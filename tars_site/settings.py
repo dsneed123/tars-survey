@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     "pages",
     "inquiries",
     "members",
+    "projects",
 ]
 
 AUTH_USER_MODEL = "accounts.CustomUser"
@@ -91,6 +92,12 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://usetars.dev",
+    "https://www.usetars.dev",
+    "https://tars-survey-production.up.railway.app",
+]
 
 # Email configuration
 # In development (DEBUG=True), emails print to the terminal console.

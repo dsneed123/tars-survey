@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }} Settings — TARS{% endblock %}
+
+{% block meta_description %}<meta name="description" content="Settings for {{ project.github_repo }} on TARS.">{% endblock %}
+
+{% block extra_head %}
+<style>
+    .page-hero {
+        background: linear-gradient(135deg, var(--tars-surface) 0%, rgba(99,102,241,0.08) 100%);
+        border-bottom: 1px solid var(--tars-border);
+        padding: 2.5rem 0 2rem;
+    }
+
+    .form-label {
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: var(--tars-text);
+        margin-bottom: 0.4rem;
+    }
+
+    .form-text {
+        color: var(--tars-muted);
+        font-size: 0.8rem;
+    }
+
+    .invalid-feedback {
+        font-size: 0.8rem;
+    }
+
+    .section-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--tars-muted);
+        margin-bottom: 1rem;
+    }
+
+    .danger-zone {
+        border: 1px solid rgba(239,68,68,0.3);
+        border-radius: 12px;
+        padding: 1.5rem;
+        background: rgba(239,68,68,0.05);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+    <div class="container">
+        <nav aria-label="breadcrumb" class="mb-2">
+            <ol class="breadcrumb mb-0" style="font-size:0.8rem; color:var(--tars-muted)">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'members:dashboard' %}" style="color:var(--tars-muted); text-decoration:none">Dashboard</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'projects:list' %}" style="color:var(--tars-muted); text-decoration:none">Projects</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'projects:detail' pk=project.pk %}" style="color:var(--tars-muted); text-decoration:none">{{ project.name }}</a>
+                </li>
+                <li class="breadcrumb-item active" style="color:var(--tars-text)">Settings</li>
+            </ol>
+        </nav>
+        <h1 class="h3 fw-bold mb-1 mt-2" style="color:var(--tars-text)">Project Settings</h1>
+        <p class="mb-0 small" style="color:var(--tars-muted)">{{ project.github_repo }}</p>
+    </div>
+</div>
+
+<div class="container py-5">
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-dismissible fade show mb-4" role="alert"
+             style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); color:var(--tars-text)">
+            {{ message }}
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+
+            <!-- Edit Form -->
+            <p class="section-label">General</p>
+            <div class="card-surface p-4 p-lg-5 mb-4">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    <!-- Project Name -->
+                    <div class="mb-4">
+                        <label class="form-label" for="{{ form.name.id_for_label }}">Project Name</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                        <div class="invalid-feedback d-block">{{ form.name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- GitHub Repository -->
+                    <div class="mb-4">
+                        <label class="form-label" for="{{ form.github_repo_url.id_for_label }}">GitHub Repository</label>
+                        {{ form.github_repo_url }}
+                        <div class="form-text mt-1">
+                            <i class="bi bi-info-circle me-1"></i>
+                            {{ form.github_repo_url.help_text }}
+                        </div>
+                        {% if form.github_repo_url.errors %}
+                        <div class="invalid-feedback d-block mt-1">{{ form.github_repo_url.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Language + Branch -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-7">
+                            <label class="form-label" for="{{ form.language.id_for_label }}">Primary Language</label>
+                            {{ form.language }}
+                            {% if form.language.errors %}
+                            <div class="invalid-feedback d-block">{{ form.language.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-sm-5">
+                            <label class="form-label" for="{{ form.default_branch.id_for_label }}">Default Branch</label>
+                            {{ form.default_branch }}
+                            {% if form.default_branch.errors %}
+                            <div class="invalid-feedback d-block">{{ form.default_branch.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="mb-4">
+                        <label class="form-label" for="{{ form.description.id_for_label }}">
+                            Description <span class="fw-normal" style="color:var(--tars-muted)">(optional)</span>
+                        </label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                        <div class="invalid-feedback d-block">{{ form.description.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Active toggle -->
+                    <div class="mb-5">
+                        <div class="d-flex align-items-center gap-3 p-3 rounded-3"
+                             style="background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.15)">
+                            {{ form.is_active }}
+                            <div>
+                                <label class="form-check-label fw-semibold" for="{{ form.is_active.id_for_label }}"
+                                       style="color:var(--tars-text); cursor:pointer">
+                                    Project Active
+                                </label>
+                                <div class="small" style="color:var(--tars-muted)">
+                                    When paused, TARS will not process new tasks for this project.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Non-field errors -->
+                    {% if form.non_field_errors %}
+                    <div class="alert mb-4" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#f87171; border-radius:10px;">
+                        {% for error in form.non_field_errors %}
+                        <div>{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex gap-3">
+                        <button type="submit" class="btn btn-accent">Save Changes</button>
+                        <a href="{% url 'projects:detail' pk=project.pk %}" class="btn btn-outline-accent">Cancel</a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Danger Zone -->
+            <p class="section-label" style="color:rgba(239,68,68,0.7)">Danger Zone</p>
+            <div class="danger-zone">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div>
+                        <h6 class="fw-bold mb-1" style="color:#f87171">Delete Project</h6>
+                        <p class="small mb-0" style="color:var(--tars-muted)">
+                            Permanently remove <strong style="color:var(--tars-text)">{{ project.name }}</strong>
+                            from TARS. This cannot be undone.
+                        </p>
+                    </div>
+                    <button type="button" class="btn btn-sm"
+                            style="border:1px solid rgba(239,68,68,0.5); color:#f87171; background:transparent;"
+                            data-bs-toggle="modal" data-bs-target="#deleteModal">
+                        <i class="bi bi-trash me-1"></i> Delete Project
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Delete confirmation modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background:var(--tars-surface); border:1px solid var(--tars-border)">
+            <div class="modal-header" style="border-color:var(--tars-border)">
+                <h5 class="modal-title fw-bold" id="deleteModalLabel" style="color:var(--tars-text)">
+                    Delete Project
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p style="color:var(--tars-muted)">
+                    Are you sure you want to delete
+                    <strong style="color:var(--tars-text)">{{ project.name }}</strong>?
+                    This will remove the project and all associated data from TARS permanently.
+                </p>
+                <div class="p-3 rounded-3" style="background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2)">
+                    <p class="small mb-0" style="color:#f87171">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        This action cannot be undone. Your GitHub repository will not be affected.
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-color:var(--tars-border)">
+                <button type="button" class="btn btn-sm" data-bs-dismiss="modal"
+                        style="border:1px solid var(--tars-border); color:var(--tars-muted)">
+                    Cancel
+                </button>
+                <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <button type="submit" name="delete" value="1" class="btn btn-sm"
+                            style="background:rgba(239,68,68,0.8); color:#fff; border:none">
+                        <i class="bi bi-trash me-1"></i> Yes, Delete Project
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

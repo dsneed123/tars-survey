@@ -25,4 +25,5 @@ urlpatterns = [
     path("", include("inquiries.urls")),
     path("", include("accounts.urls")),
     path("", include("members.urls")),
+    path("", include("projects.urls")),
 ]

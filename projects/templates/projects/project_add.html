@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Add Project — TARS{% endblock %}
+
+{% block meta_description %}<meta name="description" content="Connect a GitHub repository to TARS.">{% endblock %}
+
+{% block extra_head %}
+<style>
+    .page-hero {
+        background: linear-gradient(135deg, var(--tars-surface) 0%, rgba(99,102,241,0.08) 100%);
+        border-bottom: 1px solid var(--tars-border);
+        padding: 2.5rem 0 2rem;
+    }
+
+    .form-label {
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: var(--tars-text);
+        margin-bottom: 0.4rem;
+    }
+
+    .form-text {
+        color: var(--tars-muted);
+        font-size: 0.8rem;
+    }
+
+    .invalid-feedback {
+        font-size: 0.8rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+    <div class="container">
+        <nav aria-label="breadcrumb" class="mb-1">
+            <ol class="breadcrumb mb-0" style="font-size:0.8rem; color:var(--tars-muted)">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'members:dashboard' %}" style="color:var(--tars-muted); text-decoration:none">Dashboard</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'projects:list' %}" style="color:var(--tars-muted); text-decoration:none">Projects</a>
+                </li>
+                <li class="breadcrumb-item active" style="color:var(--tars-text)">Add Project</li>
+            </ol>
+        </nav>
+        <h1 class="h3 fw-bold mb-1 mt-2" style="color:var(--tars-text)">Add Project</h1>
+        <p class="mb-0 small" style="color:var(--tars-muted)">Connect a GitHub repository to TARS.</p>
+    </div>
+</div>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card-surface p-4 p-lg-5">
+                <form method="post" novalidate>
+                    {% csrf_token %}
+
+                    <!-- Project Name -->
+                    <div class="mb-4">
+                        <label class="form-label" for="{{ form.name.id_for_label }}">Project Name</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                        <div class="invalid-feedback d-block">{{ form.name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- GitHub Repository -->
+                    <div class="mb-4">
+                        <label class="form-label" for="{{ form.github_repo_url.id_for_label }}">GitHub Repository</label>
+                        {{ form.github_repo_url }}
+                        <div class="form-text mt-1">
+                            <i class="bi bi-info-circle me-1"></i>
+                            {{ form.github_repo_url.help_text }}
+                            TARS will verify the repository exists before saving.
+                        </div>
+                        {% if form.github_repo_url.errors %}
+                        <div class="invalid-feedback d-block mt-1">{{ form.github_repo_url.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Language + Branch (side by side) -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-7">
+                            <label class="form-label" for="{{ form.language.id_for_label }}">Primary Language</label>
+                            {{ form.language }}
+                            {% if form.language.errors %}
+                            <div class="invalid-feedback d-block">{{ form.language.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-sm-5">
+                            <label class="form-label" for="{{ form.default_branch.id_for_label }}">Default Branch</label>
+                            {{ form.default_branch }}
+                            {% if form.default_branch.errors %}
+                            <div class="invalid-feedback d-block">{{ form.default_branch.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="mb-5">
+                        <label class="form-label" for="{{ form.description.id_for_label }}">
+                            Description <span class="fw-normal" style="color:var(--tars-muted)">(optional)</span>
+                        </label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                        <div class="invalid-feedback d-block">{{ form.description.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Non-field errors -->
+                    {% if form.non_field_errors %}
+                    <div class="alert mb-4" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#f87171; border-radius:10px;">
+                        {% for error in form.non_field_errors %}
+                        <div>{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex gap-3">
+                        <button type="submit" class="btn btn-accent">
+                            <i class="bi bi-plus-lg me-1"></i> Add Project
+                        </button>
+                        <a href="{% url 'projects:list' %}" class="btn btn-outline-accent">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Note about private repos -->
+            <div class="mt-3 p-3 rounded-3 d-flex gap-2" style="background:rgba(99,102,241,0.07); border:1px solid rgba(99,102,241,0.15);">
+                <i class="bi bi-shield-lock" style="color:var(--tars-accent); flex-shrink:0; margin-top:0.1rem"></i>
+                <p class="small mb-0" style="color:var(--tars-muted)">
+                    <strong style="color:var(--tars-text)">Public repositories only.</strong>
+                    TARS currently validates public GitHub repositories. Private repo support is coming soon.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
