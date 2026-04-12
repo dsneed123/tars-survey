@@ -7,3 +7,7 @@ def landing(request):
 
 def inquiry(request):
     return render(request, "pages/inquiry.html")
+
+
+def services(request):
+    return render(request, "pages/services.html")
