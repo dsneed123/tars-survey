@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 
+import dj_database_url
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-change-me-in-production-use-env-var")
@@ -17,10 +19,13 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sitemaps",
+    "accounts",
     "pages",
     "inquiries",
     "members",
 ]
+
+AUTH_USER_MODEL = "accounts.CustomUser"
 
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/dashboard/"
@@ -59,11 +64,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "tars_site.wsgi.application"
 
+_default_db = f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
+    "default": dj_database_url.config(
+        default=os.environ.get("DATABASE_URL", _default_db),
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
 AUTH_PASSWORD_VALIDATORS = [
