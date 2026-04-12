@@ -1,0 +1,28 @@
+New inquiry received on tarsai.dev
+===================================
+
+Submitted: {{ inquiry.created_at|date:"N j, Y \a\t g:i A" }} UTC
+
+CONTACT INFORMATION
+-------------------
+Name:    {{ inquiry.contact_name }}
+Email:   {{ inquiry.email }}
+Phone:   {{ inquiry.phone|default:"(not provided)" }}
+
+COMPANY INFORMATION
+-------------------
+Company:      {{ inquiry.company_name }}
+Size:         {{ inquiry.get_company_size_display }}
+Industry:     {{ inquiry.industry }}
+How they heard about us: {{ inquiry.how_heard_about_us }}
+
+PROJECT DETAILS
+---------------
+Description:
+{{ inquiry.project_description }}
+
+Budget:   {{ inquiry.get_budget_range_display }}
+Timeline: {{ inquiry.get_timeline_display }}
+
+---
+View in admin: {{ admin_url }}
