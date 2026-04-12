@@ -99,6 +99,9 @@ CSRF_TRUSTED_ORIGINS = [
     "https://tars-survey-production.up.railway.app",
 ]
 
+# Allow Railway to pass the real scheme through the proxy
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 # Email configuration
 # In development (DEBUG=True), emails print to the terminal console.
 # In production, set EMAIL_BACKEND to smtp and provide SMTP env vars.
