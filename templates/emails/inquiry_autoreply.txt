@@ -1,0 +1,32 @@
+Hi {{ inquiry.contact_name }},
+
+Thank you for reaching out to TARS! We've received your inquiry and will be in touch shortly.
+
+Here's a summary of what you submitted:
+
+CONTACT INFORMATION
+-------------------
+Name:    {{ inquiry.contact_name }}
+Email:   {{ inquiry.email }}
+Phone:   {{ inquiry.phone|default:"(not provided)" }}
+
+COMPANY INFORMATION
+-------------------
+Company:      {{ inquiry.company_name }}
+Size:         {{ inquiry.get_company_size_display }}
+Industry:     {{ inquiry.industry }}
+
+PROJECT DETAILS
+---------------
+Description:
+{{ inquiry.project_description }}
+
+Budget:   {{ inquiry.get_budget_range_display }}
+Timeline: {{ inquiry.get_timeline_display }}
+
+---
+We typically respond within 1–2 business days.
+
+Best,
+The TARS Team
+https://tarsai.dev
