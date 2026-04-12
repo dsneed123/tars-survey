@@ -2,6 +2,24 @@
 
 {% block title %}Get Started — TARS{% endblock %}
 
+{% block meta_description %}<meta name="description" content="Apply for early access to TARS — the autonomous coding agent that builds, tests, and ships your software 24/7. Tell us about your project and we'll be in touch within 24 hours.">{% endblock %}
+
+{% block meta_og %}
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_US">
+<meta property="og:site_name" content="TARS">
+<meta property="og:title" content="Get Early Access — TARS">
+<meta property="og:description" content="Apply for early access to TARS — the autonomous coding agent that builds, tests, and ships your software 24/7. Tell us about your project and we'll be in touch within 24 hours.">
+<meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
+<meta property="og:image" content="{{ SITE_URL }}/static/img/og-image.svg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Get Early Access — TARS">
+<meta name="twitter:description" content="Apply for early access to TARS — the autonomous coding agent that builds, tests, and ships your software 24/7.">
+<meta name="twitter:image" content="{{ SITE_URL }}/static/img/og-image.svg">
+{% endblock %}
+
 {% block extra_head %}
 <style>
     .inquiry-hero {
