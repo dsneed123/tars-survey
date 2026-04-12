@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In — TARS{% endblock %}
+
+{% block extra_head %}
+<style>
+    .login-wrap {
+        min-height: calc(100vh - 140px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem 1rem;
+    }
+
+    .login-card {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 20px;
+        padding: 2.5rem 2rem;
+        width: 100%;
+        max-width: 420px;
+    }
+
+    .login-logo {
+        font-size: 1.6rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        margin-bottom: 0.25rem;
+    }
+
+    .form-control {
+        background-color: #0f172a;
+        border: 1px solid var(--tars-border);
+        color: var(--tars-text);
+        border-radius: 10px;
+        padding: 0.65rem 1rem;
+    }
+
+    .form-control:focus {
+        background-color: #0f172a;
+        border-color: var(--tars-accent);
+        color: var(--tars-text);
+        box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+    }
+
+    .form-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--tars-muted);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-wrap">
+    <div class="login-card">
+        <div class="text-center mb-4">
+            <div class="login-logo">T<span style="color:var(--tars-accent)">.</span>ARS</div>
+            <p class="mb-0" style="color: var(--tars-muted); font-size: 0.9rem;">Sign in to your dashboard</p>
+        </div>
+
+        {% if form.errors %}
+        <div class="alert alert-danger py-2 px-3 mb-3" style="border-radius: 10px; font-size: 0.88rem;">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            Invalid username or password. Please try again.
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
+
+            <div class="mb-3">
+                <label class="form-label" for="id_username">Username</label>
+                <input type="text" class="form-control" id="id_username" name="username"
+                       autocomplete="username" autofocus
+                       value="{{ form.username.value|default:'' }}">
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label" for="id_password">Password</label>
+                <input type="password" class="form-control" id="id_password" name="password"
+                       autocomplete="current-password">
+            </div>
+
+            <button type="submit" class="btn btn-accent w-100">
+                <i class="bi bi-box-arrow-in-right me-1"></i> Sign In
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

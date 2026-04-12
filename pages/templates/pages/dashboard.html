@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — TARS{% endblock %}
+
+{% block extra_head %}
+<style>
+    .dashboard-wrap {
+        padding: 2.5rem 0 4rem;
+    }
+
+    .stat-card {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 16px;
+        padding: 1.5rem;
+        height: 100%;
+    }
+
+    .stat-card .stat-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-card .stat-value {
+        font-size: 2.2rem;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-card .stat-label {
+        font-size: 0.8rem;
+        color: var(--tars-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .pipeline-tabs .nav-link {
+        color: var(--tars-muted) !important;
+        border: 1px solid var(--tars-border) !important;
+        border-radius: 8px !important;
+        margin-right: 6px;
+        margin-bottom: 6px;
+        padding: 0.4rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+
+    .pipeline-tabs .nav-link:hover {
+        color: var(--tars-text) !important;
+        border-color: var(--tars-accent) !important;
+    }
+
+    .pipeline-tabs .nav-link.active {
+        background-color: var(--tars-accent) !important;
+        border-color: var(--tars-accent) !important;
+        color: #fff !important;
+    }
+
+    .inquiry-row {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: border-color 0.2s, transform 0.15s;
+        text-decoration: none;
+        color: var(--tars-text);
+    }
+
+    .inquiry-row:hover {
+        border-color: var(--tars-accent);
+        transform: translateX(3px);
+        color: var(--tars-text);
+    }
+
+    .inquiry-row .inq-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(99,102,241,0.15);
+        border: 1px solid rgba(99,102,241,0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: #a5b4fc;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+    }
+
+    .inquiry-row .inq-meta {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .inquiry-row .inq-name {
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    .inquiry-row .inq-sub {
+        font-size: 0.8rem;
+        color: var(--tars-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .badge-status {
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        padding: 0.3em 0.75em;
+        border-radius: 999px;
+    }
+
+    .inq-date {
+        font-size: 0.78rem;
+        color: var(--tars-muted);
+        white-space: nowrap;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--tars-muted);
+    }
+
+    .empty-state i {
+        font-size: 2.5rem;
+        margin-bottom: 0.75rem;
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrap">
+    <div class="container">
+
+        <!-- Header -->
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h1 style="font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.25rem;">
+                    Inquiry Dashboard
+                </h1>
+                <p class="mb-0" style="color: var(--tars-muted); font-size: 0.9rem;">
+                    Manage and track your sales pipeline
+                </p>
+            </div>
+            <a href="{% url 'logout' %}" class="btn btn-outline-accent btn-sm">
+                <i class="bi bi-box-arrow-right me-1"></i> Logout
+            </a>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="row g-3 mb-5">
+            <div class="col-6 col-lg-3">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(99,102,241,0.15);">
+                        <i class="bi bi-inbox-fill" style="color: #818cf8;"></i>
+                    </div>
+                    <div class="stat-value">{{ total }}</div>
+                    <div class="stat-label">Total Inquiries</div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(16,185,129,0.12);">
+                        <i class="bi bi-arrow-up-circle-fill" style="color: #10b981;"></i>
+                    </div>
+                    <div class="stat-value" style="color: var(--tars-green);">{{ new_this_week }}</div>
+                    <div class="stat-label">New This Week</div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(251,191,36,0.12);">
+                        <i class="bi bi-graph-up-arrow" style="color: #fbbf24;"></i>
+                    </div>
+                    <div class="stat-value" style="color: #fbbf24;">{{ conversion_rate }}%</div>
+                    <div class="stat-label">Conversion Rate</div>
+                </div>
+            </div>
+            <div class="col-6 col-lg-3">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: rgba(236,72,153,0.12);">
+                        <i class="bi bi-clock-fill" style="color: #ec4899;"></i>
+                    </div>
+                    <div class="stat-value" style="color: #ec4899;">
+                        {% if avg_response_hours %}{{ avg_response_hours }}h{% else %}—{% endif %}
+                    </div>
+                    <div class="stat-label">Avg Response Time</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pipeline -->
+        <div class="mb-3 d-flex align-items-center justify-content-between">
+            <h2 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 0;">Pipeline</h2>
+        </div>
+
+        <!-- Status Tabs -->
+        <ul class="nav pipeline-tabs mb-4" id="pipelineTabs">
+            {% for col in pipeline %}
+            <li class="nav-item">
+                <a class="nav-link {% if active_status == col.key %}active{% endif %}"
+                   href="?status={{ col.key }}">
+                    {{ col.label }}
+                    <span class="ms-1 {% if active_status == col.key %}opacity-75{% else %}text-muted{% endif %}"
+                          style="font-size: 0.75rem;">({{ col.count }})</span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+
+        <!-- Active Column -->
+        {% for col in pipeline %}
+        {% if active_status == col.key %}
+        <div>
+            {% if col.inquiries %}
+                {% for inq in col.inquiries %}
+                <a href="{% url 'pages:inquiry_detail' inq.id %}" class="inquiry-row">
+                    <div class="inq-avatar">
+                        {{ inq.name|first|upper }}
+                    </div>
+                    <div class="inq-meta">
+                        <div class="inq-name">{{ inq.name }}</div>
+                        <div class="inq-sub">
+                            {{ inq.email }}{% if inq.company %} · {{ inq.company }}{% endif %}
+                        </div>
+                    </div>
+                    {% if inq.team_size %}
+                    <span class="d-none d-md-inline" style="font-size: 0.8rem; color: var(--tars-muted);">
+                        {{ inq.get_team_size_display }}
+                    </span>
+                    {% endif %}
+                    <span class="badge-status badge bg-{{ inq.get_status_display_class }}">
+                        {{ inq.get_status_display }}
+                    </span>
+                    <span class="inq-date">
+                        {{ inq.created_at|date:"M j" }}
+                    </span>
+                </a>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <p class="mb-0">No inquiries with status <strong>{{ col.label }}</strong>.</p>
+                </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% endfor %}
+
+    </div>
+</div>
+{% endblock %}

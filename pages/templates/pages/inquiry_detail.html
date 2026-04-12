@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}{{ inq.name }} — TARS Dashboard{% endblock %}
+
+{% block extra_head %}
+<style>
+    .detail-wrap {
+        padding: 2.5rem 0 4rem;
+    }
+
+    .detail-card {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 16px;
+        padding: 2rem;
+    }
+
+    .meta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem 2rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .meta-item {
+        font-size: 0.85rem;
+        color: var(--tars-muted);
+    }
+
+    .meta-item strong {
+        color: var(--tars-text);
+    }
+
+    .badge-status {
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        padding: 0.35em 0.85em;
+        border-radius: 999px;
+    }
+
+    .note-item {
+        background: #0f172a;
+        border: 1px solid var(--tars-border);
+        border-radius: 10px;
+        padding: 0.9rem 1.1rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .note-item .note-text {
+        font-size: 0.92rem;
+        line-height: 1.6;
+        margin-bottom: 0.4rem;
+    }
+
+    .note-item .note-meta {
+        font-size: 0.75rem;
+        color: var(--tars-muted);
+    }
+
+    .form-control, .form-select {
+        background-color: #0f172a;
+        border: 1px solid var(--tars-border);
+        color: var(--tars-text);
+        border-radius: 10px;
+        padding: 0.65rem 1rem;
+    }
+
+    .form-control:focus, .form-select:focus {
+        background-color: #0f172a;
+        border-color: var(--tars-accent);
+        color: var(--tars-text);
+        box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+    }
+
+    .section-divider {
+        border-color: var(--tars-border);
+        margin: 1.75rem 0;
+    }
+
+    .use-case-box {
+        background: #0f172a;
+        border: 1px solid var(--tars-border);
+        border-radius: 10px;
+        padding: 1rem 1.1rem;
+        font-size: 0.9rem;
+        line-height: 1.65;
+        color: var(--tars-text);
+        white-space: pre-wrap;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-wrap">
+    <div class="container">
+
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb" style="font-size: 0.85rem;">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'pages:dashboard' %}?status={{ inq.status }}"
+                       style="color: var(--tars-muted); text-decoration: none;">Dashboard</a>
+                </li>
+                <li class="breadcrumb-item active" style="color: var(--tars-text);">{{ inq.name }}</li>
+            </ol>
+        </nav>
+
+        <div class="row g-4">
+
+            <!-- Left: Inquiry Details -->
+            <div class="col-lg-7">
+                <div class="detail-card mb-4">
+                    <div class="d-flex align-items-start justify-content-between mb-3">
+                        <div>
+                            <h1 style="font-size: 1.4rem; font-weight: 800; margin-bottom: 0.25rem;">
+                                {{ inq.name }}
+                            </h1>
+                            <a href="mailto:{{ inq.email }}"
+                               style="color: var(--tars-accent); font-size: 0.9rem; text-decoration: none;">
+                                {{ inq.email }}
+                            </a>
+                        </div>
+                        <span class="badge-status badge bg-{{ inq.get_status_display_class }}">
+                            {{ inq.get_status_display }}
+                        </span>
+                    </div>
+
+                    <div class="meta-row">
+                        {% if inq.company %}
+                        <div class="meta-item">
+                            <i class="bi bi-building me-1"></i>
+                            <strong>{{ inq.company }}</strong>
+                        </div>
+                        {% endif %}
+                        {% if inq.team_size %}
+                        <div class="meta-item">
+                            <i class="bi bi-people me-1"></i>
+                            <strong>{{ inq.get_team_size_display }}</strong>
+                        </div>
+                        {% endif %}
+                        <div class="meta-item">
+                            <i class="bi bi-calendar3 me-1"></i>
+                            <strong>{{ inq.created_at|date:"N j, Y · g:i A" }}</strong>
+                        </div>
+                        {% if inq.repo %}
+                        <div class="meta-item">
+                            <i class="bi bi-github me-1"></i>
+                            <a href="{{ inq.repo }}" target="_blank" rel="noopener"
+                               style="color: var(--tars-accent);">{{ inq.repo }}</a>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if inq.use_case %}
+                    <div>
+                        <div class="mb-2" style="font-size: 0.8rem; font-weight: 600; color: var(--tars-muted); text-transform: uppercase; letter-spacing: 0.06em;">
+                            Use Case
+                        </div>
+                        <div class="use-case-box">{{ inq.use_case }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Notes -->
+                <div class="detail-card">
+                    <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 1.25rem;">
+                        <i class="bi bi-chat-left-text me-2" style="color: var(--tars-accent);"></i>
+                        Internal Notes
+                        {% if notes %}
+                        <span class="ms-2" style="font-size: 0.78rem; color: var(--tars-muted); font-weight: 400;">
+                            {{ notes|length }} note{{ notes|length|pluralize }}
+                        </span>
+                        {% endif %}
+                    </h2>
+
+                    {% for note in notes %}
+                    <div class="note-item">
+                        <div class="note-text">{{ note.note }}</div>
+                        <div class="note-meta">
+                            <i class="bi bi-clock me-1"></i>{{ note.created_at|date:"N j, Y · g:i A" }}
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p style="color: var(--tars-muted); font-size: 0.9rem;">No notes yet.</p>
+                    {% endfor %}
+
+                    <hr class="section-divider">
+
+                    <!-- Add Note Form -->
+                    <form method="post" action="{% url 'pages:add_note' inq.id %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">Add a note</label>
+                            <textarea class="form-control" name="note" rows="3"
+                                      placeholder="Internal note about this inquiry..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-accent btn-sm px-4">
+                            <i class="bi bi-plus-lg me-1"></i> Add Note
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right: Quick Actions -->
+            <div class="col-lg-5">
+                <div class="detail-card">
+                    <h2 style="font-size: 1rem; font-weight: 700; margin-bottom: 1.25rem;">
+                        <i class="bi bi-lightning-charge-fill me-2" style="color: #fbbf24;"></i>
+                        Quick Actions
+                    </h2>
+
+                    <!-- Change Status -->
+                    <form method="post" action="{% url 'pages:update_status' inq.id %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label" style="font-size: 0.85rem; font-weight: 600;">
+                                Change Status
+                            </label>
+                            <select class="form-select mb-2" name="status">
+                                {% for value, label in status_choices %}
+                                <option value="{{ value }}"
+                                    {% if inq.status == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-accent w-100">
+                            <i class="bi bi-arrow-repeat me-1"></i> Update Status
+                        </button>
+                    </form>
+
+                    <hr class="section-divider">
+
+                    <!-- Status Guide -->
+                    <div style="font-size: 0.8rem; color: var(--tars-muted);">
+                        <div class="fw-semibold mb-2" style="color: var(--tars-text);">Pipeline stages</div>
+                        <div class="d-flex flex-column gap-1">
+                            <div><span class="badge bg-primary me-2" style="font-size: 0.65rem;">New</span>Just submitted, not yet reviewed</div>
+                            <div><span class="badge bg-info me-2" style="font-size: 0.65rem;">Contacted</span>Reached out to the prospect</div>
+                            <div><span class="badge bg-warning me-2" style="font-size: 0.65rem;">Qualified</span>Confirmed fit for TARS</div>
+                            <div><span class="badge bg-secondary me-2" style="font-size: 0.65rem;">Proposal</span>Sent pricing or proposal</div>
+                            <div><span class="badge bg-success me-2" style="font-size: 0.65rem;">Won</span>Converted to customer</div>
+                            <div><span class="badge bg-danger me-2" style="font-size: 0.65rem;">Lost</span>Did not convert</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

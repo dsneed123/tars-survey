@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block title %}Request Received — TARS{% endblock %}
+
+{% block content %}
+<section style="min-height: 70vh; display: flex; align-items: center;">
+    <div class="container text-center">
+        <div class="mb-4" style="font-size: 3.5rem; color: var(--tars-green);">
+            <i class="bi bi-check-circle-fill"></i>
+        </div>
+        <h1 style="font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; letter-spacing: -0.03em; margin-bottom: 1rem;">
+            We've got your request!
+        </h1>
+        <p class="text-muted mx-auto mb-4" style="max-width: 480px; font-size: 1.1rem; line-height: 1.65;">
+            Thanks for reaching out. Our team will review your project details and get back to you within <strong style="color: var(--tars-text);">24 hours</strong>.
+        </p>
+        <a href="{% url 'pages:landing' %}" class="btn btn-accent btn-lg px-5">
+            Back to Home &rarr;
+        </a>
+    </div>
+</section>
+{% endblock %}
