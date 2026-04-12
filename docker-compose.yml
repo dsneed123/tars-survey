@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_SETTINGS_MODULE=tars_site.settings.prod
+      - SECRET_KEY=${SECRET_KEY:-insecure-docker-compose-dev-key}
+      - DEBUG=False
+      - ALLOWED_HOSTS=localhost,127.0.0.1
+      - SECURE_SSL_REDIRECT=False
+    volumes:
+      - ./db.sqlite3:/app/db.sqlite3

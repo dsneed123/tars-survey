@@ -1,1 +1,4 @@
 django>=4.2
+whitenoise[brotli]>=6.6
+gunicorn>=21.2
+dj-database-url>=2.1

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Request Submitted — TARS{% endblock %}
+
+{% block content %}
+<section style="min-height: 70vh; display: flex; align-items: center;">
+    <div class="container text-center">
+        <div style="font-size: 3.5rem; margin-bottom: 1.5rem;">🚀</div>
+        <h1 style="font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; letter-spacing: -0.03em; margin-bottom: 1rem;">
+            You're on the list!
+        </h1>
+        <p class="text-muted mx-auto mb-4" style="max-width: 480px; font-size: 1.1rem;">
+            We'll be in touch within 24 hours to get TARS set up on your repositories.
+        </p>
+        <a href="{% url 'pages:landing' %}" class="btn btn-accent btn-lg">
+            Back to Home &rarr;
+        </a>
+    </div>
+</section>
+{% endblock %}
