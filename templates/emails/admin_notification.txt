@@ -1,0 +1,13 @@
+New Inquiry Received
+====================
+
+A new inquiry has been submitted via TARS Survey.
+
+Name:        {{ inquiry.name }}
+Email:       {{ inquiry.email }}
+Subject:     {{ inquiry.subject }}
+Submitted:   {{ inquiry.submitted_at|date:"N j, Y, P" }}
+
+Message:
+--------
+{{ inquiry.message }}
