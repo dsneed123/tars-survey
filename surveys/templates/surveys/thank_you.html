@@ -1,0 +1,22 @@
+{% extends "surveys/base.html" %}
+
+{% block title %}Thank You — {{ survey.title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6 text-center">
+        <div class="card shadow-sm border-0 py-5 px-4">
+            <div class="card-body">
+                <div class="display-1 mb-3">&#10003;</div>
+                <h1 class="h3 fw-bold mb-2">Thank you!</h1>
+                <p class="text-muted fs-5 mb-4">
+                    Your response to <strong>{{ survey.title }}</strong> has been recorded.
+                </p>
+                <a href="{% url 'surveys:home' %}" class="btn btn-primary">
+                    &larr; Back to surveys
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,164 @@
+{% extends "surveys/base.html" %}
+
+{% block title %}{{ survey.title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <a href="{% url 'surveys:home' %}" class="text-decoration-none text-muted small d-inline-flex align-items-center mb-3">
+            &larr; All surveys
+        </a>
+
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-4">
+                <h1 class="h3 fw-bold mb-1">{{ survey.title }}</h1>
+                {% if survey.description %}
+                    <p class="text-muted mb-0">{{ survey.description }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <form method="post" action="{% url 'surveys:survey_submit' survey.pk %}" novalidate>
+            {% csrf_token %}
+
+            {% for question in questions %}
+            <div class="question-block rounded p-4 mb-3 shadow-sm">
+                <p class="fw-semibold mb-3">
+                    <span class="text-muted small me-1">{{ forloop.counter }}.</span>
+                    {{ question.text }}
+                </p>
+
+                {% if question.question_type == 'text' %}
+                    {# Free-text answer #}
+                    <textarea
+                        class="form-control"
+                        name="question_{{ question.id }}"
+                        id="q{{ question.id }}"
+                        rows="3"
+                        placeholder="Your answer…"></textarea>
+
+                {% elif question.question_type == 'multiple_choice' %}
+                    {# Radio buttons for each choice #}
+                    <div class="d-flex flex-column gap-2">
+                        {% for choice in question.choices.all %}
+                        <div class="form-check">
+                            <input
+                                class="form-check-input"
+                                type="radio"
+                                name="question_{{ question.id }}"
+                                id="q{{ question.id }}_c{{ choice.id }}"
+                                value="{{ choice.id }}">
+                            <label class="form-check-label" for="q{{ question.id }}_c{{ choice.id }}">
+                                {{ choice.text }}
+                            </label>
+                        </div>
+                        {% empty %}
+                            <p class="text-muted small">No choices defined for this question.</p>
+                        {% endfor %}
+                    </div>
+
+                {% elif question.question_type == 'rating' %}
+                    {# Star rating widget — stars update a hidden number input #}
+                    <input type="hidden" name="question_{{ question.id }}" id="q{{ question.id }}_val" value="">
+                    <div class="rating-stars" id="stars_{{ question.id }}">
+                        {% for i in "54321" %}
+                        <input
+                            type="radio"
+                            id="q{{ question.id }}_r{{ i }}"
+                            name="_stars_{{ question.id }}"
+                            value="{{ i }}"
+                            data-target="q{{ question.id }}_val">
+                        <label for="q{{ question.id }}_r{{ i }}" title="{{ i }} star{{ i|pluralize }}">&#9733;</label>
+                        {% endfor %}
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">Or enter a number (1–10):</small>
+                        <input
+                            type="number"
+                            class="form-control form-control-sm d-inline-block ms-2"
+                            id="q{{ question.id }}_num"
+                            min="1"
+                            max="10"
+                            placeholder="1–10"
+                            data-target="q{{ question.id }}_val"
+                            style="width: 80px;">
+                    </div>
+
+                {% elif question.question_type == 'yes_no' %}
+                    {# Yes / No toggle #}
+                    <div class="yes-no-group d-flex gap-2">
+                        <input
+                            type="radio"
+                            class="btn-check"
+                            name="question_{{ question.id }}"
+                            id="q{{ question.id }}_yes"
+                            value="yes"
+                            autocomplete="off">
+                        <label class="btn btn-outline-success" for="q{{ question.id }}_yes">
+                            Yes
+                        </label>
+
+                        <input
+                            type="radio"
+                            class="btn-check"
+                            name="question_{{ question.id }}"
+                            id="q{{ question.id }}_no"
+                            value="no"
+                            autocomplete="off">
+                        <label class="btn btn-outline-danger" for="q{{ question.id }}_no">
+                            No
+                        </label>
+                    </div>
+
+                {% endif %}
+            </div>
+            {% empty %}
+                <div class="alert alert-info">This survey has no questions yet.</div>
+            {% endfor %}
+
+            {% if questions %}
+            <div class="d-grid mt-4">
+                <button type="submit" class="btn btn-primary btn-lg">Submit Survey</button>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Sync star ratings and number inputs to hidden field for RATING questions
+    document.querySelectorAll('[id^="stars_"]').forEach(function(starGroup) {
+        var questionId = starGroup.id.replace('stars_', '');
+        var hiddenInput = document.getElementById('q' + questionId + '_val');
+        var numInput = document.getElementById('q' + questionId + '_num');
+        var radios = starGroup.querySelectorAll('input[type="radio"]');
+
+        if (!hiddenInput) return;
+
+        // Stars → hidden field (and sync number input)
+        radios.forEach(function(r) {
+            r.addEventListener('change', function() {
+                var starVal = parseInt(this.value, 10);
+                hiddenInput.value = starVal;
+                if (numInput) numInput.value = starVal * 2;
+            });
+        });
+
+        // Number input → hidden field (and pick closest star)
+        if (numInput) {
+            numInput.addEventListener('input', function() {
+                var val = parseInt(this.value, 10);
+                if (val >= 1 && val <= 10) {
+                    hiddenInput.value = val;
+                    var starVal = Math.min(5, Math.max(1, Math.round(val / 2)));
+                    radios.forEach(function(r) {
+                        r.checked = (parseInt(r.value, 10) === starVal);
+                    });
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
