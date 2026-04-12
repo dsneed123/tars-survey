@@ -112,6 +112,8 @@
             <ul class="navbar-nav ms-auto align-items-center gap-2">
                 <li class="nav-item"><a class="nav-link" href="#benefits">Benefits</a></li>
                 <li class="nav-item"><a class="nav-link" href="#how-it-works">How It Works</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'pages:about' %}">About</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'pages:faq' %}">FAQ</a></li>
                 <li class="nav-item">
                     <a class="btn btn-accent" href="{% url 'pages:inquiry' %}">Get Started</a>
                 </li>
@@ -140,8 +142,8 @@
             <div class="col-md-2">
                 <p class="fw-semibold mb-2">Company</p>
                 <ul class="list-unstyled small">
-                    <li><a href="#">About</a></li>
-                    <li><a href="#">Blog</a></li>
+                    <li><a href="{% url 'pages:about' %}">About</a></li>
+                    <li><a href="{% url 'pages:faq' %}">FAQ</a></li>
                     <li><a href="#">Contact</a></li>
                 </ul>
             </div>

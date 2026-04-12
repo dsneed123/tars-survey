@@ -1,0 +1,264 @@
+{% extends "base.html" %}
+
+{% block title %}FAQ — TARS{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* ── Page hero ──────────────────────────────────────────── */
+    .page-hero {
+        padding: 6rem 0 4rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .page-hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(ellipse 70% 50% at 50% -5%, rgba(99,102,241,0.2) 0%, transparent 60%);
+        pointer-events: none;
+    }
+
+    .section-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--tars-accent);
+        margin-bottom: 0.75rem;
+    }
+
+    .section-title {
+        font-size: clamp(2rem, 4vw, 3rem);
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        line-height: 1.1;
+    }
+
+    /* ── Accordion ──────────────────────────────────────────── */
+    .faq-accordion .accordion-item {
+        background-color: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 12px !important;
+        margin-bottom: 0.75rem;
+        overflow: hidden;
+        transition: border-color 0.2s;
+    }
+
+    .faq-accordion .accordion-item:hover {
+        border-color: rgba(99,102,241,0.5);
+    }
+
+    .faq-accordion .accordion-button {
+        background-color: var(--tars-surface);
+        color: var(--tars-text);
+        font-weight: 600;
+        font-size: 1rem;
+        padding: 1.25rem 1.5rem;
+        border-radius: 12px !important;
+        box-shadow: none;
+        transition: color 0.2s;
+    }
+
+    .faq-accordion .accordion-button:not(.collapsed) {
+        background-color: var(--tars-surface);
+        color: #a5b4fc;
+        box-shadow: none;
+    }
+
+    .faq-accordion .accordion-button::after {
+        filter: invert(1) brightness(0.7);
+    }
+
+    .faq-accordion .accordion-button:not(.collapsed)::after {
+        filter: invert(0.5) sepia(1) saturate(4) hue-rotate(210deg);
+    }
+
+    .faq-accordion .accordion-body {
+        background-color: var(--tars-surface);
+        color: var(--tars-muted);
+        font-size: 0.95rem;
+        line-height: 1.75;
+        padding: 0 1.5rem 1.5rem;
+    }
+
+    /* ── Category labels ────────────────────────────────────── */
+    .faq-category {
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--tars-accent);
+        margin: 2.5rem 0 1rem;
+    }
+
+    .faq-category:first-child {
+        margin-top: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Page Hero -->
+<section class="page-hero">
+    <div class="container">
+        <div class="row justify-content-center text-center">
+            <div class="col-lg-8">
+                <p class="section-label">Frequently Asked Questions</p>
+                <h1 class="section-title mb-4">Everything you want to know about TARS</h1>
+                <p class="lead" style="color:var(--tars-muted); max-width:580px; margin:0 auto; line-height:1.7;">
+                    Can't find an answer? <a href="{% url 'pages:inquiry' %}" style="color:var(--tars-accent);">Reach out</a> and we'll get back to you promptly.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ Content -->
+<section class="py-5">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+
+                <!-- Getting Started -->
+                <p class="faq-category">Getting Started</p>
+                <div class="accordion faq-accordion" id="faqGettingStarted">
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq-languages">
+                                What languages does TARS support?
+                            </button>
+                        </h2>
+                        <div id="faq-languages" class="accordion-collapse collapse show" data-bs-parent="#faqGettingStarted">
+                            <div class="accordion-body">
+                                TARS supports any language that Claude AI can read and write, including Python, JavaScript, TypeScript, Go, Ruby, Java, Rust, and more. Because TARS understands your codebase from context rather than relying on hard-coded language rules, it adapts to your project's specific stack. If your language has widely available open-source examples, TARS can work with it effectively.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-existing-codebase">
+                                Can TARS work with my existing codebase?
+                            </button>
+                        </h2>
+                        <div id="faq-existing-codebase" class="accordion-collapse collapse" data-bs-parent="#faqGettingStarted">
+                            <div class="accordion-body">
+                                Yes — TARS is designed to integrate with real-world repositories, not green-field projects. It reads your existing code, tests, and configuration before writing a single line, so changes fit naturally into what's already there. Most teams are up and running with their existing repo within minutes of connecting it to TARS.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-give-tasks">
+                                How do I give TARS tasks?
+                            </button>
+                        </h2>
+                        <div id="faq-give-tasks" class="accordion-collapse collapse" data-bs-parent="#faqGettingStarted">
+                            <div class="accordion-body">
+                                Tasks are defined in a simple YAML configuration file inside your repository, or submitted through the TARS dashboard. Each task is a plain-language description of the work to be done — no special syntax required. TARS reads the task queue continuously and picks up new items as they appear.
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Operations -->
+                <p class="faq-category">Operations</p>
+                <div class="accordion faq-accordion" id="faqOperations">
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-mistakes">
+                                What if TARS makes a mistake?
+                            </button>
+                        </h2>
+                        <div id="faq-mistakes" class="accordion-collapse collapse" data-bs-parent="#faqOperations">
+                            <div class="accordion-body">
+                                Every change TARS makes is delivered as a pull request — nothing is merged to your main branch without human review. If TARS produces incorrect code, your tests will catch it before a PR is opened, and your team can reject or request changes on anything that slips through. TARS treats reviewer feedback as a new task and iterates automatically.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-duration">
+                                How long does a typical task take?
+                            </button>
+                        </h2>
+                        <div id="faq-duration" class="accordion-collapse collapse" data-bs-parent="#faqOperations">
+                            <div class="accordion-body">
+                                Most well-scoped tasks — adding a feature, fixing a bug, refactoring a module — complete in two to ten minutes. Larger tasks that touch many files or require multiple test iterations may take up to 30 minutes. TARS provides real-time status updates via Discord webhook so your team always knows what's in progress.
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Security & Privacy -->
+                <p class="faq-category">Security &amp; Privacy</p>
+                <div class="accordion faq-accordion" id="faqSecurity">
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-security">
+                                How does TARS handle security?
+                            </button>
+                        </h2>
+                        <div id="faq-security" class="accordion-collapse collapse" data-bs-parent="#faqSecurity">
+                            <div class="accordion-body">
+                                TARS operates with the minimum permissions needed: read access to your repository and the ability to open pull requests. It never pushes directly to protected branches, never stores your source code beyond the duration of a task, and all API communication is encrypted in transit. We follow OWASP secure-coding guidelines and review all generated code for common vulnerabilities before submission.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-private">
+                                Is my code private?
+                            </button>
+                        </h2>
+                        <div id="faq-private" class="accordion-collapse collapse" data-bs-parent="#faqSecurity">
+                            <div class="accordion-body">
+                                Your code is never used to train AI models and is not shared with any third parties outside of the Claude API call required to complete each task. Repository contents are held in memory only for the duration of an active task and are purged immediately afterward. Enterprise plans include a dedicated processing environment for additional isolation.
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Pricing -->
+                <p class="faq-category">Pricing</p>
+                <div class="accordion faq-accordion" id="faqPricing">
+
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq-cost">
+                                What does TARS cost?
+                            </button>
+                        </h2>
+                        <div id="faq-cost" class="accordion-collapse collapse" data-bs-parent="#faqPricing">
+                            <div class="accordion-body">
+                                TARS is currently in private early access and pricing is not yet publicly announced. Early-access customers receive heavily discounted rates in exchange for feedback. Fill out the inquiry form to reserve your spot and be notified when pricing is finalized.
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- CTA -->
+                <div class="text-center mt-5 pt-3">
+                    <p style="color:var(--tars-muted); margin-bottom:1.5rem;">Still have questions? We're happy to talk through your specific use case.</p>
+                    <a href="{% url 'pages:inquiry' %}" class="btn btn-accent btn-lg">Get in Touch</a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
