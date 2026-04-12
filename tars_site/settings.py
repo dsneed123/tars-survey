@@ -19,7 +19,11 @@ INSTALLED_APPS = [
     "django.contrib.sitemaps",
     "pages",
     "inquiries",
+    "members",
 ]
+
+LOGIN_URL = "/login/"
+LOGIN_REDIRECT_URL = "/dashboard/"
 
 SITE_URL = "https://usetars.dev"
 

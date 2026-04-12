@@ -1,0 +1,382 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — TARS{% endblock %}
+
+{% block meta_description %}<meta name="description" content="Your TARS member dashboard — manage your services, view activity, and take action.">{% endblock %}
+
+{% block extra_head %}
+<style>
+    .dashboard-hero {
+        background: linear-gradient(135deg, var(--tars-surface) 0%, rgba(99,102,241,0.08) 100%);
+        border-bottom: 1px solid var(--tars-border);
+        padding: 2.5rem 0 2rem;
+    }
+
+    .plan-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: rgba(99,102,241,0.15);
+        border: 1px solid rgba(99,102,241,0.3);
+        color: var(--tars-accent);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 0.3rem 0.75rem;
+        border-radius: 999px;
+    }
+
+    .service-card {
+        background-color: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 16px;
+        padding: 1.75rem;
+        height: 100%;
+        transition: border-color 0.2s, transform 0.15s;
+    }
+
+    .service-card:hover {
+        border-color: rgba(99,102,241,0.4);
+        transform: translateY(-2px);
+    }
+
+    .service-card.active {
+        border-color: rgba(16,185,129,0.3);
+    }
+
+    .service-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        margin-bottom: 1rem;
+    }
+
+    .service-icon.code  { background: rgba(99,102,241,0.15); color: var(--tars-accent); }
+    .service-icon.mktg  { background: rgba(251,146,60,0.12); color: #fb923c; }
+    .service-icon.devops { background: rgba(16,185,129,0.12); color: var(--tars-green); }
+
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 0.25rem 0.65rem;
+        border-radius: 999px;
+    }
+
+    .status-pill.active {
+        background: rgba(16,185,129,0.15);
+        color: var(--tars-green);
+    }
+
+    .status-pill.coming-soon {
+        background: rgba(156,163,175,0.12);
+        color: var(--tars-muted);
+    }
+
+    .stat-box {
+        background: rgba(99,102,241,0.07);
+        border: 1px solid rgba(99,102,241,0.15);
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        text-align: center;
+    }
+
+    .stat-box .stat-val {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--tars-text);
+        line-height: 1;
+    }
+
+    .stat-box .stat-lbl {
+        font-size: 0.7rem;
+        color: var(--tars-muted);
+        margin-top: 0.2rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .activity-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.9rem;
+        padding: 0.85rem 0;
+        border-bottom: 1px solid var(--tars-border);
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-top: 0.35rem;
+        flex-shrink: 0;
+    }
+
+    .quick-action {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 10px;
+        padding: 0.85rem 1.1rem;
+        color: var(--tars-text);
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 0.9rem;
+        transition: border-color 0.2s, background 0.2s;
+        width: 100%;
+    }
+
+    .quick-action:hover {
+        border-color: var(--tars-accent);
+        background: rgba(99,102,241,0.07);
+        color: var(--tars-text);
+    }
+
+    .quick-action i {
+        color: var(--tars-accent);
+        font-size: 1.1rem;
+    }
+
+    .section-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--tars-muted);
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Welcome Hero -->
+<div class="dashboard-hero">
+    <div class="container">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="plan-badge">
+                        <i class="bi bi-star-fill"></i>
+                        {{ profile.get_plan_tier_display }} Plan
+                    </span>
+                </div>
+                <h1 class="h3 fw-bold mb-1" style="color:var(--tars-text)">
+                    Welcome back, {{ user.first_name|default:user.username }}
+                </h1>
+                <p class="mb-0 small" style="color:var(--tars-muted)">
+                    {{ user.email }}
+                    &nbsp;·&nbsp; Member since {{ profile.created_at|date:"N Y" }}
+                </p>
+            </div>
+            <a href="{% url 'members:logout' %}" class="btn btn-outline-accent btn-sm">
+                <i class="bi bi-box-arrow-right me-1"></i> Sign out
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container py-5">
+    <div class="row g-4">
+
+        <!-- Left column: services + activity -->
+        <div class="col-lg-8">
+
+            <!-- Service Cards -->
+            <p class="section-label">Your Services</p>
+            <div class="row g-3 mb-5">
+
+                <!-- TARS Code -->
+                <div class="col-md-4">
+                    <div class="service-card active">
+                        <div class="service-icon code">
+                            <i class="bi bi-code-slash"></i>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="fw-bold mb-0">TARS Code</h6>
+                            <span class="status-pill active">
+                                <i class="bi bi-circle-fill" style="font-size:0.5rem"></i> Active
+                            </span>
+                        </div>
+                        <p class="small mb-3" style="color:var(--tars-muted)">
+                            Autonomous coding, PR generation, and bug fixes — around the clock.
+                        </p>
+                        <div class="row g-2 mb-3">
+                            <div class="col-4">
+                                <div class="stat-box">
+                                    <div class="stat-val">—</div>
+                                    <div class="stat-lbl">PRs</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="stat-box">
+                                    <div class="stat-val">—</div>
+                                    <div class="stat-lbl">Tasks</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="stat-box">
+                                    <div class="stat-val">—</div>
+                                    <div class="stat-lbl">Fixes</div>
+                                </div>
+                            </div>
+                        </div>
+                        <a href="{% url 'inquiries:get_started' %}" class="btn btn-accent w-100 btn-sm">
+                            Submit Task
+                        </a>
+                    </div>
+                </div>
+
+                <!-- TARS Marketing -->
+                <div class="col-md-4">
+                    <div class="service-card">
+                        <div class="service-icon mktg">
+                            <i class="bi bi-megaphone"></i>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="fw-bold mb-0">TARS Marketing</h6>
+                            <span class="status-pill coming-soon">
+                                <i class="bi bi-clock" style="font-size:0.6rem"></i> Soon
+                            </span>
+                        </div>
+                        <p class="small mb-3" style="color:var(--tars-muted)">
+                            Automated content generation, SEO optimization, and social media management.
+                        </p>
+                        <div class="p-3 rounded-3 mb-3 text-center" style="background:rgba(156,163,175,0.06); border:1px dashed var(--tars-border)">
+                            <i class="bi bi-lock" style="color:var(--tars-muted); font-size:1.2rem"></i>
+                            <p class="small mb-0 mt-1" style="color:var(--tars-muted)">Coming soon</p>
+                        </div>
+                        <button class="btn w-100 btn-sm" style="border:1px solid var(--tars-border); color:var(--tars-muted)" disabled>
+                            Join Waitlist
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TARS DevOps -->
+                <div class="col-md-4">
+                    <div class="service-card">
+                        <div class="service-icon devops">
+                            <i class="bi bi-diagram-3"></i>
+                        </div>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="fw-bold mb-0">TARS DevOps</h6>
+                            <span class="status-pill coming-soon">
+                                <i class="bi bi-clock" style="font-size:0.6rem"></i> Soon
+                            </span>
+                        </div>
+                        <p class="small mb-3" style="color:var(--tars-muted)">
+                            Automated CI/CD pipelines, infrastructure monitoring, and deployment management.
+                        </p>
+                        <div class="p-3 rounded-3 mb-3 text-center" style="background:rgba(156,163,175,0.06); border:1px dashed var(--tars-border)">
+                            <i class="bi bi-lock" style="color:var(--tars-muted); font-size:1.2rem"></i>
+                            <p class="small mb-0 mt-1" style="color:var(--tars-muted)">Coming soon</p>
+                        </div>
+                        <button class="btn w-100 btn-sm" style="border:1px solid var(--tars-border); color:var(--tars-muted)" disabled>
+                            Join Waitlist
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <p class="section-label">Recent Activity</p>
+            <div class="card-surface p-4">
+                {% if recent_inquiries %}
+                    {% for inquiry in recent_inquiries %}
+                    <div class="activity-item">
+                        <div class="activity-dot" style="background:var(--tars-accent)"></div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <span class="fw-semibold small">Inquiry submitted</span>
+                                    <span class="small ms-2" style="color:var(--tars-muted)">{{ inquiry.company_name }}</span>
+                                </div>
+                                <span class="small" style="color:var(--tars-muted)">{{ inquiry.created_at|date:"M j" }}</span>
+                            </div>
+                            <p class="small mb-0 mt-1" style="color:var(--tars-muted)">
+                                {{ inquiry.project_description|truncatechars:80 }}
+                            </p>
+                        </div>
+                        <span class="status-pill {% if inquiry.status == 'new' %}coming-soon{% else %}active{% endif %} ms-2">
+                            {{ inquiry.get_status_display }}
+                        </span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-activity" style="font-size:2rem; color:var(--tars-border)"></i>
+                        <p class="small mt-2 mb-3" style="color:var(--tars-muted)">No activity yet — submit your first task to get started.</p>
+                        <a href="{% url 'inquiries:get_started' %}" class="btn btn-accent btn-sm">
+                            Submit a Task
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Right column: quick actions + plan info -->
+        <div class="col-lg-4">
+
+            <!-- Quick Actions -->
+            <p class="section-label">Quick Actions</p>
+            <div class="d-flex flex-column gap-2 mb-5">
+                <a href="{% url 'inquiries:get_started' %}" class="quick-action">
+                    <i class="bi bi-plus-circle-fill"></i>
+                    Submit New Task
+                </a>
+                <a href="#" class="quick-action">
+                    <i class="bi bi-git"></i>
+                    View Open PRs
+                </a>
+                <a href="{% url 'inquiries:get_started' %}" class="quick-action">
+                    <i class="bi bi-headset"></i>
+                    Contact Support
+                </a>
+                <a href="{% url 'pages:services' %}" class="quick-action">
+                    <i class="bi bi-grid-3x3-gap-fill"></i>
+                    Explore Services
+                </a>
+            </div>
+
+            <!-- Plan Info -->
+            <p class="section-label">Your Plan</p>
+            <div class="card-surface p-4">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div style="width:44px; height:44px; border-radius:12px; background:rgba(99,102,241,0.15); display:flex; align-items:center; justify-content:center;">
+                        <i class="bi bi-star-fill" style="color:var(--tars-accent)"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold">{{ profile.get_plan_tier_display }} Plan</div>
+                        <div class="small" style="color:var(--tars-muted)">Active</div>
+                    </div>
+                </div>
+                <ul class="list-unstyled small mb-3" style="color:var(--tars-muted)">
+                    <li class="mb-1"><i class="bi bi-check-circle-fill me-2" style="color:var(--tars-green)"></i>TARS Code access</li>
+                    <li class="mb-1"><i class="bi bi-check-circle-fill me-2" style="color:var(--tars-green)"></i>PR generation</li>
+                    <li class="mb-1"><i class="bi bi-check-circle-fill me-2" style="color:var(--tars-green)"></i>Bug fix automation</li>
+                    <li class="mb-1 text-decoration-line-through"><i class="bi bi-dash-circle me-2"></i>TARS Marketing</li>
+                    <li class="text-decoration-line-through"><i class="bi bi-dash-circle me-2"></i>TARS DevOps</li>
+                </ul>
+                <a href="{% url 'inquiries:get_started' %}" class="btn btn-outline-accent w-100 btn-sm">
+                    Upgrade Plan
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
