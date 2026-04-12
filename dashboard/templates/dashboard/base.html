@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TARS Dashboard{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        .navbar-brand {
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+        .stat-card {
+            border: none;
+            border-radius: 0.5rem;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1) !important;
+        }
+        .pipeline-col {
+            min-width: 200px;
+        }
+        .pipeline-col .card-header {
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .inquiry-card {
+            border: none;
+            border-left: 4px solid #0d6efd;
+            border-radius: 0.25rem;
+            transition: box-shadow 0.15s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        .inquiry-card:hover {
+            box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.1);
+            color: inherit;
+        }
+        .inquiry-card.border-primary { border-left-color: #0d6efd; }
+        .inquiry-card.border-info { border-left-color: #0dcaf0; }
+        .inquiry-card.border-warning { border-left-color: #ffc107; }
+        .inquiry-card.border-secondary { border-left-color: #6c757d; }
+        .inquiry-card.border-success { border-left-color: #198754; }
+        .inquiry-card.border-danger { border-left-color: #dc3545; }
+        .pipeline-scroll {
+            overflow-x: auto;
+            padding-bottom: 1rem;
+        }
+        .pipeline-board {
+            display: flex;
+            gap: 1rem;
+            min-width: max-content;
+        }
+        .note-item {
+            border-left: 3px solid #dee2e6;
+            padding-left: 1rem;
+        }
+        footer {
+            border-top: 1px solid #dee2e6;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar navbar-expand-md navbar-dark bg-primary shadow-sm">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{% url 'dashboard:home' %}">TARS Dashboard</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navDash">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navDash">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dashboard:home' %}">Pipeline</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'surveys:home' %}">Surveys</a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <span class="nav-link text-white-50 small">{{ request.user.username }}</span>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'admin:logout' %}">Log out</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="py-4">
+        <div class="container-fluid px-4">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <footer class="py-4 mt-auto bg-white">
+        <div class="container-fluid px-4 text-center text-muted small">
+            &copy; {% now "Y" %} TARS Survey &mdash; Admin Dashboard
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

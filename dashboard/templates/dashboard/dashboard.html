@@ -1,0 +1,81 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Inquiry Dashboard — TARS{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 fw-bold">Inquiry Pipeline</h1>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card stat-card shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-semibold mb-1">Total Inquiries</div>
+                <div class="display-6 fw-bold text-primary">{{ total }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card stat-card shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-semibold mb-1">New This Week</div>
+                <div class="display-6 fw-bold text-info">{{ new_this_week }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card stat-card shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-semibold mb-1">Conversion Rate</div>
+                <div class="display-6 fw-bold text-success">{{ conversion_rate }}%</div>
+                <div class="text-muted small">Won / (Won + Lost)</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card stat-card shadow-sm h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-semibold mb-1">Avg Response Time</div>
+                <div class="display-6 fw-bold text-warning">{{ avg_response_display }}</div>
+                <div class="text-muted small">Time to first contact</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Kanban Pipeline -->
+<div class="pipeline-scroll">
+    <div class="pipeline-board">
+        {% for col in pipeline %}
+        <div class="pipeline-col" style="width: 220px; flex-shrink: 0;">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-{{ col.color }} {% if col.color == 'warning' %}text-dark{% else %}text-white{% endif %}">
+                    {{ col.label }}
+                    <span class="badge bg-white {% if col.color == 'warning' %}text-dark{% else %}text-{{ col.color }}{% endif %} float-end">
+                        {{ col.count }}
+                    </span>
+                </div>
+                <div class="card-body p-2" style="min-height: 200px;">
+                    {% for inquiry in col.inquiries %}
+                    <a href="{% url 'dashboard:inquiry_detail' inquiry.pk %}"
+                       class="inquiry-card border-{{ col.color }} card mb-2 p-2 small">
+                        <div class="fw-semibold text-truncate">{{ inquiry.name }}</div>
+                        {% if inquiry.company %}
+                        <div class="text-muted text-truncate">{{ inquiry.company }}</div>
+                        {% endif %}
+                        <div class="text-muted mt-1" style="font-size: 0.75rem;">
+                            {{ inquiry.created_at|date:"M j" }}
+                        </div>
+                    </a>
+                    {% empty %}
+                    <div class="text-muted small text-center mt-3">No inquiries</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
