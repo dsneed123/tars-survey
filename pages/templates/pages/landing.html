@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+
+{% block title %}TARS — Ship Code While You Sleep{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* ── Hero ───────────────────────────────────────────── */
+    .hero {
+        min-height: 92vh;
+        display: flex;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,0.25) 0%, transparent 60%),
+            radial-gradient(ellipse 60% 40% at 80% 80%, rgba(16,185,129,0.12) 0%, transparent 50%);
+        pointer-events: none;
+    }
+
+    .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(99,102,241,0.12);
+        border: 1px solid rgba(99,102,241,0.35);
+        border-radius: 999px;
+        padding: 6px 16px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #a5b4fc;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        margin-bottom: 1.5rem;
+    }
+
+    .hero-badge .dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--tars-green);
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.4); }
+    }
+
+    .hero h1 {
+        font-size: clamp(2.8rem, 6vw, 5rem);
+        font-weight: 800;
+        line-height: 1.08;
+        letter-spacing: -0.04em;
+        margin-bottom: 1.5rem;
+    }
+
+    .hero h1 .gradient-text {
+        background: linear-gradient(135deg, #818cf8 0%, #6366f1 40%, #10b981 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .hero-sub {
+        font-size: 1.2rem;
+        color: var(--tars-muted);
+        max-width: 560px;
+        line-height: 1.65;
+        margin-bottom: 2.5rem;
+    }
+
+    .hero-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .hero-stat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .hero-stat .stat-value {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: var(--tars-text);
+        line-height: 1;
+    }
+
+    .hero-stat .stat-label {
+        font-size: 0.75rem;
+        color: var(--tars-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-top: 4px;
+    }
+
+    .hero-terminal {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 14px;
+        overflow: hidden;
+        font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
+        font-size: 0.82rem;
+        box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+    }
+
+    .terminal-bar {
+        background: #1f2937;
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .terminal-bar .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+    }
+
+    .terminal-body {
+        padding: 20px 22px;
+        line-height: 1.8;
+        color: #d1d5db;
+    }
+
+    .terminal-body .prompt { color: var(--tars-green); }
+    .terminal-body .cmd { color: #a5b4fc; }
+    .terminal-body .out { color: var(--tars-muted); }
+    .terminal-body .success { color: var(--tars-green); }
+
+    /* ── Benefits ───────────────────────────────────────── */
+    .benefit-card {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 16px;
+        padding: 2rem;
+        height: 100%;
+        transition: border-color 0.25s, transform 0.25s;
+    }
+
+    .benefit-card:hover {
+        border-color: var(--tars-accent);
+        transform: translateY(-4px);
+    }
+
+    .benefit-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        margin-bottom: 1.25rem;
+    }
+
+    /* ── How It Works ───────────────────────────────────── */
+    .step-number {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: rgba(99,102,241,0.15);
+        border: 1.5px solid rgba(99,102,241,0.4);
+        color: #a5b4fc;
+        font-size: 1rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .step-connector {
+        width: 2px;
+        background: linear-gradient(to bottom, rgba(99,102,241,0.4), transparent);
+        flex-grow: 1;
+        min-height: 40px;
+        margin: 8px auto;
+    }
+
+    section {
+        padding-top: 5rem;
+        padding-bottom: 5rem;
+    }
+
+    .section-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--tars-accent);
+        margin-bottom: 0.75rem;
+    }
+
+    .section-title {
+        font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Hero ───────────────────────────────────────────────── -->
+<section class="hero">
+    <div class="container">
+        <div class="row align-items-center gy-5">
+            <div class="col-lg-6">
+                <div class="hero-badge">
+                    <span class="dot"></span>
+                    Now in early access
+                </div>
+                <h1>
+                    Ship Code<br>
+                    <span class="gradient-text">While You Sleep.</span>
+                </h1>
+                <p class="hero-sub">
+                    TARS is an autonomous coding agent that discovers tasks, writes production-ready code, runs your test suite, opens pull requests, and deploys — all without a human in the loop.
+                </p>
+                <div class="hero-actions mb-4">
+                    <a href="{% url 'pages:inquiry' %}" class="btn btn-accent btn-lg">
+                        Get Started &rarr;
+                    </a>
+                    <a href="#how-it-works" class="btn btn-outline-accent btn-lg">
+                        See How It Works
+                    </a>
+                </div>
+                <div class="d-flex gap-4 mt-3">
+                    <div class="hero-stat">
+                        <span class="stat-value">24/7</span>
+                        <span class="stat-label">Always On</span>
+                    </div>
+                    <div style="width:1px; background:var(--tars-border);"></div>
+                    <div class="hero-stat">
+                        <span class="stat-value">100%</span>
+                        <span class="stat-label">Automated</span>
+                    </div>
+                    <div style="width:1px; background:var(--tars-border);"></div>
+                    <div class="hero-stat">
+                        <span class="stat-value">0</span>
+                        <span class="stat-label">Idle Hours</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="hero-terminal">
+                    <div class="terminal-bar">
+                        <div class="dot" style="background:#ef4444;"></div>
+                        <div class="dot" style="background:#f59e0b;"></div>
+                        <div class="dot" style="background:#10b981;"></div>
+                        <span style="color:#6b7280; font-size:0.78rem; margin-left:8px;">tars — autonomous agent</span>
+                    </div>
+                    <div class="terminal-body">
+                        <div><span class="prompt">tars@agent</span>:<span class="cmd"> Scanning task queue...</span></div>
+                        <div class="out">  → Found 3 open tasks in dsneed123/my-app</div>
+                        <div class="out">  → Selecting: "Add user authentication endpoint"</div>
+                        <div><span class="prompt">tars@agent</span>:<span class="cmd"> Implementing changes...</span></div>
+                        <div class="out">  → Writing src/auth/views.py</div>
+                        <div class="out">  → Writing tests/test_auth.py</div>
+                        <div><span class="prompt">tars@agent</span>:<span class="cmd"> Running test suite...</span></div>
+                        <div class="success">  ✓ 42 tests passed (0 failed)</div>
+                        <div><span class="prompt">tars@agent</span>:<span class="cmd"> Opening pull request...</span></div>
+                        <div class="success">  ✓ PR #47 opened — ready for review</div>
+                        <div class="out" style="margin-top:8px;">  Next task in 12 seconds...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── Benefits ───────────────────────────────────────────── -->
+<section id="benefits">
+    <div class="container">
+        <div class="text-center mb-5">
+            <div class="section-label">Why TARS</div>
+            <h2 class="section-title">Everything your dev team needs,<br>running autonomously.</h2>
+            <p class="text-muted mx-auto" style="max-width:520px;">Stop waiting on engineers. TARS keeps your backlog moving day and night so you can focus on strategy, not execution.</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="benefit-card">
+                    <div class="benefit-icon" style="background:rgba(99,102,241,0.15);">
+                        <i class="bi bi-moon-stars-fill" style="color:#818cf8;"></i>
+                    </div>
+                    <h5 class="fw-700 mb-2">24/7 Autonomous Development</h5>
+                    <p class="small text-muted mb-0">TARS works through nights, weekends, and holidays. Your repository never sits idle while features wait for a developer to clock in.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="benefit-card">
+                    <div class="benefit-icon" style="background:rgba(16,185,129,0.12);">
+                        <i class="bi bi-shield-check-fill" style="color:#10b981;"></i>
+                    </div>
+                    <h5 class="fw-700 mb-2">Auto-Testing &amp; Quality Assurance</h5>
+                    <p class="small text-muted mb-0">Every change is accompanied by tests. TARS runs the full suite before opening a PR, so broken code never reaches your main branch.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="benefit-card">
+                    <div class="benefit-icon" style="background:rgba(251,191,36,0.12);">
+                        <i class="bi bi-git" style="color:#fbbf24;"></i>
+                    </div>
+                    <h5 class="fw-700 mb-2">GitHub Integration &amp; PR Workflow</h5>
+                    <p class="small text-muted mb-0">TARS clones your repo, commits on a feature branch, and opens pull requests with descriptive summaries — ready for human review.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="benefit-card">
+                    <div class="benefit-icon" style="background:rgba(236,72,153,0.12);">
+                        <i class="bi bi-graph-up-arrow" style="color:#ec4899;"></i>
+                    </div>
+                    <h5 class="fw-700 mb-2">Cost-Effective Scaling</h5>
+                    <p class="small text-muted mb-0">Scale your output without scaling headcount. Add repositories and task definitions, not salaries. Ship more for a fraction of the cost.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── How It Works ───────────────────────────────────────── -->
+<section id="how-it-works" style="background:var(--tars-surface); border-top:1px solid var(--tars-border); border-bottom:1px solid var(--tars-border);">
+    <div class="container">
+        <div class="text-center mb-5">
+            <div class="section-label">Process</div>
+            <h2 class="section-title">Three steps to autonomous delivery.</h2>
+            <p class="text-muted mx-auto" style="max-width:480px;">Getting started takes minutes. Once configured, TARS handles the rest — indefinitely.</p>
+        </div>
+        <div class="row justify-content-center g-4">
+            <div class="col-md-4">
+                <div class="text-center px-3">
+                    <div class="step-number mx-auto mb-4">1</div>
+                    <div style="font-size:2.5rem; margin-bottom:1rem;">🗂️</div>
+                    <h4 class="fw-700 mb-2">Define Your Project</h4>
+                    <p class="text-muted small">Connect your GitHub repository and describe your tasks in plain English or structured YAML. Set priorities, constraints, and acceptance criteria.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-center px-3">
+                    <div class="step-number mx-auto mb-4">2</div>
+                    <div style="font-size:2.5rem; margin-bottom:1rem;">🤖</div>
+                    <h4 class="fw-700 mb-2">TARS Builds It</h4>
+                    <p class="text-muted small">TARS picks up tasks, reads your codebase, writes implementation code, creates tests, and validates the output — all using Claude, Anthropic's frontier AI.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-center px-3">
+                    <div class="step-number mx-auto mb-4">3</div>
+                    <div style="font-size:2.5rem; margin-bottom:1rem;">🚀</div>
+                    <h4 class="fw-700 mb-2">Review &amp; Deploy</h4>
+                    <p class="text-muted small">Inspect the pull request, leave comments, and merge when satisfied. TARS logs every action to Discord so your team stays informed automatically.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── CTA ────────────────────────────────────────────────── -->
+<section>
+    <div class="container text-center">
+        <h2 class="section-title mb-3">Ready to put your backlog on autopilot?</h2>
+        <p class="text-muted mb-4 mx-auto" style="max-width:480px;">Join early-access teams already shipping faster with TARS. No credit card required to start.</p>
+        <a href="{% url 'pages:inquiry' %}" class="btn btn-accent btn-lg px-5">
+            Get Early Access &rarr;
+        </a>
+    </div>
+</section>
+
+{% endblock %}
