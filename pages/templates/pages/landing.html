@@ -1,0 +1,489 @@
+{% extends 'pages/base.html' %}
+
+{% block extra_head %}
+<style>
+    /* ── Hero ── */
+    .hero {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        padding-top: 80px;
+        background:
+            radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,0.18) 0%, transparent 70%),
+            var(--tars-bg);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image:
+            linear-gradient(rgba(99,102,241,0.06) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(99,102,241,0.06) 1px, transparent 1px);
+        background-size: 60px 60px;
+        mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, black 40%, transparent 100%);
+        pointer-events: none;
+    }
+
+    .hero-badge {
+        display: inline-block;
+        background: rgba(99,102,241,0.15);
+        border: 1px solid rgba(99,102,241,0.35);
+        border-radius: 50px;
+        padding: 0.35rem 1rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #a5b4fc;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        margin-bottom: 1.5rem;
+    }
+
+    .hero-headline {
+        font-size: clamp(2.6rem, 6vw, 4.2rem);
+        font-weight: 800;
+        line-height: 1.1;
+        letter-spacing: -0.03em;
+        color: #fff;
+    }
+
+    .hero-headline .accent {
+        background: linear-gradient(135deg, #6366f1 0%, #a78bfa 50%, #38bdf8 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .hero-sub {
+        font-size: 1.15rem;
+        color: var(--tars-text-muted);
+        max-width: 540px;
+        line-height: 1.7;
+    }
+
+    .hero-cta-group { display: flex; gap: 1rem; flex-wrap: wrap; }
+
+    .hero-cta-group .btn-accent {
+        padding: 0.8rem 2rem;
+        font-size: 1rem;
+        border-radius: 10px;
+    }
+
+    .hero-cta-group .btn-outline-accent {
+        padding: 0.8rem 2rem;
+        font-size: 1rem;
+        border-radius: 10px;
+    }
+
+    /* code window mock */
+    .code-window {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.12);
+    }
+
+    .code-window-bar {
+        background: var(--tars-surface-2);
+        padding: 0.75rem 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        border-bottom: 1px solid var(--tars-border);
+    }
+
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-red   { background: #ef4444; }
+    .dot-yellow{ background: #f59e0b; }
+    .dot-green { background: #22c55e; }
+
+    .code-body {
+        padding: 1.25rem 1.5rem;
+        font-family: 'Menlo', 'Consolas', monospace;
+        font-size: 0.82rem;
+        line-height: 1.8;
+        color: #c4cfde;
+    }
+
+    .kw  { color: #a78bfa; }
+    .fn  { color: #38bdf8; }
+    .str { color: #86efac; }
+    .cm  { color: #4b5563; }
+    .hl  { color: #fbbf24; }
+
+    .typing-cursor {
+        display: inline-block;
+        width: 2px;
+        height: 1em;
+        background: var(--tars-accent);
+        vertical-align: text-bottom;
+        animation: blink 1s step-end infinite;
+    }
+
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* ── Section base ── */
+    section { padding: 5rem 0; }
+
+    .section-label {
+        font-size: 0.78rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--tars-accent);
+        margin-bottom: 0.75rem;
+    }
+
+    .section-title {
+        font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+        font-weight: 800;
+        color: #fff;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+    }
+
+    .section-sub {
+        color: var(--tars-text-muted);
+        font-size: 1.05rem;
+        max-width: 520px;
+        line-height: 1.7;
+    }
+
+    /* ── Benefits cards ── */
+    #benefits { background: var(--tars-surface); }
+
+    .benefit-card {
+        background: var(--tars-surface-2);
+        border: 1px solid var(--tars-border);
+        border-radius: 16px;
+        padding: 2rem;
+        height: 100%;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    }
+
+    .benefit-card:hover {
+        border-color: rgba(99,102,241,0.4);
+        box-shadow: 0 0 30px rgba(99,102,241,0.12);
+        transform: translateY(-4px);
+    }
+
+    .benefit-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
+        background: rgba(99,102,241,0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        color: var(--tars-accent);
+        margin-bottom: 1.25rem;
+    }
+
+    .benefit-card h5 {
+        color: #fff;
+        font-weight: 700;
+        margin-bottom: 0.6rem;
+    }
+
+    .benefit-card p {
+        color: var(--tars-text-muted);
+        font-size: 0.93rem;
+        line-height: 1.65;
+        margin: 0;
+    }
+
+    /* ── How it works ── */
+    #how-it-works { background: var(--tars-bg); }
+
+    .step-number {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: rgba(99,102,241,0.15);
+        border: 1.5px solid rgba(99,102,241,0.4);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        font-weight: 800;
+        color: var(--tars-accent);
+        flex-shrink: 0;
+    }
+
+    .step-connector {
+        width: 2px;
+        height: 40px;
+        background: linear-gradient(to bottom, rgba(99,102,241,0.4), transparent);
+        margin-left: 21px;
+    }
+
+    .step-content h5 {
+        color: #fff;
+        font-weight: 700;
+        margin-bottom: 0.4rem;
+    }
+
+    .step-content p {
+        color: var(--tars-text-muted);
+        font-size: 0.93rem;
+        line-height: 1.65;
+        margin: 0;
+    }
+
+    /* ── CTA ── */
+    #get-started {
+        background: radial-gradient(ellipse 70% 60% at 50% 50%, rgba(99,102,241,0.15) 0%, transparent 70%),
+                    var(--tars-surface);
+        border-top: 1px solid var(--tars-border);
+    }
+
+    .cta-card {
+        background: linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(56,189,248,0.06) 100%);
+        border: 1px solid rgba(99,102,241,0.25);
+        border-radius: 24px;
+        padding: 4rem 2rem;
+        text-align: center;
+    }
+
+    .cta-card h2 {
+        font-size: clamp(1.8rem, 3vw, 2.4rem);
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 1rem;
+    }
+
+    .cta-card p {
+        color: var(--tars-text-muted);
+        font-size: 1.05rem;
+        margin-bottom: 2rem;
+    }
+
+    /* inquiry form */
+    .form-control-dark {
+        background: var(--tars-surface-2);
+        border: 1px solid var(--tars-border);
+        color: var(--tars-text);
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+    }
+
+    .form-control-dark:focus {
+        background: var(--tars-surface-2);
+        border-color: var(--tars-accent);
+        color: var(--tars-text);
+        box-shadow: 0 0 0 3px var(--tars-accent-glow);
+    }
+
+    .form-control-dark::placeholder { color: var(--tars-text-muted); }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- ══════════════════════════════════ HERO ══════════════════════════════════ -->
+<section class="hero" id="hero">
+    <div class="container">
+        <div class="row align-items-center gy-5">
+            <div class="col-lg-6">
+                <div class="hero-badge">
+                    <i class="bi bi-lightning-charge-fill me-1"></i> Autonomous Coding Agent
+                </div>
+                <h1 class="hero-headline mb-4">
+                    Ship Code<br>
+                    <span class="accent">While You Sleep.</span>
+                </h1>
+                <p class="hero-sub mb-5">
+                    TARS discovers tasks, writes production-ready code, runs tests, opens pull requests,
+                    and deploys — all without lifting a finger. Let your business scale without scaling your team.
+                </p>
+                <div class="hero-cta-group">
+                    <a href="#get-started" class="btn btn-accent">
+                        Get Started <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                    <a href="#how-it-works" class="btn btn-outline-accent">
+                        See How It Works
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="code-window">
+                    <div class="code-window-bar">
+                        <span class="dot dot-red"></span>
+                        <span class="dot dot-yellow"></span>
+                        <span class="dot dot-green"></span>
+                        <span class="ms-3 small" style="color: var(--tars-text-muted); font-family: monospace;">tars.log</span>
+                    </div>
+                    <div class="code-body">
+                        <div><span class="cm"># 02:14:07 — Task discovered</span></div>
+                        <div><span class="hl">[TARS]</span> Analyzing project: <span class="str">e-commerce API</span></div>
+                        <div><span class="hl">[TARS]</span> Generating implementation plan…</div>
+                        <div>&nbsp;</div>
+                        <div><span class="cm"># 02:14:22 — Writing code</span></div>
+                        <div><span class="kw">def</span> <span class="fn">create_order</span>(cart, user):</div>
+                        <div>&nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">with</span> transaction.atomic():</div>
+                        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;order = Order.objects.<span class="fn">create</span>(</div>
+                        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;user=user, total=cart.<span class="fn">total</span>()</div>
+                        <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)</div>
+                        <div>&nbsp;</div>
+                        <div><span class="cm"># 02:15:01 — Running tests</span></div>
+                        <div><span class="str">✓</span> test_create_order … <span class="str">PASSED</span></div>
+                        <div><span class="str">✓</span> test_inventory_deduction … <span class="str">PASSED</span></div>
+                        <div><span class="str">✓</span> test_payment_flow … <span class="str">PASSED</span></div>
+                        <div>&nbsp;</div>
+                        <div><span class="cm"># 02:15:08 — Opening PR #47</span></div>
+                        <div><span class="hl">[TARS]</span> PR merged. Deploying… <span class="typing-cursor"></span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════════════════════ BENEFITS ════════════════════════════════ -->
+<section id="benefits">
+    <div class="container">
+        <div class="text-center mb-5">
+            <p class="section-label">Why TARS</p>
+            <h2 class="section-title">Everything your dev team needs,<br>running 24 / 7</h2>
+            <p class="section-sub mx-auto mt-3">
+                From idea to production — TARS handles the entire software delivery pipeline so your engineers
+                can focus on strategy, not repetition.
+            </p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-sm-6 col-xl-3">
+                <div class="benefit-card">
+                    <div class="benefit-icon">
+                        <i class="bi bi-moon-stars-fill"></i>
+                    </div>
+                    <h5>24/7 Autonomous Development</h5>
+                    <p>TARS works nights, weekends, and holidays. Tasks are picked up the moment they're defined — no standups, no blockers.</p>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-xl-3">
+                <div class="benefit-card">
+                    <div class="benefit-icon">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <h5>Auto-Testing &amp; Quality Assurance</h5>
+                    <p>Every change is covered by automatically generated tests. Code is only shipped when all checks pass — no exceptions.</p>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-xl-3">
+                <div class="benefit-card">
+                    <div class="benefit-icon">
+                        <i class="bi bi-git"></i>
+                    </div>
+                    <h5>GitHub Integration &amp; PR Workflow</h5>
+                    <p>TARS opens pull requests, adds context-rich descriptions, and merges on approval — fitting seamlessly into your existing workflow.</p>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-xl-3">
+                <div class="benefit-card">
+                    <div class="benefit-icon">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                    <h5>Cost-Effective Scaling</h5>
+                    <p>Deliver more features without headcount. TARS scales instantly with your backlog — no ramp-up time, no onboarding costs.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ════════════════════════════ HOW IT WORKS ══════════════════════════════ -->
+<section id="how-it-works">
+    <div class="container">
+        <div class="row align-items-center gy-5">
+            <div class="col-lg-5">
+                <p class="section-label">The Process</p>
+                <h2 class="section-title">Three steps from idea to production</h2>
+                <p class="section-sub mt-3">
+                    TARS integrates with your project in minutes and immediately starts delivering value —
+                    no complex configuration required.
+                </p>
+            </div>
+
+            <div class="col-lg-6 offset-lg-1">
+                <!-- Step 1 -->
+                <div class="d-flex gap-4 align-items-start">
+                    <div>
+                        <div class="step-number">1</div>
+                        <div class="step-connector"></div>
+                    </div>
+                    <div class="step-content pb-4">
+                        <h5>Define Your Project</h5>
+                        <p>Connect your GitHub repo and drop a YAML config. Describe your tech stack, coding standards, and task sources (issues, Trello, Linear). TARS is ready in under five minutes.</p>
+                    </div>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="d-flex gap-4 align-items-start">
+                    <div>
+                        <div class="step-number">2</div>
+                        <div class="step-connector"></div>
+                    </div>
+                    <div class="step-content pb-4">
+                        <h5>TARS Builds It</h5>
+                        <p>TARS reads your codebase, plans the implementation, writes clean and idiomatic code, generates tests, and verifies everything passes — autonomously, around the clock.</p>
+                    </div>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="d-flex gap-4 align-items-start">
+                    <div>
+                        <div class="step-number">3</div>
+                    </div>
+                    <div class="step-content">
+                        <h5>Review &amp; Deploy</h5>
+                        <p>Receive a pull request with a clear description of every change. Approve it and TARS handles deployment. You stay in control — TARS does the heavy lifting.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════════════════════ CTA / FORM ══════════════════════════════ -->
+<section id="get-started">
+    <div class="container">
+        <div class="cta-card">
+            <h2>Ready to automate your development?</h2>
+            <p>Tell us about your project and we'll set you up with TARS.</p>
+
+            <form class="row g-3 justify-content-center" method="post" action="#">
+                {% csrf_token %}
+                <div class="col-sm-5">
+                    <input type="text" class="form-control form-control-dark" name="name"
+                           placeholder="Your name" required>
+                </div>
+                <div class="col-sm-5">
+                    <input type="email" class="form-control form-control-dark" name="email"
+                           placeholder="Work email" required>
+                </div>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control form-control-dark" name="company"
+                           placeholder="Company &amp; project description">
+                </div>
+                <div class="col-sm-10">
+                    <textarea class="form-control form-control-dark" name="message" rows="3"
+                              placeholder="What would you like TARS to build?"></textarea>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-accent" style="padding: 0.8rem 2.5rem; font-size: 1rem;">
+                        Send Inquiry <i class="bi bi-send ms-1"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

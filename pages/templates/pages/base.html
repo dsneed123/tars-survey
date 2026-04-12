@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TARS — Autonomous Coding for Businesses{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --tars-bg: #0a0e1a;
+            --tars-surface: #111827;
+            --tars-surface-2: #1a2236;
+            --tars-accent: #6366f1;
+            --tars-accent-hover: #4f46e5;
+            --tars-accent-glow: rgba(99, 102, 241, 0.25);
+            --tars-text: #e2e8f0;
+            --tars-text-muted: #94a3b8;
+            --tars-border: rgba(255, 255, 255, 0.07);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background-color: var(--tars-bg);
+            color: var(--tars-text);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            min-height: 100vh;
+        }
+
+        a { color: var(--tars-accent); text-decoration: none; }
+        a:hover { color: var(--tars-accent-hover); }
+
+        .navbar-dark-tars {
+            background: rgba(10, 14, 26, 0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--tars-border);
+        }
+
+        .btn-accent {
+            background: var(--tars-accent);
+            border: none;
+            color: #fff;
+            font-weight: 600;
+            padding: 0.6rem 1.6rem;
+            border-radius: 8px;
+            transition: background 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-accent:hover {
+            background: var(--tars-accent-hover);
+            color: #fff;
+            box-shadow: 0 0 18px var(--tars-accent-glow);
+        }
+
+        .btn-outline-accent {
+            border: 1.5px solid var(--tars-accent);
+            color: var(--tars-accent);
+            font-weight: 600;
+            padding: 0.6rem 1.6rem;
+            border-radius: 8px;
+            background: transparent;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .btn-outline-accent:hover {
+            background: var(--tars-accent);
+            color: #fff;
+        }
+
+        footer {
+            background: var(--tars-surface);
+            border-top: 1px solid var(--tars-border);
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar navbar-expand-md navbar-dark-tars navbar-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold fs-4" href="{% url 'pages:landing' %}">
+                <span style="color: var(--tars-accent);">T</span>ARS
+            </a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navMain">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navMain">
+                <ul class="navbar-nav ms-auto align-items-center gap-3">
+                    <li class="nav-item">
+                        <a class="nav-link text-light opacity-75" href="#benefits">Features</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-light opacity-75" href="#how-it-works">How It Works</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-accent btn-sm" href="#get-started">Get Started</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    {% block content %}{% endblock %}
+
+    <footer class="py-5">
+        <div class="container">
+            <div class="row gy-4">
+                <div class="col-md-4">
+                    <span class="fw-bold fs-5"><span style="color: var(--tars-accent);">T</span>ARS</span>
+                    <p class="mt-2 small" style="color: var(--tars-text-muted);">
+                        Autonomous coding, testing, and deployment — so your team can focus on what matters.
+                    </p>
+                </div>
+                <div class="col-md-2 offset-md-2">
+                    <p class="fw-semibold small text-uppercase mb-3" style="color: var(--tars-text-muted); letter-spacing: 0.08em;">Product</p>
+                    <ul class="list-unstyled small" style="color: var(--tars-text-muted);">
+                        <li class="mb-2"><a href="#benefits" style="color: var(--tars-text-muted);">Features</a></li>
+                        <li class="mb-2"><a href="#how-it-works" style="color: var(--tars-text-muted);">How It Works</a></li>
+                        <li class="mb-2"><a href="#get-started" style="color: var(--tars-text-muted);">Pricing</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2">
+                    <p class="fw-semibold small text-uppercase mb-3" style="color: var(--tars-text-muted); letter-spacing: 0.08em;">Company</p>
+                    <ul class="list-unstyled small" style="color: var(--tars-text-muted);">
+                        <li class="mb-2"><a href="#" style="color: var(--tars-text-muted);">About</a></li>
+                        <li class="mb-2"><a href="#" style="color: var(--tars-text-muted);">Blog</a></li>
+                        <li class="mb-2"><a href="#get-started" style="color: var(--tars-text-muted);">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr style="border-color: var(--tars-border); margin-top: 2.5rem;">
+            <p class="text-center small mb-0" style="color: var(--tars-text-muted);">
+                &copy; {% now "Y" %} TARS. All rights reserved.
+            </p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>
