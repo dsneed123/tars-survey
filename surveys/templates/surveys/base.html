@@ -65,9 +65,12 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navMain">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav ms-auto align-items-md-center gap-1">
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'surveys:home' %}">Surveys</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-light btn-sm fw-semibold ms-2" href="{% url 'inquiries:get_started' %}">Get Started</a>
                     </li>
                 </ul>
             </div>

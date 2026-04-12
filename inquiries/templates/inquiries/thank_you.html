@@ -1,0 +1,16 @@
+{% extends "surveys/base.html" %}
+
+{% block title %}Thank You – TARS Survey{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6 text-center py-5">
+        <div class="mb-4" style="font-size: 4rem; color: #198754;">&#10003;</div>
+        <h1 class="h2 fw-bold mb-3">Thank you for reaching out!</h1>
+        <p class="lead text-muted mb-4">We'll be in touch within 24 hours.</p>
+        <a href="{% url 'surveys:home' %}" class="btn btn-outline-primary">
+            &larr; Back to Home
+        </a>
+    </div>
+</div>
+{% endblock %}
