@@ -1,0 +1,21 @@
+New Early Access Inquiry — TARS
+================================
+
+A new inquiry was submitted on {{ inquiry.created_at|date:"N j, Y \a\t g:i A" }} UTC.
+
+CONTACT
+-------
+Name:    {{ inquiry.name }}
+Email:   {{ inquiry.email }}
+Company: {{ inquiry.company|default:"(not provided)" }}
+
+PROJECT DETAILS
+---------------
+GitHub Repo: {{ inquiry.repo|default:"(not provided)" }}
+Team Size:   {{ inquiry.get_team_size_display|default:"(not provided)" }}
+
+Use Case:
+{{ inquiry.use_case|default:"(not provided)" }}
+
+---
+View all inquiries in the Django admin at /admin/pages/inquiry/

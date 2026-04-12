@@ -1,0 +1,16 @@
+Hi {{ inquiry.name }},
+
+Thanks for your interest in TARS — we received your early access request and we're excited to learn more about your project.
+
+Here's a summary of what you submitted:
+
+  Company:   {{ inquiry.company|default:"(not provided)" }}
+  Repo:      {{ inquiry.repo|default:"(not provided)" }}
+  Team Size: {{ inquiry.get_team_size_display|default:"(not provided)" }}
+  Use Case:  {{ inquiry.use_case|default:"(not provided)" }}
+
+We'll review your request and get back to you within 24 hours to discuss next steps and get TARS set up on your repositories.
+
+If you have any questions in the meantime, just reply to this email.
+
+— The TARS Team

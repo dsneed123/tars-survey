@@ -49,23 +49,28 @@
     </div>
     <div class="container">
         <div class="inquiry-card">
+            {% if error %}
+            <div class="alert alert-danger mb-4" role="alert">
+                {{ error }}
+            </div>
+            {% endif %}
             <form method="post" novalidate>
                 {% csrf_token %}
                 <div class="mb-4">
                     <label class="form-label">Full Name</label>
-                    <input type="text" class="form-control" name="name" placeholder="Jane Smith" required>
+                    <input type="text" class="form-control" name="name" placeholder="Jane Smith" value="{{ form_data.name }}" required>
                 </div>
                 <div class="mb-4">
                     <label class="form-label">Work Email</label>
-                    <input type="email" class="form-control" name="email" placeholder="jane@company.com" required>
+                    <input type="email" class="form-control" name="email" placeholder="jane@company.com" value="{{ form_data.email }}" required>
                 </div>
                 <div class="mb-4">
                     <label class="form-label">Company / Project Name</label>
-                    <input type="text" class="form-control" name="company" placeholder="Acme Corp">
+                    <input type="text" class="form-control" name="company" placeholder="Acme Corp" value="{{ form_data.company }}">
                 </div>
                 <div class="mb-4">
                     <label class="form-label">GitHub Repository (optional)</label>
-                    <input type="text" class="form-control" name="repo" placeholder="github.com/your-org/your-repo">
+                    <input type="text" class="form-control" name="repo" placeholder="github.com/your-org/your-repo" value="{{ form_data.repo }}">
                 </div>
                 <div class="mb-4">
                     <label class="form-label">Team Size</label>
