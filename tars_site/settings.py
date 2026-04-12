@@ -21,7 +21,7 @@ INSTALLED_APPS = [
     "inquiries",
 ]
 
-SITE_URL = "https://tarsai.dev"
+SITE_URL = "https://usetars.dev"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
