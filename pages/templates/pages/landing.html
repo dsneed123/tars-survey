@@ -208,6 +208,126 @@
         letter-spacing: -0.03em;
         margin-bottom: 1rem;
     }
+
+    /* ── Use Cases ──────────────────────────────────────────── */
+    .usecase-card {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 16px;
+        padding: 2rem;
+        height: 100%;
+        transition: border-color 0.25s, transform 0.25s;
+    }
+
+    .usecase-card:hover {
+        border-color: var(--tars-accent);
+        transform: translateY(-4px);
+    }
+
+    .usecase-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        margin-bottom: 1.25rem;
+    }
+
+    /* ── Metrics Bar ────────────────────────────────────────── */
+    .metrics-bar {
+        background: var(--tars-surface);
+        border-top: 1px solid var(--tars-border);
+        border-bottom: 1px solid var(--tars-border);
+        padding: 3.5rem 0;
+    }
+
+    .metric-item {
+        text-align: center;
+        padding: 0 1rem;
+    }
+
+    .metric-value {
+        font-size: clamp(2rem, 4vw, 3rem);
+        font-weight: 800;
+        line-height: 1;
+        background: linear-gradient(135deg, #818cf8 0%, #6366f1 40%, #10b981 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .metric-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--tars-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-top: 0.5rem;
+    }
+
+    .metric-divider {
+        width: 1px;
+        background: var(--tars-border);
+        align-self: stretch;
+    }
+
+    /* ── Testimonials ───────────────────────────────────────── */
+    .testimonial-card {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 16px;
+        padding: 2rem;
+        height: 100%;
+        transition: border-color 0.25s, transform 0.25s;
+        position: relative;
+    }
+
+    .testimonial-card:hover {
+        border-color: var(--tars-accent);
+        transform: translateY(-4px);
+    }
+
+    .testimonial-quote {
+        font-size: 3rem;
+        line-height: 1;
+        color: var(--tars-accent);
+        opacity: 0.4;
+        margin-bottom: 0.5rem;
+        font-family: Georgia, serif;
+    }
+
+    .testimonial-text {
+        color: var(--tars-text);
+        font-size: 0.98rem;
+        line-height: 1.7;
+        margin-bottom: 1.5rem;
+    }
+
+    .testimonial-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        font-weight: 700;
+        flex-shrink: 0;
+    }
+
+    .testimonial-name {
+        font-weight: 700;
+        font-size: 0.95rem;
+        color: var(--tars-text);
+        line-height: 1.2;
+    }
+
+    .testimonial-role {
+        font-size: 0.8rem;
+        color: var(--tars-muted);
+    }
 </style>
 {% endblock %}
 
@@ -366,6 +486,175 @@
         </div>
     </div>
 </section>
+
+<!-- ── Use Cases ─────────────────────────────────────────── -->
+<section id="use-cases">
+    <div class="container">
+        <div class="text-center mb-5">
+            <div class="section-label">Who It's For</div>
+            <h2 class="section-title">Built for every team that ships.</h2>
+            <p class="text-muted mx-auto" style="max-width:520px;">Whether you're a solo founder or a 50-person engineering org, TARS adapts to the way you work.</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="usecase-card">
+                    <div class="usecase-icon" style="background:rgba(99,102,241,0.15);">
+                        <i class="bi bi-rocket-takeoff-fill" style="color:#818cf8;"></i>
+                    </div>
+                    <h5 class="fw-700 mb-2">Startups</h5>
+                    <p class="small text-muted mb-0">Move fast and ship MVPs overnight. TARS keeps your backlog clearing even when your team is heads-down on product strategy.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="usecase-card">
+                    <div class="usecase-icon" style="background:rgba(16,185,129,0.12);">
+                        <i class="bi bi-building-fill" style="color:#10b981;"></i>
+                    </div>
+                    <h5 class="fw-700 mb-2">Agencies</h5>
+                    <p class="small text-muted mb-0">Scale dev capacity without hiring. Deliver more client projects simultaneously and hit deadlines without burning out your team.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="usecase-card">
+                    <div class="usecase-icon" style="background:rgba(251,191,36,0.12);">
+                        <i class="bi bi-diagram-3-fill" style="color:#fbbf24;"></i>
+                    </div>
+                    <h5 class="fw-700 mb-2">Enterprise Teams</h5>
+                    <p class="small text-muted mb-0">Automate maintenance and bug fixes across multiple repos. Free senior engineers for architecture and innovation, not toil.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="usecase-card">
+                    <div class="usecase-icon" style="background:rgba(236,72,153,0.12);">
+                        <i class="bi bi-person-fill" style="color:#ec4899;"></i>
+                    </div>
+                    <h5 class="fw-700 mb-2">Solo Founders</h5>
+                    <p class="small text-muted mb-0">Your AI engineering team, available 24/7. Stop choosing between building and everything else — TARS handles the code so you don't have to.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ── Metrics Bar ────────────────────────────────────────── -->
+<div class="metrics-bar" id="metrics-bar">
+    <div class="container">
+        <div class="d-flex flex-wrap justify-content-center align-items-center gap-4">
+            <div class="metric-item">
+                <div class="metric-value" data-target="500" data-suffix="+">0+</div>
+                <div class="metric-label">PRs Merged</div>
+            </div>
+            <div class="metric-divider d-none d-md-block"></div>
+            <div class="metric-item">
+                <div class="metric-value" data-target="50" data-suffix="+">0+</div>
+                <div class="metric-label">Projects Built</div>
+            </div>
+            <div class="metric-divider d-none d-md-block"></div>
+            <div class="metric-item">
+                <div class="metric-value" data-target="99.2" data-suffix="%" data-decimal="1">0%</div>
+                <div class="metric-label">Test Pass Rate</div>
+            </div>
+            <div class="metric-divider d-none d-md-block"></div>
+            <div class="metric-item">
+                <div class="metric-value">24/7</div>
+                <div class="metric-label">Uptime</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Testimonials ───────────────────────────────────────── -->
+<section id="testimonials">
+    <div class="container">
+        <div class="text-center mb-5">
+            <div class="section-label">Social Proof</div>
+            <h2 class="section-title">Teams shipping faster with TARS.</h2>
+            <p class="text-muted mx-auto" style="max-width:480px;">Early-access teams are already seeing the difference. Here's what they have to say.</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="testimonial-card">
+                    <div class="testimonial-quote">&ldquo;</div>
+                    <p class="testimonial-text">TARS opened 12 pull requests over a single weekend while the team was at an offsite. We came back Monday to a cleared backlog. It's changed how we think about velocity.</p>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="testimonial-avatar" style="background:rgba(99,102,241,0.2); color:#818cf8;">AK</div>
+                        <div>
+                            <div class="testimonial-name">Alex Kim</div>
+                            <div class="testimonial-role">CTO, Launchpad AI</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="testimonial-card">
+                    <div class="testimonial-quote">&ldquo;</div>
+                    <p class="testimonial-text">We run three client projects in parallel with a team of two. TARS handles maintenance tasks and small features overnight — our clients think we have a much bigger team.</p>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="testimonial-avatar" style="background:rgba(16,185,129,0.2); color:#10b981;">SR</div>
+                        <div>
+                            <div class="testimonial-name">Sofia Reyes</div>
+                            <div class="testimonial-role">Founder, Pixel & Code Studio</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="testimonial-card">
+                    <div class="testimonial-quote">&ldquo;</div>
+                    <p class="testimonial-text">Bug tickets that used to sit for two weeks are getting fixed in hours. TARS writes the tests, opens the PR, and posts to Discord so nothing slips through the cracks.</p>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="testimonial-avatar" style="background:rgba(251,191,36,0.2); color:#fbbf24;">MP</div>
+                        <div>
+                            <div class="testimonial-name">Marcus Patel</div>
+                            <div class="testimonial-role">Engineering Lead, Orbit Systems</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+(function () {
+    function animateCounter(el) {
+        var target = parseFloat(el.dataset.target);
+        var suffix = el.dataset.suffix || '';
+        var decimals = parseInt(el.dataset.decimal || '0', 10);
+        var duration = 1600;
+        var start = null;
+
+        function step(timestamp) {
+            if (!start) start = timestamp;
+            var progress = Math.min((timestamp - start) / duration, 1);
+            // ease-out cubic
+            var eased = 1 - Math.pow(1 - progress, 3);
+            var current = (target * eased).toFixed(decimals);
+            el.textContent = current + suffix;
+            if (progress < 1) requestAnimationFrame(step);
+        }
+
+        requestAnimationFrame(step);
+    }
+
+    var counters = document.querySelectorAll('#metrics-bar [data-target]');
+    if (!counters.length) return;
+
+    var observed = false;
+    var observer = new IntersectionObserver(function (entries) {
+        if (observed) return;
+        entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+                observed = true;
+                counters.forEach(animateCounter);
+                observer.disconnect();
+            }
+        });
+    }, { threshold: 0.3 });
+
+    observer.observe(document.getElementById('metrics-bar'));
+}());
+</script>
 
 <!-- ── CTA ────────────────────────────────────────────────── -->
 <section>
