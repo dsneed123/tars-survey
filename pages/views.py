@@ -9,9 +9,5 @@ def inquiry(request):
     return render(request, "pages/inquiry.html")
 
 
-def about(request):
-    return render(request, "pages/about.html")
-
-
-def faq(request):
-    return render(request, "pages/faq.html")
+def services(request):
+    return render(request, "pages/services.html")
