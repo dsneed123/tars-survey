@@ -1,0 +1,159 @@
+{% extends "surveys/base.html" %}
+
+{% block title %}FAQ — TARS Survey{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+
+        <h1 class="fw-bold mb-1">Frequently Asked Questions</h1>
+        <p class="text-muted mb-5">Everything you need to know about TARS</p>
+
+        <div class="accordion" id="faqAccordion">
+
+            <div class="accordion-item border mb-3 rounded shadow-sm">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed rounded" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#faq1">
+                        What languages does TARS support?
+                    </button>
+                </h2>
+                <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body text-muted">
+                        TARS supports any language that Claude AI can read and write, including Python,
+                        JavaScript, TypeScript, Go, Ruby, Java, C#, Rust, and more. Because TARS reads
+                        your codebase before making changes, it adapts to your project's specific
+                        language version, framework, and conventions automatically.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item border mb-3 rounded shadow-sm">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed rounded" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#faq2">
+                        How does TARS handle security?
+                    </button>
+                </h2>
+                <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body text-muted">
+                        TARS operates with read and write access limited to its own clone of your
+                        repository and never touches your production environment. All changes are
+                        submitted as pull requests, so your team retains full control and can review
+                        every line before anything is merged.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item border mb-3 rounded shadow-sm">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed rounded" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#faq3">
+                        What if TARS makes a mistake?
+                    </button>
+                </h2>
+                <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body text-muted">
+                        Every TARS change goes through a pull request, so mistakes are caught during
+                        normal code review before they can reach production. If a PR does not meet your
+                        standards, simply close it — TARS will try again with updated instructions or
+                        you can adjust the task description and resubmit.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item border mb-3 rounded shadow-sm">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed rounded" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#faq4">
+                        How do I give TARS tasks?
+                    </button>
+                </h2>
+                <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body text-muted">
+                        Tasks are defined in a simple YAML configuration file in your project's
+                        <code>config/</code> directory. Each task has a title, a plain-language
+                        description, and optional constraints. TARS polls the task queue on a schedule
+                        and picks up new work automatically.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item border mb-3 rounded shadow-sm">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed rounded" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#faq5">
+                        What does TARS cost?
+                    </button>
+                </h2>
+                <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body text-muted">
+                        TARS is self-hosted and open-source, so there is no per-seat or per-task fee
+                        from us. You pay only for the underlying Claude API usage billed by Anthropic,
+                        which varies based on the size and complexity of each task. Most routine tasks
+                        cost a few cents in API credits.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item border mb-3 rounded shadow-sm">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed rounded" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#faq6">
+                        Can TARS work with my existing codebase?
+                    </button>
+                </h2>
+                <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body text-muted">
+                        Yes. TARS is designed to drop into any existing Git repository without requiring
+                        changes to your project structure or tooling. It reads your code, tests, and
+                        configuration as-is and follows whatever conventions are already in place.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item border mb-3 rounded shadow-sm">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed rounded" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#faq7">
+                        How long does a typical task take?
+                    </button>
+                </h2>
+                <div id="faq7" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body text-muted">
+                        Simple tasks such as adding a page, fixing a bug, or updating copy typically
+                        complete in two to five minutes. More complex tasks involving multiple files,
+                        new models, or significant logic changes may take ten to twenty minutes. TARS
+                        logs progress and posts a Discord notification when the pull request is ready.
+                    </div>
+                </div>
+            </div>
+
+            <div class="accordion-item border mb-3 rounded shadow-sm">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed rounded" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#faq8">
+                        Is my code private?
+                    </button>
+                </h2>
+                <div id="faq8" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body text-muted">
+                        TARS runs entirely on your own infrastructure and clones repositories using
+                        your own GitHub credentials. Your source code is sent to Anthropic's Claude API
+                        for processing; Anthropic's standard data-handling and privacy policies apply.
+                        No code is stored or shared by TARS itself.
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="text-center mt-5">
+            <a href="{% url 'pages:about' %}" class="btn btn-outline-primary">
+                Learn more about TARS &rarr;
+            </a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends "surveys/base.html" %}
+
+{% block title %}About — TARS Survey{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+
+        <h1 class="fw-bold mb-1">About TARS</h1>
+        <p class="text-muted mb-5">Autonomous software development, powered by Claude AI</p>
+
+        <section class="mb-5">
+            <h2 class="h4 fw-semibold mb-3">What is TARS?</h2>
+            <p>
+                TARS is an autonomous coding system that uses Claude AI to build software end-to-end.
+                Given a task description, TARS reads your codebase, implements the requested changes,
+                runs your test suite, and submits a pull request — all without human intervention.
+                It is designed to handle the full software development loop so engineering teams can
+                focus on the work that matters most.
+            </p>
+        </section>
+
+        <section class="mb-5">
+            <h2 class="h4 fw-semibold mb-3">How it works</h2>
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm h-100 p-4">
+                        <div class="fs-2 mb-3">&#x1F50D;</div>
+                        <h3 class="h6 fw-bold">1. Read</h3>
+                        <p class="text-muted small mb-0">
+                            TARS clones your repository and builds a deep understanding of its
+                            structure, conventions, and existing patterns before touching a single file.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm h-100 p-4">
+                        <div class="fs-2 mb-3">&#x2699;&#xFE0F;</div>
+                        <h3 class="h6 fw-bold">2. Implement</h3>
+                        <p class="text-muted small mb-0">
+                            Claude AI writes the code, following your project's style and conventions
+                            exactly. Changes are minimal and focused — no unnecessary refactoring.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm h-100 p-4">
+                        <div class="fs-2 mb-3">&#x2705;</div>
+                        <h3 class="h6 fw-bold">3. Test</h3>
+                        <p class="text-muted small mb-0">
+                            TARS runs your existing test suite and verifies the build succeeds.
+                            If something breaks, it diagnoses and fixes the issue before proceeding.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm h-100 p-4">
+                        <div class="fs-2 mb-3">&#x1F4E4;</div>
+                        <h3 class="h6 fw-bold">4. Submit</h3>
+                        <p class="text-muted small mb-0">
+                            A pull request is opened on GitHub with a clear description of what was
+                            done and why. Your team reviews and merges on their own schedule.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="mb-5">
+            <h2 class="h4 fw-semibold mb-3">The team</h2>
+            <p>
+                TARS was created by a small team of engineers who believe that AI should handle
+                the mechanical parts of software development so humans can concentrate on product
+                thinking, architecture, and the problems that genuinely require human judgment.
+                We operate lean, move fast, and ship continuously — with TARS helping us do it.
+            </p>
+        </section>
+
+        <section class="mb-5">
+            <h2 class="h4 fw-semibold mb-3">Vision</h2>
+            <p>
+                Software projects accumulate backlogs that never shrink. Routine features, bug
+                fixes, and maintenance tasks pile up while engineers focus on high-priority work.
+                Our vision is a world where that backlog is no longer a constraint — where any
+                well-described task can be delegated to an autonomous agent that implements it
+                correctly, safely, and fast. TARS is the first step toward that future.
+            </p>
+        </section>
+
+        <div class="text-center mt-4">
+            <a href="{% url 'pages:faq' %}" class="btn btn-outline-primary">
+                Read the FAQ &rarr;
+            </a>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
