@@ -2,6 +2,48 @@
 
 {% block title %}TARS — Ship Code While You Sleep{% endblock %}
 
+{% block meta_description %}<meta name="description" content="TARS is an autonomous coding agent that ships production-ready code 24/7. Discover tasks, write code, run tests, and open pull requests — all without a human in the loop.">{% endblock %}
+
+{% block meta_og %}
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_US">
+<meta property="og:site_name" content="TARS">
+<meta property="og:title" content="TARS — Ship Code While You Sleep">
+<meta property="og:description" content="TARS is an autonomous coding agent that ships production-ready code 24/7. Discover tasks, write code, run tests, and open pull requests — all without a human in the loop.">
+<meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
+<meta property="og:image" content="{{ SITE_URL }}/static/img/og-image.svg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="TARS — Ship Code While You Sleep">
+<meta name="twitter:description" content="TARS is an autonomous coding agent that ships production-ready code 24/7. Discover tasks, write code, run tests, and open pull requests — all without a human in the loop.">
+<meta name="twitter:image" content="{{ SITE_URL }}/static/img/og-image.svg">
+{% endblock %}
+
+{% block json_ld %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "TARS",
+  "url": "{{ request.scheme }}://{{ request.get_host }}",
+  "description": "TARS is an autonomous coding agent that discovers tasks, writes production-ready code, runs your test suite, and opens pull requests — 24/7, without human intervention.",
+  "foundingDate": "2026",
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "contactType": "sales",
+    "url": "{{ request.scheme }}://{{ request.get_host }}{% url 'pages:inquiry' %}"
+  },
+  "offers": {
+    "@type": "Offer",
+    "name": "Early Access",
+    "description": "Autonomous coding agent that builds, tests, and ships your software around the clock.",
+    "url": "{{ request.scheme }}://{{ request.get_host }}{% url 'pages:inquiry' %}"
+  }
+}
+</script>
+{% endblock %}
+
 {% block extra_head %}
 <style>
     /* ── Hero ───────────────────────────────────────────── */
@@ -415,7 +457,7 @@
                     <div class="benefit-icon" style="background:rgba(99,102,241,0.15);">
                         <i class="bi bi-moon-stars-fill" style="color:#818cf8;"></i>
                     </div>
-                    <h5 class="fw-700 mb-2">24/7 Autonomous Development</h5>
+                    <h3 class="h5 fw-700 mb-2">24/7 Autonomous Development</h3>
                     <p class="small text-muted mb-0">TARS works through nights, weekends, and holidays. Your repository never sits idle while features wait for a developer to clock in.</p>
                 </div>
             </div>
@@ -424,7 +466,7 @@
                     <div class="benefit-icon" style="background:rgba(16,185,129,0.12);">
                         <i class="bi bi-shield-check-fill" style="color:#10b981;"></i>
                     </div>
-                    <h5 class="fw-700 mb-2">Auto-Testing &amp; Quality Assurance</h5>
+                    <h3 class="h5 fw-700 mb-2">Auto-Testing &amp; Quality Assurance</h3>
                     <p class="small text-muted mb-0">Every change is accompanied by tests. TARS runs the full suite before opening a PR, so broken code never reaches your main branch.</p>
                 </div>
             </div>
@@ -433,7 +475,7 @@
                     <div class="benefit-icon" style="background:rgba(251,191,36,0.12);">
                         <i class="bi bi-git" style="color:#fbbf24;"></i>
                     </div>
-                    <h5 class="fw-700 mb-2">GitHub Integration &amp; PR Workflow</h5>
+                    <h3 class="h5 fw-700 mb-2">GitHub Integration &amp; PR Workflow</h3>
                     <p class="small text-muted mb-0">TARS clones your repo, commits on a feature branch, and opens pull requests with descriptive summaries — ready for human review.</p>
                 </div>
             </div>
@@ -442,7 +484,7 @@
                     <div class="benefit-icon" style="background:rgba(236,72,153,0.12);">
                         <i class="bi bi-graph-up-arrow" style="color:#ec4899;"></i>
                     </div>
-                    <h5 class="fw-700 mb-2">Cost-Effective Scaling</h5>
+                    <h3 class="h5 fw-700 mb-2">Cost-Effective Scaling</h3>
                     <p class="small text-muted mb-0">Scale your output without scaling headcount. Add repositories and task definitions, not salaries. Ship more for a fraction of the cost.</p>
                 </div>
             </div>
@@ -463,7 +505,7 @@
                 <div class="text-center px-3">
                     <div class="step-number mx-auto mb-4">1</div>
                     <div style="font-size:2.5rem; margin-bottom:1rem;">🗂️</div>
-                    <h4 class="fw-700 mb-2">Define Your Project</h4>
+                    <h3 class="h4 fw-700 mb-2">Define Your Project</h3>
                     <p class="text-muted small">Connect your GitHub repository and describe your tasks in plain English or structured YAML. Set priorities, constraints, and acceptance criteria.</p>
                 </div>
             </div>
@@ -471,7 +513,7 @@
                 <div class="text-center px-3">
                     <div class="step-number mx-auto mb-4">2</div>
                     <div style="font-size:2.5rem; margin-bottom:1rem;">🤖</div>
-                    <h4 class="fw-700 mb-2">TARS Builds It</h4>
+                    <h3 class="h4 fw-700 mb-2">TARS Builds It</h3>
                     <p class="text-muted small">TARS picks up tasks, reads your codebase, writes implementation code, creates tests, and validates the output — all using Claude, Anthropic's frontier AI.</p>
                 </div>
             </div>
@@ -479,7 +521,7 @@
                 <div class="text-center px-3">
                     <div class="step-number mx-auto mb-4">3</div>
                     <div style="font-size:2.5rem; margin-bottom:1rem;">🚀</div>
-                    <h4 class="fw-700 mb-2">Review &amp; Deploy</h4>
+                    <h3 class="h4 fw-700 mb-2">Review &amp; Deploy</h3>
                     <p class="text-muted small">Inspect the pull request, leave comments, and merge when satisfied. TARS logs every action to Discord so your team stays informed automatically.</p>
                 </div>
             </div>

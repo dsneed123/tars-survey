@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0d14"/>
+      <stop offset="100%" style="stop-color:#111827"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="50%" cy="0%" r="60%">
+      <stop offset="0%" style="stop-color:rgba(99,102,241,0.3)"/>
+      <stop offset="100%" style="stop-color:transparent"/>
+    </radialGradient>
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#818cf8"/>
+      <stop offset="50%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#10b981"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow1)"/>
+  <!-- Border -->
+  <rect x="1" y="1" width="1198" height="628" rx="0" fill="none" stroke="#1f2937" stroke-width="2"/>
+  <!-- Logo mark -->
+  <rect x="80" y="80" width="72" height="72" rx="16" fill="#6366f1"/>
+  <text x="116" y="140" font-family="system-ui, -apple-system, sans-serif" font-size="52" font-weight="800" text-anchor="middle" fill="white">T</text>
+  <!-- Brand name -->
+  <text x="172" y="132" font-family="system-ui, -apple-system, sans-serif" font-size="42" font-weight="800" fill="#f9fafb" letter-spacing="-1">T<tspan fill="#6366f1">.</tspan>ARS</text>
+  <!-- Main headline -->
+  <text x="80" y="300" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="800" fill="#f9fafb" letter-spacing="-2">Ship Code</text>
+  <text x="80" y="390" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="800" fill="url(#textGrad)" letter-spacing="-2">While You Sleep.</text>
+  <!-- Subtext -->
+  <text x="80" y="470" font-family="system-ui, -apple-system, sans-serif" font-size="28" fill="#9ca3af">Autonomous coding agent — 24/7 development, zero idle hours.</text>
+  <!-- Badge -->
+  <rect x="80" y="520" width="220" height="44" rx="22" fill="rgba(99,102,241,0.15)" stroke="rgba(99,102,241,0.4)" stroke-width="1.5"/>
+  <circle cx="108" cy="542" r="5" fill="#10b981"/>
+  <text x="122" y="548" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="700" fill="#a5b4fc" letter-spacing="1">NOW IN EARLY ACCESS</text>
+  <!-- Decorative terminal lines -->
+  <rect x="720" y="160" width="400" height="300" rx="14" fill="#111827" stroke="#1f2937" stroke-width="1.5"/>
+  <rect x="720" y="160" width="400" height="42" rx="14" fill="#1f2937"/>
+  <circle cx="748" cy="181" r="7" fill="#ef4444"/>
+  <circle cx="772" cy="181" r="7" fill="#f59e0b"/>
+  <circle cx="796" cy="181" r="7" fill="#10b981"/>
+  <text x="740" y="226" font-family="Menlo, Consolas, monospace" font-size="14" fill="#10b981">tars@agent: </text>
+  <text x="840" y="226" font-family="Menlo, Consolas, monospace" font-size="14" fill="#a5b4fc">Scanning tasks...</text>
+  <text x="740" y="254" font-family="Menlo, Consolas, monospace" font-size="14" fill="#6b7280">  → Found 3 open tasks</text>
+  <text x="740" y="282" font-family="Menlo, Consolas, monospace" font-size="14" fill="#10b981">tars@agent: </text>
+  <text x="840" y="282" font-family="Menlo, Consolas, monospace" font-size="14" fill="#a5b4fc">Implementing...</text>
+  <text x="740" y="310" font-family="Menlo, Consolas, monospace" font-size="14" fill="#6b7280">  → Writing auth/views.py</text>
+  <text x="740" y="338" font-family="Menlo, Consolas, monospace" font-size="14" fill="#10b981">  ✓ 42 tests passed</text>
+  <text x="740" y="366" font-family="Menlo, Consolas, monospace" font-size="14" fill="#10b981">  ✓ PR #47 opened</text>
+  <text x="740" y="394" font-family="Menlo, Consolas, monospace" font-size="14" fill="#6b7280">  Next task in 12s...</text>
+  <text x="740" y="430" font-family="Menlo, Consolas, monospace" font-size="14" fill="#374151">tars.build</text>
+</svg>
