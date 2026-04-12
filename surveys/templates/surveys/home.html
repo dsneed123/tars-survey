@@ -1,43 +1,361 @@
 {% extends "surveys/base.html" %}
 
-{% block title %}Surveys{% endblock %}
+{% block title %}TARS Survey — Automated Surveys, Zero Effort{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* ── Full-bleed helper — break out of the Bootstrap .container ── */
+    .section-bleed {
+        margin-left:  calc(-50vw + 50%);
+        margin-right: calc(-50vw + 50%);
+        padding-left: calc(50vw - 50%);
+        padding-right: calc(50vw - 50%);
+    }
+
+    /* ── Use Cases ─────────────────────────────────────────────── */
+    .section-use-cases {
+        background: #0d1117;
+        color: #e6edf3;
+    }
+    .section-use-cases .section-label {
+        color: #58a6ff;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+    .use-case-card {
+        background: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 0.75rem;
+        transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+    .use-case-card:hover {
+        border-color: #58a6ff;
+        transform: translateY(-3px);
+    }
+    .use-case-icon {
+        font-size: 2rem;
+        line-height: 1;
+    }
+    .use-case-card h3 {
+        color: #e6edf3;
+        font-size: 1.1rem;
+    }
+    .use-case-card p {
+        color: #8b949e;
+        font-size: 0.9rem;
+        margin-bottom: 0;
+    }
+
+    /* ── Metrics Bar ───────────────────────────────────────────── */
+    .section-metrics {
+        background: #0d6efd;
+        color: #fff;
+    }
+    .metric-value {
+        font-size: 2.25rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+    .metric-label {
+        font-size: 0.85rem;
+        opacity: 0.85;
+        margin-top: 0.25rem;
+    }
+    .metric-divider {
+        width: 1px;
+        background: rgba(255,255,255,0.3);
+        align-self: stretch;
+    }
+
+    /* ── Testimonials ──────────────────────────────────────────── */
+    .section-testimonials {
+        background: #0d1117;
+        color: #e6edf3;
+    }
+    .section-testimonials .section-label {
+        color: #58a6ff;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+    .testimonial-card {
+        background: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 0.75rem;
+    }
+    .testimonial-quote {
+        color: #c9d1d9;
+        font-size: 0.95rem;
+        line-height: 1.65;
+    }
+    .testimonial-quote::before {
+        content: '\201C';
+        font-size: 2.5rem;
+        color: #58a6ff;
+        line-height: 0;
+        vertical-align: -0.6rem;
+        margin-right: 0.2rem;
+    }
+    .testimonial-name {
+        color: #e6edf3;
+        font-weight: 700;
+        font-size: 0.95rem;
+        margin-bottom: 0;
+    }
+    .testimonial-role {
+        color: #8b949e;
+        font-size: 0.82rem;
+    }
+    .testimonial-avatar {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
+        background: #0d6efd;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1rem;
+        color: #fff;
+        flex-shrink: 0;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <h1 class="h2 fw-bold mb-1">Available Surveys</h1>
-        <p class="text-muted mb-4">Select a survey below to get started.</p>
 
-        {% if surveys %}
-            <div class="d-flex flex-column gap-3">
-                {% for survey in surveys %}
-                <div class="card survey-card shadow-sm border-0">
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <h2 class="h5 fw-semibold mb-1">{{ survey.title }}</h2>
-                                {% if survey.description %}
-                                    <p class="text-muted mb-2">{{ survey.description }}</p>
-                                {% endif %}
-                                <span class="badge bg-primary bg-opacity-10 text-primary fw-normal">
-                                    {{ survey.questions.count }} question{{ survey.questions.count|pluralize }}
-                                </span>
-                            </div>
-                            <a href="{% url 'surveys:survey_detail' survey.pk %}"
-                               class="btn btn-primary ms-3 flex-shrink-0">
-                                Start &rarr;
-                            </a>
+{# ──────────────────────────── USE CASES ──────────────────────────── #}
+<div class="section-use-cases section-bleed py-5">
+    <div class="py-2">
+        <div class="text-center mb-5">
+            <span class="section-label d-block mb-2">Who It's For</span>
+            <h2 class="fw-bold fs-2" style="color:#e6edf3;">Built for teams that ship</h2>
+            <p style="color:#8b949e; max-width:520px;" class="mx-auto mt-2 mb-0">
+                Whether you're a solo founder or a scaled enterprise, TARS Survey
+                adapts to your workflow.
+            </p>
+        </div>
+
+        <div class="row g-4">
+
+            <div class="col-sm-6 col-lg-3">
+                <div class="use-case-card h-100 p-4">
+                    <div class="use-case-icon mb-3">🚀</div>
+                    <h3 class="fw-semibold mb-2">Startups</h3>
+                    <p>Move fast and ship MVPs overnight. Validate ideas with real users before you write a line of code.</p>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-lg-3">
+                <div class="use-case-card h-100 p-4">
+                    <div class="use-case-icon mb-3">🏢</div>
+                    <h3 class="fw-semibold mb-2">Agencies</h3>
+                    <p>Scale client feedback capacity without hiring. Run dozens of surveys in parallel, automatically.</p>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-lg-3">
+                <div class="use-case-card h-100 p-4">
+                    <div class="use-case-icon mb-3">⚙️</div>
+                    <h3 class="fw-semibold mb-2">Enterprise Teams</h3>
+                    <p>Automate recurring pulse checks and bug-fix validation. Keep quality high without the manual overhead.</p>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-lg-3">
+                <div class="use-case-card h-100 p-4">
+                    <div class="use-case-icon mb-3">🧑‍💻</div>
+                    <h3 class="fw-semibold mb-2">Solo Founders</h3>
+                    <p>Your AI engineering team on demand. Launch, collect, and analyze feedback while you sleep.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{# ──────────────────────────── METRICS BAR ─────────────────────────── #}
+<div class="section-metrics section-bleed py-4">
+    <div class="d-flex flex-wrap justify-content-around align-items-center gap-3 py-2">
+
+        <div class="text-center px-3">
+            <div class="metric-value" data-target="500" data-suffix="+">500+</div>
+            <div class="metric-label">PRs Merged</div>
+        </div>
+
+        <div class="metric-divider d-none d-md-block"></div>
+
+        <div class="text-center px-3">
+            <div class="metric-value" data-target="50" data-suffix="+">50+</div>
+            <div class="metric-label">Projects Built</div>
+        </div>
+
+        <div class="metric-divider d-none d-md-block"></div>
+
+        <div class="text-center px-3">
+            <div class="metric-value" data-target="992" data-suffix="%" data-decimal="1" data-divisor="10">99.2%</div>
+            <div class="metric-label">Test Pass Rate</div>
+        </div>
+
+        <div class="metric-divider d-none d-md-block"></div>
+
+        <div class="text-center px-3">
+            <div class="metric-value">24/7</div>
+            <div class="metric-label">Uptime</div>
+        </div>
+
+    </div>
+</div>
+
+{# ─────────────────────────── TESTIMONIALS ─────────────────────────── #}
+<div class="section-testimonials section-bleed py-5">
+    <div class="py-2">
+        <div class="text-center mb-5">
+            <span class="section-label d-block mb-2">What People Say</span>
+            <h2 class="fw-bold fs-2" style="color:#e6edf3;">Trusted by builders</h2>
+        </div>
+
+        <div class="row g-4">
+
+            <div class="col-md-4">
+                <div class="testimonial-card h-100 p-4 d-flex flex-column gap-3">
+                    <p class="testimonial-quote flex-grow-1">
+                        TARS Survey cut our user-research cycle from two weeks to two days. We ship features our customers actually asked for now.
+                    </p>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="testimonial-avatar">JL</div>
+                        <div>
+                            <p class="testimonial-name">Jamie Lee</p>
+                            <span class="testimonial-role">Co-founder &amp; CEO, Stackform</span>
                         </div>
                     </div>
                 </div>
-                {% endfor %}
             </div>
-        {% else %}
-            <div class="text-center py-5">
-                <p class="text-muted fs-5">No surveys are available right now.</p>
-                <p class="text-muted">Check back later!</p>
+
+            <div class="col-md-4">
+                <div class="testimonial-card h-100 p-4 d-flex flex-column gap-3">
+                    <p class="testimonial-quote flex-grow-1">
+                        We replaced three separate feedback tools with TARS. The automated follow-ups alone save us hours every sprint.
+                    </p>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="testimonial-avatar" style="background:#6f42c1;">MR</div>
+                        <div>
+                            <p class="testimonial-name">Marcus Rivera</p>
+                            <span class="testimonial-role">Head of Product, Orbitlabs</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-        {% endif %}
+
+            <div class="col-md-4">
+                <div class="testimonial-card h-100 p-4 d-flex flex-column gap-3">
+                    <p class="testimonial-quote flex-grow-1">
+                        As a solo founder I can't afford a research team. TARS gives me the insight I need without the headcount.
+                    </p>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="testimonial-avatar" style="background:#198754;">AK</div>
+                        <div>
+                            <p class="testimonial-name">Anika Kowalski</p>
+                            <span class="testimonial-role">Founder, Patchwork App</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
     </div>
 </div>
+
+{# ─────────────────────────── SURVEYS LIST ─────────────────────────── #}
+<div class="py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <h2 class="h3 fw-bold mb-1">Available Surveys</h2>
+            <p class="text-muted mb-4">Select a survey below to get started.</p>
+
+            {% if surveys %}
+                <div class="d-flex flex-column gap-3">
+                    {% for survey in surveys %}
+                    <div class="card survey-card shadow-sm border-0">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h3 class="h5 fw-semibold mb-1">{{ survey.title }}</h3>
+                                    {% if survey.description %}
+                                        <p class="text-muted mb-2">{{ survey.description }}</p>
+                                    {% endif %}
+                                    <span class="badge bg-primary bg-opacity-10 text-primary fw-normal">
+                                        {{ survey.questions.count }} question{{ survey.questions.count|pluralize }}
+                                    </span>
+                                </div>
+                                <a href="{% url 'surveys:survey_detail' survey.pk %}"
+                                   class="btn btn-primary ms-3 flex-shrink-0">
+                                    Start &rarr;
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <p class="text-muted fs-5">No surveys are available right now.</p>
+                    <p class="text-muted">Check back later!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    /* Animated counter — triggers once when the metrics bar enters the viewport */
+    function animateCounter(el) {
+        const target  = parseInt(el.dataset.target, 10);
+        const suffix  = el.dataset.suffix  || '';
+        const divisor = parseInt(el.dataset.divisor || '1', 10);
+        const decimal = parseInt(el.dataset.decimal || '0', 10);
+        const duration = 1400; // ms
+        const steps    = 60;
+        const increment = target / steps;
+        let current = 0;
+        let step = 0;
+
+        const timer = setInterval(function () {
+            step++;
+            current = Math.min(increment * step, target);
+            const display = decimal > 0
+                ? (current / divisor).toFixed(decimal)
+                : Math.round(current);
+            el.textContent = display + suffix;
+            if (step >= steps) clearInterval(timer);
+        }, duration / steps);
+    }
+
+    const metricEls = document.querySelectorAll('.metric-value[data-target]');
+    if (!metricEls.length) return;
+
+    if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver(function (entries, obs) {
+            entries.forEach(function (entry) {
+                if (entry.isIntersecting) {
+                    animateCounter(entry.target);
+                    obs.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.5 });
+
+        metricEls.forEach(function (el) { observer.observe(el); });
+    } else {
+        /* Fallback for browsers without IntersectionObserver */
+        metricEls.forEach(animateCounter);
+    }
+}());
+</script>
 {% endblock %}
