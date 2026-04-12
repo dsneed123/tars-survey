@@ -146,9 +146,21 @@
                 <li class="nav-item"><a class="nav-link" href="{% url 'pages:services' %}">Services</a></li>
                 <li class="nav-item"><a class="nav-link" href="#benefits">Benefits</a></li>
                 <li class="nav-item"><a class="nav-link" href="#how-it-works">How It Works</a></li>
+                {% if user.is_authenticated %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'members:dashboard' %}">
+                        <i class="bi bi-grid-1x2 me-1"></i>Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="btn btn-accent" href="{% url 'inquiries:get_started' %}">Submit Task</a>
+                </li>
+                {% else %}
+                <li class="nav-item"><a class="nav-link" href="{% url 'members:login' %}">Sign In</a></li>
                 <li class="nav-item">
                     <a class="btn btn-accent" href="{% url 'inquiries:get_started' %}">Get Started</a>
                 </li>
+                {% endif %}
             </ul>
         </div>
     </div>
