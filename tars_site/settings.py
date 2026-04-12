@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -71,3 +72,5 @@ STATIC_URL = "static/"
 STATICFILES_DIRS = []
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+TARS_API_KEY = os.environ.get("TARS_API_KEY", "")
