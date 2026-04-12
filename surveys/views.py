@@ -52,3 +52,7 @@ def survey_submit(request, pk):
 def thank_you(request, pk):
     survey = get_object_or_404(Survey, pk=pk)
     return render(request, 'surveys/thank_you.html', {'survey': survey})
+
+
+def services(request):
+    return render(request, 'surveys/services.html', {})

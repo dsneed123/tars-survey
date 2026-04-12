@@ -1,0 +1,155 @@
+{% extends "surveys/base.html" %}
+{% block title %}Services — TARS{% endblock %}
+
+{% block extra_head %}
+<style>
+    .service-card {
+        border-left: 4px solid #0d6efd;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .service-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1) !important;
+    }
+    .service-icon {
+        width: 3rem;
+        height: 3rem;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+    .feature-list li {
+        padding: 0.25rem 0;
+    }
+    .feature-list li::before {
+        content: "✓";
+        color: #0d6efd;
+        font-weight: 700;
+        margin-right: 0.5rem;
+    }
+    .cta-section {
+        background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mb-5">
+    <div class="col-lg-8 text-center">
+        <h1 class="fw-bold mb-3">What TARS Does for Your Team</h1>
+        <p class="lead text-muted">TARS is an autonomous coding agent that plugs into your existing workflow and handles the work — from picking up GitHub issues to shipping pull requests.</p>
+    </div>
+</div>
+
+<div class="row justify-content-center g-4 mb-5">
+    <div class="col-lg-9">
+
+        <!-- Service 1: Autonomous Development -->
+        <div class="card service-card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-start gap-3 mb-3">
+                    <div class="service-icon bg-primary bg-opacity-10">
+                        <span>⚙️</span>
+                    </div>
+                    <div>
+                        <h2 class="h4 fw-bold mb-1">Autonomous Development</h2>
+                        <p class="text-muted mb-0">TARS reads your codebase, picks up open tasks, writes the code, and submits pull requests — no hand-holding required.</p>
+                    </div>
+                </div>
+                <ul class="feature-list list-unstyled ps-2 mb-0">
+                    <li>Reads your GitHub issues and selects actionable tasks based on priority and scope</li>
+                    <li>Explores the codebase to understand context before writing a single line</li>
+                    <li>Implements features end-to-end: logic, tests, and any required migrations</li>
+                    <li>Runs your test suite and confirms all checks pass before opening a PR</li>
+                    <li>Submits clean, reviewable pull requests with descriptive commit messages</li>
+                    <li>Logs every action to Discord so your team stays informed in real time</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Service 2: Bug Fixing & Maintenance -->
+        <div class="card service-card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-start gap-3 mb-3">
+                    <div class="service-icon bg-danger bg-opacity-10">
+                        <span>🐛</span>
+                    </div>
+                    <div>
+                        <h2 class="h4 fw-bold mb-1">Bug Fixing &amp; Maintenance</h2>
+                        <p class="text-muted mb-0">TARS auto-detects reported issues, traces them to their root cause, applies a targeted patch, and verifies the fix passes CI.</p>
+                    </div>
+                </div>
+                <ul class="feature-list list-unstyled ps-2 mb-0">
+                    <li>Triages bug reports from GitHub issues and classifies severity</li>
+                    <li>Reproduces the failure by reading stack traces, logs, and related code</li>
+                    <li>Applies minimal, focused patches — no unrelated refactors</li>
+                    <li>Adds a regression test so the bug cannot recur silently</li>
+                    <li>Re-runs the full test suite to confirm nothing else broke</li>
+                    <li>Links the fix back to the original issue in the PR description</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Service 3: New Project Scaffolding -->
+        <div class="card service-card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-start gap-3 mb-3">
+                    <div class="service-icon bg-success bg-opacity-10">
+                        <span>🏗️</span>
+                    </div>
+                    <div>
+                        <h2 class="h4 fw-bold mb-1">New Project Scaffolding</h2>
+                        <p class="text-muted mb-0">Describe your idea and TARS creates a production-ready repository with best-practice structure, CI/CD pipelines, and a working test suite from day one.</p>
+                    </div>
+                </div>
+                <ul class="feature-list list-unstyled ps-2 mb-0">
+                    <li>Generates a repo structure tailored to the language and framework you choose</li>
+                    <li>Wires up GitHub Actions CI/CD so every commit is tested automatically</li>
+                    <li>Writes an initial test suite covering the scaffolded code</li>
+                    <li>Configures linting, formatting, and pre-commit hooks out of the box</li>
+                    <li>Sets up environment variable handling and a ready-to-use development setup</li>
+                    <li>Commits everything with clear, conventional commit messages from the start</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Service 4: Code Review & Quality -->
+        <div class="card service-card border-0 shadow-sm mb-4">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-start gap-3 mb-3">
+                    <div class="service-icon bg-warning bg-opacity-10">
+                        <span>🔍</span>
+                    </div>
+                    <div>
+                        <h2 class="h4 fw-bold mb-1">Code Review &amp; Quality</h2>
+                        <p class="text-muted mb-0">TARS reviews its own work before every PR and can be pointed at any open pull request to catch security issues, enforce style, and flag logic errors.</p>
+                    </div>
+                </div>
+                <ul class="feature-list list-unstyled ps-2 mb-0">
+                    <li>Self-reviews every diff it produces before submitting — no rubber-stamping</li>
+                    <li>Scans for common security vulnerabilities (injection, XSS, insecure dependencies)</li>
+                    <li>Enforces your project's style guide and naming conventions automatically</li>
+                    <li>Flags logic errors, off-by-one risks, and unhandled edge cases</li>
+                    <li>Leaves inline review comments on PRs with specific, actionable feedback</li>
+                    <li>Tracks quality metrics over time and surfaces regressions proactively</li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- CTA -->
+<div class="row justify-content-center mb-2">
+    <div class="col-lg-9">
+        <div class="cta-section rounded-3 p-5 text-center text-white shadow">
+            <h2 class="fw-bold mb-2">Ready to put TARS to work?</h2>
+            <p class="mb-4 opacity-75">Tell us about your project and we'll show you how TARS fits into your team's workflow.</p>
+            <a href="/get-started/" class="btn btn-light btn-lg fw-semibold px-5">Get Started</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
