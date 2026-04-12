@@ -1,9 +1,38 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}TARS Survey{% endblock %}</title>
+
+    <title>{% block title %}TARS Survey{% endblock %} — TARS Survey</title>
+
+    {# Canonical URL #}
+    <link rel="canonical" href="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
+
+    {# Meta description #}
+    <meta name="description" content="{% block meta_description %}TARS Survey — collect feedback and insights with easy-to-use online surveys.{% endblock %}">
+
+    {# Open Graph #}
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="TARS Survey">
+    <meta property="og:title" content="{% block og_title %}TARS Survey{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}TARS Survey — collect feedback and insights with easy-to-use online surveys.{% endblock %}">
+    <meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
+    <meta property="og:image" content="{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'surveys/favicon.svg' %}{% endblock %}">
+
+    {# Twitter Card #}
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="{% block twitter_title %}TARS Survey{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}TARS Survey — collect feedback and insights with easy-to-use online surveys.{% endblock %}">
+    <meta name="twitter:image" content="{% block twitter_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'surveys/favicon.svg' %}{% endblock %}">
+
+    {# Robots #}
+    {% block robots %}<meta name="robots" content="index, follow">{% endblock %}
+
+    {# Favicon #}
+    <link rel="icon" type="image/svg+xml" href="{% static 'surveys/favicon.svg' %}">
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
@@ -55,6 +84,10 @@
             border-top: 1px solid #dee2e6;
         }
     </style>
+
+    {# Structured data (JSON-LD) — override per page #}
+    {% block structured_data %}{% endblock %}
+
     {% block extra_head %}{% endblock %}
 </head>
 <body>

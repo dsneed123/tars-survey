@@ -2,6 +2,16 @@
 
 {% block title %}Thank You — {{ survey.title }}{% endblock %}
 
+{% block meta_description %}Your response to "{{ survey.title }}" has been recorded. Thank you for your feedback.{% endblock %}
+
+{% block og_title %}Thank You — {{ survey.title }} — TARS Survey{% endblock %}
+{% block og_description %}Your response to "{{ survey.title }}" has been recorded. Thank you for your feedback.{% endblock %}
+
+{% block twitter_title %}Thank You — {{ survey.title }} — TARS Survey{% endblock %}
+{% block twitter_description %}Your response to "{{ survey.title }}" has been recorded. Thank you for your feedback.{% endblock %}
+
+{% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-6 text-center">

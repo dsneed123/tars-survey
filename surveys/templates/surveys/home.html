@@ -1,6 +1,28 @@
 {% extends "surveys/base.html" %}
+{% load static %}
 
-{% block title %}Surveys{% endblock %}
+{% block title %}Available Surveys{% endblock %}
+
+{% block meta_description %}Browse and complete surveys on TARS Survey. Share your feedback and help us improve.{% endblock %}
+
+{% block og_title %}Available Surveys — TARS Survey{% endblock %}
+{% block og_description %}Browse and complete surveys on TARS Survey. Share your feedback and help us improve.{% endblock %}
+
+{% block twitter_title %}Available Surveys — TARS Survey{% endblock %}
+{% block twitter_description %}Browse and complete surveys on TARS Survey. Share your feedback and help us improve.{% endblock %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "TARS Survey",
+  "url": "{{ request.scheme }}://{{ request.get_host }}",
+  "description": "TARS Survey — collect feedback and insights with easy-to-use online surveys.",
+  "logo": "{{ request.scheme }}://{{ request.get_host }}{% static 'surveys/favicon.svg' %}"
+}
+</script>
+{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">

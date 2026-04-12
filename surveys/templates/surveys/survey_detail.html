@@ -2,6 +2,14 @@
 
 {% block title %}{{ survey.title }}{% endblock %}
 
+{% block meta_description %}{% if survey.description %}{{ survey.description|truncatechars:160 }}{% else %}Complete the "{{ survey.title }}" survey on TARS Survey.{% endif %}{% endblock %}
+
+{% block og_title %}{{ survey.title }} — TARS Survey{% endblock %}
+{% block og_description %}{% if survey.description %}{{ survey.description|truncatechars:200 }}{% else %}Complete the "{{ survey.title }}" survey on TARS Survey.{% endif %}{% endblock %}
+
+{% block twitter_title %}{{ survey.title }} — TARS Survey{% endblock %}
+{% block twitter_description %}{% if survey.description %}{{ survey.description|truncatechars:200 }}{% else %}Complete the "{{ survey.title }}" survey on TARS Survey.{% endif %}{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-lg-7">
