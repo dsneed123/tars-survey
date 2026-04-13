@@ -14,7 +14,7 @@ def dashboard(request):
     recent_inquiries = Inquiry.objects.filter(email=request.user.email)[:5]
     projects = Project.objects.filter(owner=request.user)
     recent_tasks = Task.objects.filter(created_by=request.user).select_related("project")[:10]
-    active_tasks = recent_tasks.filter(status__in=["pending", "queued", "assigned", "in_progress", "reviewing"])
+    active_tasks = Task.objects.filter(created_by=request.user, status__in=["pending", "queued", "assigned", "in_progress", "reviewing"])
     completed_count = Task.objects.filter(created_by=request.user, status="completed").count()
     ctx = {
         "profile": profile,
