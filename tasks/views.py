@@ -3,10 +3,16 @@ import logging
 import os
 
 import requests as http_requests
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 
 from analytics.utils import fire_event
 from projects.models import Project
@@ -15,6 +21,28 @@ from .forms import TaskForm
 from .models import Task, TaskAttachment
 
 logger = logging.getLogger(__name__)
+
+
+_TARS_STATUS_CHOICES = {s for s, _ in Task.STATUS_CHOICES}
+
+
+def _broadcast_task_update(task):
+    """Push a task status update to the WS groups listening for this task."""
+    channel_layer = get_channel_layer()
+    if channel_layer is None:
+        return
+    data = {
+        "task_id": task.pk,
+        "title": task.title,
+        "status": task.status,
+        "status_display": task.get_status_display(),
+        "branch_name": task.branch_name,
+        "pr_url": task.pr_url,
+        "error_message": task.error_message,
+    }
+    send = async_to_sync(channel_layer.group_send)
+    send(f"task_{task.pk}", {"type": "task_update", "data": data})
+    send(f"dashboard_{task.created_by_id}", {"type": "task_update", "data": data})
 
 
 @login_required
@@ -177,3 +205,67 @@ def _forward_to_controller(task):
             logger.warning("Controller rejected task %s: %s", task.pk, resp.text)
     except Exception as e:
         logger.warning("Failed to forward task %s to controller: %s", task.pk, e)
+
+
+# ---------------------------------------------------------------------------
+# POST /api/tasks/<pk>/status
+#
+# Authenticated callback from the TARS controller / worker.
+# Updates a Task's status and broadcasts to connected WebSocket clients so
+# the detail page progress bar and badge update live.
+# ---------------------------------------------------------------------------
+
+
+@csrf_exempt
+@require_POST
+def api_task_status(request, pk):
+    api_key = request.META.get("HTTP_X_API_KEY", "").strip()
+    expected = getattr(settings, "TARS_API_KEY", "")
+    if not expected or api_key != expected:
+        return JsonResponse({"error": "Invalid or missing X-API-Key"}, status=401)
+
+    try:
+        data = json.loads(request.body or b"{}")
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    status = (data.get("status") or "").strip()
+    if status not in _TARS_STATUS_CHOICES:
+        return JsonResponse(
+            {"error": f"Invalid status. Must be one of: {sorted(_TARS_STATUS_CHOICES)}"},
+            status=400,
+        )
+
+    try:
+        task = Task.objects.get(pk=pk)
+    except Task.DoesNotExist:
+        return JsonResponse({"error": "Task not found"}, status=404)
+
+    update_fields = ["status"]
+    task.status = status
+
+    for field in ("branch_name", "pr_url", "error_message", "worker_id"):
+        if field in data and data[field] is not None:
+            setattr(task, field, data[field])
+            update_fields.append(field)
+
+    now = timezone.now()
+    if status in ("assigned", "in_progress") and task.started_at is None:
+        task.started_at = now
+        update_fields.append("started_at")
+    if status in ("completed", "failed") and task.completed_at is None:
+        task.completed_at = now
+        update_fields.append("completed_at")
+
+    task.save(update_fields=update_fields)
+    _broadcast_task_update(task)
+
+    logger.info("Task %s status -> %s", task.pk, status)
+    return JsonResponse(
+        {
+            "ok": True,
+            "task_id": task.pk,
+            "status": task.status,
+            "status_display": task.get_status_display(),
+        }
+    )

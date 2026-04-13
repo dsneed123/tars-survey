@@ -329,9 +329,9 @@
             <!-- Status Timeline -->
             <p class="section-label">Progress</p>
             <div class="card-surface p-4 mb-4">
-                <div class="timeline">
+                <div class="timeline" id="task-timeline">
                     {% for step in timeline %}
-                    <div class="timeline-item">
+                    <div class="timeline-item" data-status="{{ step.status }}" data-icon="{{ step.icon }}">
                         <div class="timeline-dot dot-{{ step.state }}">
                             {% if step.state == "done" %}
                             <i class="bi bi-check"></i>
@@ -452,12 +452,54 @@
     var scheme = location.protocol === 'https:' ? 'wss' : 'ws';
     var ws = new WebSocket(scheme + '://' + location.host + '/ws/tasks/{{ task.pk }}/');
 
+    // Timeline order must match tasks/views.py::_build_timeline.
+    var TIMELINE_ORDER = ["pending", "queued", "assigned", "in_progress", "reviewing", "completed"];
+
+    function updateTimeline(newStatus) {
+        var failed = newStatus === "failed";
+        var currentIndex = TIMELINE_ORDER.indexOf(newStatus);
+        if (currentIndex < 0) currentIndex = 0;
+
+        var items = document.querySelectorAll('#task-timeline .timeline-item');
+        items.forEach(function (item, i) {
+            var dot = item.querySelector('.timeline-dot');
+            var label = item.querySelector('[class*="timeline-label-"]');
+            if (!dot || !label) return;
+
+            // Remove old state classes
+            dot.classList.remove('dot-done', 'dot-current', 'dot-pending', 'dot-failed');
+            label.classList.remove('timeline-label-done', 'timeline-label-current', 'timeline-label-pending', 'timeline-label-failed');
+
+            var state;
+            if (failed && i === currentIndex) {
+                state = 'failed';
+            } else if (i < currentIndex) {
+                state = 'done';
+            } else if (i === currentIndex && !failed) {
+                state = 'current';
+            } else {
+                state = 'pending';
+            }
+
+            dot.classList.add('dot-' + state);
+            label.classList.add('timeline-label-' + state);
+
+            // Rebuild dot glyph
+            var glyph = '';
+            if (state === 'done') glyph = '<i class="bi bi-check"></i>';
+            else if (state === 'current') glyph = '<i class="bi bi-circle-fill" style="font-size:0.45rem"></i>';
+            else if (state === 'failed') glyph = '<i class="bi bi-x"></i>';
+            dot.innerHTML = glyph;
+        });
+    }
+
     ws.onmessage = function (e) {
         var data;
         try { data = JSON.parse(e.data); } catch (_) { return; }
 
         if (data.status) {
             updateBadge(data.status, data.status_display);
+            updateTimeline(data.status);
             showToast('\u2022 Status updated: ' + data.status_display);
         }
 
