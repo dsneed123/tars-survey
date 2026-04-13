@@ -378,3 +378,97 @@ class ProjectRollbackViewTests(TestCase):
         self.client.force_login(self.user)
         resp = self.client.get(self.url)
         self.assertEqual(resp.status_code, 405)
+
+
+# ---------------------------------------------------------------------------
+# GET /dashboard/projects/<pk>/diff/<sha>/
+# ---------------------------------------------------------------------------
+
+class ProjectCommitDiffViewTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = make_user()
+        self.project = make_project(self.user)
+        self.valid_sha = "abc1234def56789012345678901234567890abcd"
+        self.url = f"/dashboard/projects/{self.project.pk}/diff/{self.valid_sha}/"
+
+    def test_requires_login(self):
+        resp = self.client.get(self.url)
+        self.assertRedirects(resp, f"/login/?next={self.url}", fetch_redirect_response=False)
+
+    def test_returns_404_for_other_user(self):
+        other = make_user(email="other@example.com", username="other")
+        self.client.force_login(other)
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, 404)
+
+    def test_returns_400_for_invalid_sha(self):
+        self.client.force_login(self.user)
+        url = f"/dashboard/projects/{self.project.pk}/diff/not-a-valid-sha!/"
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 400)
+        data = resp.json()
+        self.assertIn("error", data)
+
+    @patch("projects.views._github_request", return_value=None)
+    def test_returns_502_when_github_unavailable(self, _mock):
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, 502)
+        data = resp.json()
+        self.assertIn("error", data)
+
+    @patch("projects.views._github_request")
+    def test_returns_json_with_commit_data(self, mock_gh):
+        mock_gh.return_value = {
+            "sha": self.valid_sha,
+            "commit": {
+                "message": "Fix critical bug",
+                "author": {"name": "Alice", "date": "2024-01-15T10:00:00Z"},
+            },
+            "stats": {"additions": 10, "deletions": 3, "total": 13},
+            "files": [
+                {
+                    "filename": "app/main.py",
+                    "status": "modified",
+                    "additions": 10,
+                    "deletions": 3,
+                    "patch": "@@ -1,3 +1,10 @@\n+new line\n-old line",
+                }
+            ],
+        }
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data["sha"], self.valid_sha)
+        self.assertEqual(data["author"], "Alice")
+        self.assertEqual(len(data["files"]), 1)
+        self.assertEqual(data["files"][0]["filename"], "app/main.py")
+        self.assertEqual(data["stats"]["additions"], 10)
+
+    @patch("projects.views._github_request")
+    def test_files_without_patch_included(self, mock_gh):
+        mock_gh.return_value = {
+            "sha": self.valid_sha,
+            "commit": {
+                "message": "Add binary asset",
+                "author": {"name": "Bob", "date": "2024-02-01T09:00:00Z"},
+            },
+            "stats": {"additions": 0, "deletions": 0, "total": 0},
+            "files": [
+                {
+                    "filename": "assets/logo.png",
+                    "status": "added",
+                    "additions": 0,
+                    "deletions": 0,
+                    # no "patch" key — binary file
+                }
+            ],
+        }
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data["files"][0]["patch"], "")
+        self.assertEqual(data["files"][0]["status"], "added")
