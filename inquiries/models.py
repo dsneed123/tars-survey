@@ -44,6 +44,8 @@ class Inquiry(models.Model):
     budget_range = models.CharField(max_length=20, choices=BUDGET_RANGE_CHOICES)
     timeline = models.CharField(max_length=20, choices=TIMELINE_CHOICES)
     how_heard_about_us = models.CharField(max_length=300)
+    primary_language = models.CharField(max_length=200, blank=True)
+    repo_url = models.URLField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="new")
 

@@ -1,3 +1,7 @@
+import json
+import urllib.parse
+import urllib.request
+
 from django.conf import settings
 from django.core.mail import send_mail
 from django.shortcuts import render, redirect
@@ -31,16 +35,45 @@ def _send_inquiry_emails(inquiry, request):
     )
 
 
+def _verify_recaptcha(token):
+    """Verify reCAPTCHA v3 token. Returns True if valid or if reCAPTCHA is not configured."""
+    secret = getattr(settings, "RECAPTCHA_SECRET_KEY", "")
+    if not secret:
+        return True
+    try:
+        data = urllib.parse.urlencode({
+            "secret": secret,
+            "response": token,
+        }).encode()
+        req = urllib.request.Request(
+            "https://www.google.com/recaptcha/api/siteverify",
+            data=data,
+        )
+        with urllib.request.urlopen(req, timeout=5) as response:
+            result = json.loads(response.read())
+        return result.get("success", False) and result.get("score", 0.0) >= 0.5
+    except Exception:
+        return True  # Fail open if reCAPTCHA service is unreachable
+
+
 def get_started(request):
+    recaptcha_site_key = getattr(settings, "RECAPTCHA_SITE_KEY", "")
     if request.method == "POST":
         form = InquiryForm(request.POST)
         if form.is_valid():
-            inquiry = form.save()
-            _send_inquiry_emails(inquiry, request)
-            return redirect("inquiries:thank_you")
+            token = request.POST.get("g-recaptcha-response", "")
+            if not _verify_recaptcha(token):
+                form.add_error(None, "Security check failed. Please try again.")
+            else:
+                inquiry = form.save()
+                _send_inquiry_emails(inquiry, request)
+                return redirect("inquiries:thank_you")
     else:
         form = InquiryForm()
-    return render(request, "inquiries/get_started.html", {"form": form})
+    return render(request, "inquiries/get_started.html", {
+        "form": form,
+        "recaptcha_site_key": recaptcha_site_key,
+    })
 
 
 def thank_you(request):
