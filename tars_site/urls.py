@@ -31,6 +31,7 @@ urlpatterns = [
     path("", include("tasks.urls")),
     path("", include("workers.urls")),
     path("", include("analytics.urls")),
+    path("", include("billing.urls")),
 ]
 
 if settings.DEBUG:

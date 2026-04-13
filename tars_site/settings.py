@@ -29,7 +29,15 @@ INSTALLED_APPS = [
     "tasks",
     "workers",
     "analytics",
+    "billing",
 ]
+
+# ---------------------------------------------------------------------------
+# Stripe
+# ---------------------------------------------------------------------------
+STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
+STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 
 AUTH_USER_MODEL = "accounts.CustomUser"
 
