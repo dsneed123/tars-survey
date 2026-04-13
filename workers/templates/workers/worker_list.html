@@ -115,35 +115,58 @@
 
         <!-- Summary stats -->
         <div class="row g-3 mt-3">
-            {% with online_count=workers|length %}
             <div class="col-6 col-md-3">
                 <div style="background:rgba(99,102,241,0.07); border:1px solid rgba(99,102,241,0.15); border-radius:10px; padding:0.75rem 1rem; text-align:center;">
                     <div style="font-size:1.5rem; font-weight:700; color:var(--tars-text); line-height:1;">{{ workers.count }}</div>
-                    <div style="font-size:0.68rem; color:var(--tars-muted); margin-top:0.2rem; text-transform:uppercase; letter-spacing:0.06em;">Total</div>
-                </div>
-            </div>
-            {% endwith %}
-            <div class="col-6 col-md-3">
-                <div style="background:rgba(16,185,129,0.07); border:1px solid rgba(16,185,129,0.15); border-radius:10px; padding:0.75rem 1rem; text-align:center;">
-                    <div style="font-size:1.5rem; font-weight:700; color:var(--tars-green); line-height:1;">
-                        {% with c=0 %}
-                        {% for w in workers %}{% if w.status == "online" or w.status == "busy" %}{% with c=c|add:1 %}{% endwith %}{% endif %}{% endfor %}
-                        {{ workers|length }}
-                        {% endwith %}
-                    </div>
-                    <div style="font-size:0.68rem; color:var(--tars-muted); margin-top:0.2rem; text-transform:uppercase; letter-spacing:0.06em;">Online/Busy</div>
+                    <div style="font-size:0.68rem; color:var(--tars-muted); margin-top:0.2rem; text-transform:uppercase; letter-spacing:0.06em;">Total Workers</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
                 <div style="background:rgba(99,102,241,0.07); border:1px solid rgba(99,102,241,0.15); border-radius:10px; padding:0.75rem 1rem; text-align:center;">
                     <div style="font-size:1.5rem; font-weight:700; color:var(--tars-text); line-height:1;" id="stat-active-load">—</div>
-                    <div style="font-size:0.68rem; color:var(--tars-muted); margin-top:0.2rem; text-transform:uppercase; letter-spacing:0.06em;">Active Tasks</div>
+                    <div style="font-size:0.68rem; color:var(--tars-muted); margin-top:0.2rem; text-transform:uppercase; letter-spacing:0.06em;">Active Load</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
                 <div style="background:rgba(99,102,241,0.07); border:1px solid rgba(99,102,241,0.15); border-radius:10px; padding:0.75rem 1rem; text-align:center;">
                     <div style="font-size:1.5rem; font-weight:700; color:var(--tars-text); line-height:1;" id="stat-total-capacity">—</div>
                     <div style="font-size:0.68rem; color:var(--tars-muted); margin-top:0.2rem; text-transform:uppercase; letter-spacing:0.06em;">Total Capacity</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div style="background:rgba({% if success_rate is not None and success_rate >= 80 %}16,185,129{% else %}99,102,241{% endif %},0.07); border:1px solid rgba({% if success_rate is not None and success_rate >= 80 %}16,185,129{% else %}99,102,241{% endif %},0.15); border-radius:10px; padding:0.75rem 1rem; text-align:center;">
+                    <div style="font-size:1.5rem; font-weight:700; color:{% if success_rate is not None and success_rate >= 80 %}var(--tars-green){% else %}var(--tars-text){% endif %}; line-height:1;">
+                        {% if success_rate is not None %}{{ success_rate }}%{% else %}—{% endif %}
+                    </div>
+                    <div style="font-size:0.68rem; color:var(--tars-muted); margin-top:0.2rem; text-transform:uppercase; letter-spacing:0.06em;">Success Rate</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Load balancing stats -->
+        <div class="row g-3 mt-2">
+            <div class="col-6 col-md-3">
+                <div style="background:rgba(99,102,241,0.04); border:1px solid var(--tars-border); border-radius:10px; padding:0.75rem 1rem; text-align:center;">
+                    <div style="font-size:1.5rem; font-weight:700; color:var(--tars-text); line-height:1;">{{ pending_count }}</div>
+                    <div style="font-size:0.68rem; color:var(--tars-muted); margin-top:0.2rem; text-transform:uppercase; letter-spacing:0.06em;">Pending Tasks</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div style="background:rgba(99,102,241,0.04); border:1px solid var(--tars-border); border-radius:10px; padding:0.75rem 1rem; text-align:center;">
+                    <div style="font-size:1.5rem; font-weight:700; color:var(--tars-accent); line-height:1;">{{ active_count }}</div>
+                    <div style="font-size:0.68rem; color:var(--tars-muted); margin-top:0.2rem; text-transform:uppercase; letter-spacing:0.06em;">In Progress</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div style="background:rgba({% if stuck_count > 0 %}245,158,11{% else %}99,102,241{% endif %},0.04); border:1px solid rgba({% if stuck_count > 0 %}245,158,11{% else %}99,102,241{% endif %},0.15); border-radius:10px; padding:0.75rem 1rem; text-align:center;">
+                    <div style="font-size:1.5rem; font-weight:700; color:{% if stuck_count > 0 %}#f59e0b{% else %}var(--tars-text){% endif %}; line-height:1;">{{ stuck_count }}</div>
+                    <div style="font-size:0.68rem; color:var(--tars-muted); margin-top:0.2rem; text-transform:uppercase; letter-spacing:0.06em;">Stuck Tasks</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div style="background:rgba(99,102,241,0.04); border:1px solid var(--tars-border); border-radius:10px; padding:0.75rem 1rem; text-align:center;">
+                    <div style="font-size:1.5rem; font-weight:700; color:var(--tars-text); line-height:1;">{{ total_assignments }}</div>
+                    <div style="font-size:0.68rem; color:var(--tars-muted); margin-top:0.2rem; text-transform:uppercase; letter-spacing:0.06em;">All Assignments</div>
                 </div>
             </div>
         </div>
@@ -216,6 +239,46 @@
                 Workers register themselves via <code>POST /api/workers/register/</code>.
             </p>
         </div>
+    {% endif %}
+
+    {% if recent_assignments %}
+    <p class="section-label mt-5">Recent Assignments</p>
+    <div style="overflow-x:auto;">
+        <table style="width:100%; border-collapse:collapse; font-size:0.82rem;">
+            <thead>
+                <tr style="border-bottom:1px solid var(--tars-border); color:var(--tars-muted); text-transform:uppercase; font-size:0.68rem; letter-spacing:0.06em;">
+                    <th style="padding:0.5rem 0.75rem; text-align:left; font-weight:600;">Task</th>
+                    <th style="padding:0.5rem 0.75rem; text-align:left; font-weight:600;">Worker</th>
+                    <th style="padding:0.5rem 0.75rem; text-align:left; font-weight:600;">Assigned</th>
+                    <th style="padding:0.5rem 0.75rem; text-align:left; font-weight:600;">Completed</th>
+                    <th style="padding:0.5rem 0.75rem; text-align:left; font-weight:600;">Result</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for a in recent_assignments %}
+                <tr style="border-bottom:1px solid var(--tars-border);">
+                    <td style="padding:0.6rem 0.75rem; color:var(--tars-text);">{{ a.task.title|truncatechars:40 }}</td>
+                    <td style="padding:0.6rem 0.75rem; color:var(--tars-muted);">{{ a.worker.hostname }}</td>
+                    <td style="padding:0.6rem 0.75rem; color:var(--tars-muted);">{{ a.assigned_at|timesince }} ago</td>
+                    <td style="padding:0.6rem 0.75rem; color:var(--tars-muted);">
+                        {% if a.completed_at %}{{ a.completed_at|timesince }} ago{% else %}—{% endif %}
+                    </td>
+                    <td style="padding:0.6rem 0.75rem;">
+                        {% if a.result == "success" %}
+                            <span style="color:var(--tars-green); font-weight:600;">Success</span>
+                        {% elif a.result == "failed" %}
+                            <span style="color:#ef4444; font-weight:600;">Failed</span>
+                        {% elif a.result == "timeout" %}
+                            <span style="color:#f59e0b; font-weight:600;">Timeout</span>
+                        {% else %}
+                            <span style="color:var(--tars-muted);">In progress</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {% endif %}
 </div>
 

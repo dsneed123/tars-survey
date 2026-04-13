@@ -26,3 +26,31 @@ class Worker(models.Model):
 
     def __str__(self):
         return f"{self.hostname} [{self.get_status_display()}]"
+
+
+class TaskAssignment(models.Model):
+    RESULT_CHOICES = [
+        ("success", "Success"),
+        ("failed", "Failed"),
+        ("timeout", "Timeout"),
+    ]
+
+    task = models.ForeignKey(
+        "tasks.Task",
+        on_delete=models.CASCADE,
+        related_name="assignments",
+    )
+    worker = models.ForeignKey(
+        Worker,
+        on_delete=models.CASCADE,
+        related_name="assignments",
+    )
+    assigned_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(blank=True, null=True)
+    result = models.CharField(max_length=20, choices=RESULT_CHOICES, blank=True, null=True)
+
+    class Meta:
+        ordering = ["-assigned_at"]
+
+    def __str__(self):
+        return f"Task {self.task_id} → {self.worker.hostname} [{self.result or 'pending'}]"

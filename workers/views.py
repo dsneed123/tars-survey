@@ -1,6 +1,7 @@
 import json
 
 from django.contrib.admin.views.decorators import staff_member_required
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import render
@@ -10,7 +11,7 @@ from django.views.decorators.http import require_http_methods
 
 from tasks.models import Task
 
-from .models import Worker
+from .models import TaskAssignment, Worker
 
 # ---------------------------------------------------------------------------
 # Auth helper
@@ -23,7 +24,7 @@ def _get_worker(request):
         return None
     try:
         return Worker.objects.get(api_key=api_key)
-    except (Worker.DoesNotExist, ValueError):
+    except (Worker.DoesNotExist, ValueError, ValidationError):
         return None
 
 
@@ -108,6 +109,14 @@ def heartbeat(request):
 # GET /api/workers/next-task/
 # ---------------------------------------------------------------------------
 
+# Age bonus: +1 priority per minute waiting, capped at this value
+_AGE_BONUS_MAX = 50
+# Cache-warm bonus: reward for assigning a task on a project the worker recently touched
+_CACHE_WARM_BONUS = 10
+# How far back to look for "recently worked" project history (seconds)
+_CACHE_WARM_WINDOW_SECS = 3600
+
+
 @csrf_exempt
 @require_http_methods(["GET"])
 @transaction.atomic
@@ -115,6 +124,12 @@ def next_task(request):
     worker, err = _require_worker(request)
     if err:
         return err
+
+    # Don't assign when worker is at max load
+    if worker.current_load >= worker.capacity:
+        return JsonResponse({"task": None})
+
+    now = timezone.now()
 
     # Projects that already have an active task being worked on
     busy_project_ids = list(
@@ -125,34 +140,53 @@ def next_task(request):
         .distinct()
     )
 
-    task = (
+    # Fetch all eligible pending tasks (lock for update to prevent races)
+    pending_tasks = list(
         Task.objects.select_for_update()
         .filter(status="pending")
         .exclude(project_id__in=busy_project_ids)
-        .order_by("-priority", "created_at")
         .select_related("project")
-        .first()
     )
 
-    if task is None:
+    if not pending_tasks:
         return JsonResponse({"task": None})
 
-    task.status = "assigned"
-    task.worker_id = str(worker.pk)
-    task.save(update_fields=["status", "worker_id"])
+    # Projects this worker recently worked on → cache-warm bonus
+    warm_project_ids = set(
+        TaskAssignment.objects.filter(
+            worker=worker,
+            assigned_at__gte=now - timezone.timedelta(seconds=_CACHE_WARM_WINDOW_SECS),
+        ).values_list("task__project_id", flat=True)
+    )
+
+    # Score every candidate task
+    def _score(t):
+        age_minutes = (now - t.created_at).total_seconds() / 60
+        age_bonus = min(int(age_minutes), _AGE_BONUS_MAX)
+        cache_bonus = _CACHE_WARM_BONUS if t.project_id in warm_project_ids else 0
+        return t.priority + age_bonus + cache_bonus
+
+    # Pick highest score; break ties by created_at ascending (oldest first = round-robin fairness)
+    best_task = max(pending_tasks, key=lambda t: (_score(t), -t.created_at.timestamp()))
+
+    best_task.status = "assigned"
+    best_task.worker_id = str(worker.pk)
+    best_task.save(update_fields=["status", "worker_id"])
+
+    TaskAssignment.objects.create(task=best_task, worker=worker)
 
     return JsonResponse(
         {
             "task": {
-                "id": task.pk,
-                "title": task.title,
-                "description": task.description,
-                "priority": task.priority,
+                "id": best_task.pk,
+                "title": best_task.title,
+                "description": best_task.description,
+                "priority": best_task.priority,
                 "project": {
-                    "id": task.project.pk,
-                    "name": task.project.name,
-                    "github_repo": task.project.github_repo,
-                    "default_branch": task.project.default_branch,
+                    "id": best_task.project.pk,
+                    "name": best_task.project.name,
+                    "github_repo": best_task.project.github_repo,
+                    "default_branch": best_task.project.default_branch,
                 },
             }
         }
@@ -208,6 +242,13 @@ def task_update(request, task_id):
     if update_fields:
         task.save(update_fields=update_fields)
 
+    # Update the TaskAssignment record when the task reaches a terminal state
+    if status in ("completed", "failed"):
+        result = "success" if status == "completed" else "failed"
+        TaskAssignment.objects.filter(
+            task=task, worker=worker, result__isnull=True
+        ).update(result=result, completed_at=timezone.now())
+
     return JsonResponse({"ok": True, "task_id": task.pk, "status": task.status})
 
 
@@ -217,12 +258,43 @@ def task_update(request, task_id):
 
 @staff_member_required
 def worker_list(request):
+    now = timezone.now()
+
     # Mark stale workers offline (no heartbeat in 5 minutes)
-    cutoff = timezone.now() - timezone.timedelta(minutes=5)
+    cutoff = now - timezone.timedelta(minutes=5)
     Worker.objects.filter(
         last_heartbeat__lt=cutoff,
     ).exclude(status="offline").update(status="offline")
 
     workers = Worker.objects.all()
 
-    return render(request, "workers/worker_list.html", {"workers": workers})
+    # Load balancing stats
+    pending_count = Task.objects.filter(status="pending").count()
+    active_count = Task.objects.filter(status__in=["assigned", "in_progress", "reviewing"]).count()
+
+    stuck_cutoff = now - timezone.timedelta(minutes=30)
+    stuck_count = TaskAssignment.objects.filter(
+        assigned_at__lt=stuck_cutoff,
+        result__isnull=True,
+        task__status__in=["assigned", "in_progress"],
+        worker__last_heartbeat__lt=cutoff,
+    ).count()
+
+    total_assignments = TaskAssignment.objects.count()
+    success_count = TaskAssignment.objects.filter(result="success").count()
+    success_rate = round(success_count / total_assignments * 100) if total_assignments else None
+
+    recent_assignments = (
+        TaskAssignment.objects.select_related("task", "worker")
+        .order_by("-assigned_at")[:10]
+    )
+
+    return render(request, "workers/worker_list.html", {
+        "workers": workers,
+        "pending_count": pending_count,
+        "active_count": active_count,
+        "stuck_count": stuck_count,
+        "success_rate": success_rate,
+        "total_assignments": total_assignments,
+        "recent_assignments": recent_assignments,
+    })
