@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}Workers — TARS Admin{% endblock %}
+
+{% block meta_description %}<meta name="description" content="TARS worker registration and status dashboard.">{% endblock %}
+
+{% block extra_head %}
+<style>
+    .page-hero {
+        background: linear-gradient(135deg, var(--tars-surface) 0%, rgba(99,102,241,0.08) 100%);
+        border-bottom: 1px solid var(--tars-border);
+        padding: 2.5rem 0 2rem;
+    }
+
+    .section-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--tars-muted);
+        margin-bottom: 1rem;
+    }
+
+    .worker-row {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 12px;
+        padding: 1.1rem 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: border-color 0.2s;
+    }
+
+    .worker-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        background: rgba(99,102,241,0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 1.1rem;
+        color: var(--tars-accent);
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 0.2rem 0.6rem;
+        border-radius: 999px;
+        white-space: nowrap;
+    }
+
+    .status-online      { background: rgba(16,185,129,0.15);  color: var(--tars-green); }
+    .status-busy        { background: rgba(99,102,241,0.15);  color: var(--tars-accent); }
+    .status-offline     { background: rgba(156,163,175,0.12); color: var(--tars-muted); }
+    .status-maintenance { background: rgba(245,158,11,0.15);  color: #f59e0b; }
+
+    .load-bar-wrap {
+        background: var(--tars-border);
+        border-radius: 999px;
+        height: 6px;
+        width: 80px;
+        overflow: hidden;
+    }
+
+    .load-bar-fill {
+        height: 100%;
+        border-radius: 999px;
+        background: var(--tars-accent);
+        transition: width 0.3s;
+    }
+
+    .load-bar-fill.full { background: #f59e0b; }
+    .load-bar-fill.over { background: #ef4444; }
+
+    .meta-text {
+        font-size: 0.78rem;
+        color: var(--tars-muted);
+    }
+
+    .stale-warning {
+        font-size: 0.72rem;
+        color: #f87171;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+    <div class="container">
+        <nav aria-label="breadcrumb" class="mb-1">
+            <ol class="breadcrumb mb-0" style="font-size:0.8rem; color:var(--tars-muted)">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'members:dashboard' %}" style="color:var(--tars-muted); text-decoration:none">Dashboard</a>
+                </li>
+                <li class="breadcrumb-item active" style="color:var(--tars-text)">Workers</li>
+            </ol>
+        </nav>
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div>
+                <h1 class="h3 fw-bold mb-1" style="color:var(--tars-text)">Workers</h1>
+                <p class="mb-0 small" style="color:var(--tars-muted)">
+                    {{ workers.count }} registered worker{{ workers.count|pluralize }}
+                </p>
+            </div>
+        </div>
+
+        <!-- Summary stats -->
+        <div class="row g-3 mt-3">
+            {% with online_count=workers|length %}
+            <div class="col-6 col-md-3">
+                <div style="background:rgba(99,102,241,0.07); border:1px solid rgba(99,102,241,0.15); border-radius:10px; padding:0.75rem 1rem; text-align:center;">
+                    <div style="font-size:1.5rem; font-weight:700; color:var(--tars-text); line-height:1;">{{ workers.count }}</div>
+                    <div style="font-size:0.68rem; color:var(--tars-muted); margin-top:0.2rem; text-transform:uppercase; letter-spacing:0.06em;">Total</div>
+                </div>
+            </div>
+            {% endwith %}
+            <div class="col-6 col-md-3">
+                <div style="background:rgba(16,185,129,0.07); border:1px solid rgba(16,185,129,0.15); border-radius:10px; padding:0.75rem 1rem; text-align:center;">
+                    <div style="font-size:1.5rem; font-weight:700; color:var(--tars-green); line-height:1;">
+                        {% with c=0 %}
+                        {% for w in workers %}{% if w.status == "online" or w.status == "busy" %}{% with c=c|add:1 %}{% endwith %}{% endif %}{% endfor %}
+                        {{ workers|length }}
+                        {% endwith %}
+                    </div>
+                    <div style="font-size:0.68rem; color:var(--tars-muted); margin-top:0.2rem; text-transform:uppercase; letter-spacing:0.06em;">Online/Busy</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div style="background:rgba(99,102,241,0.07); border:1px solid rgba(99,102,241,0.15); border-radius:10px; padding:0.75rem 1rem; text-align:center;">
+                    <div style="font-size:1.5rem; font-weight:700; color:var(--tars-text); line-height:1;" id="stat-active-load">—</div>
+                    <div style="font-size:0.68rem; color:var(--tars-muted); margin-top:0.2rem; text-transform:uppercase; letter-spacing:0.06em;">Active Tasks</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div style="background:rgba(99,102,241,0.07); border:1px solid rgba(99,102,241,0.15); border-radius:10px; padding:0.75rem 1rem; text-align:center;">
+                    <div style="font-size:1.5rem; font-weight:700; color:var(--tars-text); line-height:1;" id="stat-total-capacity">—</div>
+                    <div style="font-size:0.68rem; color:var(--tars-muted); margin-top:0.2rem; text-transform:uppercase; letter-spacing:0.06em;">Total Capacity</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-5">
+    {% if workers %}
+        <p class="section-label">All Workers</p>
+        <div class="d-flex flex-column gap-3">
+        {% for worker in workers %}
+            <div class="worker-row">
+                <div class="worker-icon">
+                    <i class="bi bi-cpu{% if worker.status == 'offline' %}-fill{% endif %}"></i>
+                </div>
+
+                <div class="flex-grow-1" style="min-width:0">
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                        <span class="fw-semibold" style="color:var(--tars-text)">{{ worker.hostname }}</span>
+                        <span class="status-badge status-{{ worker.status }}">
+                            <i class="bi bi-circle-fill" style="font-size:0.4rem"></i>
+                            {{ worker.get_status_display }}
+                        </span>
+                    </div>
+                    <div class="d-flex flex-wrap gap-3">
+                        {% if worker.ip_address %}
+                        <span class="meta-text"><i class="bi bi-hdd-network me-1"></i>{{ worker.ip_address }}</span>
+                        {% endif %}
+                        <span class="meta-text">
+                            <i class="bi bi-clock me-1"></i>
+                            {% if worker.last_heartbeat %}
+                                Last seen {{ worker.last_heartbeat|timesince }} ago
+                            {% else %}
+                                No heartbeat yet
+                            {% endif %}
+                        </span>
+                        <span class="meta-text">
+                            <i class="bi bi-calendar me-1"></i>
+                            Registered {{ worker.registered_at|date:"M j, Y" }}
+                        </span>
+                        {% if worker.specs %}
+                        <span class="meta-text"><i class="bi bi-info-circle me-1"></i>{{ worker.specs }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Load indicator -->
+                <div class="text-end flex-shrink-0" style="min-width:110px">
+                    <div class="meta-text mb-1">
+                        Load: {{ worker.current_load }} / {{ worker.capacity }}
+                    </div>
+                    {% if worker.capacity > 0 %}
+                    {% with pct=worker.current_load|stringformat:"s" %}
+                    <div class="load-bar-wrap">
+                        <div class="load-bar-fill{% if worker.current_load >= worker.capacity %} full{% endif %}"
+                             style="width: {% widthratio worker.current_load worker.capacity 100 %}%">
+                        </div>
+                    </div>
+                    {% endwith %}
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    {% else %}
+        <div class="card-surface text-center py-5 px-4">
+            <i class="bi bi-cpu" style="font-size:3rem; color:var(--tars-border)"></i>
+            <h5 class="fw-bold mt-3 mb-2" style="color:var(--tars-text)">No workers registered</h5>
+            <p class="small mb-0" style="color:var(--tars-muted)">
+                Workers register themselves via <code>POST /api/workers/register/</code>.
+            </p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+// Compute active load and total capacity from rendered data
+document.addEventListener("DOMContentLoaded", function () {
+    const rows = document.querySelectorAll(".worker-row");
+    let totalLoad = 0, totalCapacity = 0;
+    rows.forEach(function (row) {
+        const metaTexts = row.querySelectorAll(".meta-text");
+        metaTexts.forEach(function (el) {
+            const m = el.textContent.match(/Load:\s*(\d+)\s*\/\s*(\d+)/);
+            if (m) {
+                totalLoad += parseInt(m[1], 10);
+                totalCapacity += parseInt(m[2], 10);
+            }
+        });
+    });
+    const loadEl = document.getElementById("stat-active-load");
+    const capEl = document.getElementById("stat-total-capacity");
+    if (loadEl) loadEl.textContent = totalLoad;
+    if (capEl) capEl.textContent = totalCapacity;
+});
+</script>
+{% endblock %}
