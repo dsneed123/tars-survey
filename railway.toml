@@ -1,9 +1,9 @@
 [build]
 builder = "nixpacks"
-buildCommand = "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate --noinput"
+buildCommand = "pip install -r requirements.txt && python manage.py collectstatic --noinput"
 
 [deploy]
-startCommand = "daphne -b 0.0.0.0 -p $PORT tars_site.asgi:application"
+startCommand = "python manage.py migrate --noinput && python manage.py create_superuser_if_none && daphne -b 0.0.0.0 -p $PORT tars_site.asgi:application"
 healthcheckPath = "/health/"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
