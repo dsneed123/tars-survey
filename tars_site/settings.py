@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 import dj_database_url
@@ -138,9 +139,11 @@ CSRF_TRUSTED_ORIGINS = [
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Security settings for production HTTPS
-SECURE_SSL_REDIRECT = not DEBUG
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
+# Force HTTPS on Railway regardless of DEBUG setting
+_ON_RAILWAY = bool(os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("DATABASE_URL", "").startswith("postgresql"))
+SECURE_SSL_REDIRECT = _ON_RAILWAY or not DEBUG
+SESSION_COOKIE_SECURE = _ON_RAILWAY or not DEBUG
+CSRF_COOKIE_SECURE = _ON_RAILWAY or not DEBUG
 
 # Email configuration
 # In development (DEBUG=True), emails print to the terminal console.
@@ -189,3 +192,17 @@ else:
             "BACKEND": "channels.layers.InMemoryChannelLayer",
         }
     }
+
+# ---------------------------------------------------------------------------
+# Test environment overrides
+# ---------------------------------------------------------------------------
+# When running `manage.py test`, switch to DummyCache so that:
+#   - @cache_page responses don't bleed context=None across test methods
+#   - @ratelimit counters don't accumulate across test methods (causing 429s)
+if "test" in sys.argv:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.dummy.DummyCache",
+        }
+    }
+    RATELIMIT_ENABLE = False
