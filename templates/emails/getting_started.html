@@ -1,0 +1,66 @@
+{% extends "emails/base_email.html" %}
+{% block subject %}Getting started with TARS — tips for your first task{% endblock %}
+
+{% block body %}
+<p class="email-greeting">Tips for your first TARS task</p>
+
+<p class="email-text">
+  Hi {{ user.first_name|default:user.email }}, you signed up yesterday — time to put TARS to work.
+  Here's what makes a great first task.
+</p>
+
+<div class="info-box">
+  <div class="info-box-label">Pro tip</div>
+  <div class="info-box-value">
+    The more context you give, the better the result. Include acceptance criteria,
+    relevant files, and any constraints directly in the task description.
+  </div>
+</div>
+
+<p class="email-text" style="font-weight:600; color:#f9fafb; margin-bottom:12px;">What TARS does well:</p>
+<ul class="feature-list">
+  <li>
+    <span class="icon">✓</span>
+    <span>Adding new features to existing codebases</span>
+  </li>
+  <li>
+    <span class="icon">✓</span>
+    <span>Fixing bugs with clear reproduction steps</span>
+  </li>
+  <li>
+    <span class="icon">✓</span>
+    <span>Writing tests for existing code</span>
+  </li>
+  <li>
+    <span class="icon">✓</span>
+    <span>Refactoring and improving code quality</span>
+  </li>
+  <li>
+    <span class="icon">✓</span>
+    <span>Integrating third-party APIs and services</span>
+  </li>
+</ul>
+
+<hr class="email-divider">
+
+<p class="email-text" style="font-weight:600; color:#f9fafb; margin-bottom:12px;">Example task descriptions that work great:</p>
+
+<div class="task-item">
+  <div class="task-item-title">"Add rate limiting to the /api/users endpoint — max 100 requests per minute per IP using Redis"</div>
+</div>
+<div class="task-item">
+  <div class="task-item-title">"Fix the bug in checkout.py line 142 where tax is calculated before discount is applied"</div>
+</div>
+<div class="task-item">
+  <div class="task-item-title">"Write pytest tests for all public methods in auth/validators.py — aim for 90% coverage"</div>
+</div>
+
+<div class="email-cta">
+  <a href="{{ site_url }}/dashboard/tasks/new/" class="btn-primary">Submit your first task</a>
+</div>
+
+<p class="email-text" style="font-size:13px; text-align:center;">
+  Need to connect a project first?
+  <a href="{{ site_url }}/dashboard/projects/add/">Add a GitHub repo →</a>
+</p>
+{% endblock %}

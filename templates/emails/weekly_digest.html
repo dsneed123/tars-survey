@@ -1,0 +1,108 @@
+{% extends "emails/base_email.html" %}
+{% block subject %}Your TARS weekly digest — {{ total_completed }} task(s) completed{% endblock %}
+
+{% block body %}
+<p class="email-greeting">Your weekly summary</p>
+
+<p class="email-text">
+  Here's what TARS accomplished for {{ user.first_name|default:user.email }} this week
+  ({{ week_start|date:"M j" }} – {{ week_end|date:"M j, Y" }}).
+</p>
+
+<!-- Stats row -->
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;">
+  <tr>
+    <td width="33%" style="text-align:center; padding:16px 6px; background:#0a0d14; border:1px solid #1f2937; border-radius:8px;">
+      <span class="stat-value">{{ total_completed }}</span>
+      <span class="stat-label">Completed</span>
+    </td>
+    <td width="8px"></td>
+    <td width="33%" style="text-align:center; padding:16px 6px; background:#0a0d14; border:1px solid #1f2937; border-radius:8px;">
+      <span class="stat-value">{{ total_prs }}</span>
+      <span class="stat-label">Pull Requests</span>
+    </td>
+    <td width="8px"></td>
+    <td width="33%" style="text-align:center; padding:16px 6px; background:#0a0d14; border:1px solid #1f2937; border-radius:8px;">
+      <span class="stat-value" style="color:{% if total_failed > 0 %}#f87171{% else %}#34d399{% endif %};">{{ total_failed }}</span>
+      <span class="stat-label">Failed</span>
+    </td>
+  </tr>
+</table>
+
+{% if completed_tasks %}
+<hr class="email-divider">
+<p class="email-text" style="font-weight:600; color:#f9fafb; margin-bottom:12px;">
+  ✓ Completed tasks
+</p>
+{% for task in completed_tasks %}
+<div class="task-item">
+  <div class="task-item-title">{{ task.title }}</div>
+  <div class="task-item-meta">
+    {{ task.project.name }}
+    {% if task.pr_url %}
+    &nbsp;·&nbsp;<a href="{{ task.pr_url }}">View PR →</a>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if pr_tasks %}
+<hr class="email-divider">
+<p class="email-text" style="font-weight:600; color:#f9fafb; margin-bottom:12px;">
+  Pull requests opened this week
+</p>
+{% for task in pr_tasks %}
+<div class="task-item">
+  <div class="task-item-title">{{ task.title }}</div>
+  <div class="task-item-meta">
+    {{ task.project.name }}
+    &nbsp;·&nbsp;
+    <span class="status-badge {% if task.status == 'completed' %}status-completed{% else %}status-reviewing{% endif %}" style="font-size:10px; padding:2px 8px;">{{ task.get_status_display }}</span>
+    {% if task.pr_url %}
+    &nbsp;·&nbsp;<a href="{{ task.pr_url }}">Review →</a>
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if failed_tasks %}
+<hr class="email-divider">
+<p class="email-text" style="font-weight:600; color:#f87171; margin-bottom:12px;">
+  Tasks that need attention
+</p>
+{% for task in failed_tasks %}
+<div class="task-item" style="border-color:#3b1f1f;">
+  <div class="task-item-title">{{ task.title }}</div>
+  <div class="task-item-meta">
+    {{ task.project.name }}
+    &nbsp;·&nbsp;<a href="{{ site_url }}/dashboard/tasks/{{ task.pk }}/">View details →</a>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+{% if active_projects %}
+<hr class="email-divider">
+<p class="email-text" style="font-weight:600; color:#f9fafb; margin-bottom:12px;">
+  Active projects
+</p>
+{% for project in active_projects %}
+<div class="task-item">
+  <div class="task-item-title">{{ project.name }}</div>
+  <div class="task-item-meta">{{ project.github_repo }}</div>
+</div>
+{% endfor %}
+{% endif %}
+
+<hr class="email-divider">
+
+<div class="email-cta">
+  <a href="{{ site_url }}/dashboard/" class="btn-primary">Go to dashboard</a>
+</div>
+
+<p class="email-text" style="font-size:13px; text-align:center;">
+  <a href="{{ site_url }}/dashboard/tasks/new/">Submit a new task →</a>
+</p>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "emails/base_email.html" %}
+{% block subject %}PR ready for review: {{ task.title }}{% endblock %}
+
+{% block body %}
+<p class="email-greeting">Your pull request is ready</p>
+
+<p class="email-text">
+  TARS has finished working on your task and opened a pull request.
+  Review the changes and merge when you're satisfied.
+</p>
+
+<div class="info-box">
+  <div class="info-box-label">Task</div>
+  <div class="info-box-value">{{ task.title }}</div>
+</div>
+
+<div class="info-box">
+  <div class="info-box-label">Project</div>
+  <div class="info-box-value">{{ task.project.name }}</div>
+</div>
+
+{% if task.branch_name %}
+<div class="info-box">
+  <div class="info-box-label">Branch</div>
+  <div class="info-box-value" style="font-family: monospace; font-size:13px;">{{ task.branch_name }}</div>
+</div>
+{% endif %}
+
+<div class="info-box">
+  <div class="info-box-label">Status</div>
+  <div class="info-box-value">
+    <span class="status-badge status-reviewing">Ready for Review</span>
+  </div>
+</div>
+
+<div class="email-cta">
+  {% if task.pr_url %}
+  <a href="{{ task.pr_url }}" class="btn-primary">Review pull request on GitHub</a>
+  {% else %}
+  <a href="{{ task_url }}" class="btn-primary">View task details</a>
+  {% endif %}
+</div>
+
+{% if task.pr_url %}
+<p class="email-text" style="font-size:13px; text-align:center;">
+  Or <a href="{{ task_url }}">view task details in your dashboard →</a>
+</p>
+{% endif %}
+{% endblock %}

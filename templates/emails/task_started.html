@@ -1,0 +1,43 @@
+{% extends "emails/base_email.html" %}
+{% block subject %}TARS is working on: {{ task.title }}{% endblock %}
+
+{% block body %}
+<p class="email-greeting">Your task is in progress</p>
+
+<p class="email-text">
+  TARS has picked up your task and is actively working on it now.
+  You'll receive another email when the pull request is ready for review.
+</p>
+
+<div class="info-box">
+  <div class="info-box-label">Task</div>
+  <div class="info-box-value">{{ task.title }}</div>
+</div>
+
+<div class="info-box">
+  <div class="info-box-label">Project</div>
+  <div class="info-box-value">{{ task.project.name }}</div>
+</div>
+
+{% if task.branch_name %}
+<div class="info-box">
+  <div class="info-box-label">Branch</div>
+  <div class="info-box-value" style="font-family: monospace; font-size:13px;">{{ task.branch_name }}</div>
+</div>
+{% endif %}
+
+<div class="info-box">
+  <div class="info-box-label">Status</div>
+  <div class="info-box-value">
+    <span class="status-badge status-in-progress">In Progress</span>
+  </div>
+</div>
+
+<div class="email-cta">
+  <a href="{{ task_url }}" class="btn-primary">View task details</a>
+</div>
+
+<p class="email-text" style="font-size:13px; text-align:center; color:#6b7280;">
+  TARS works autonomously — no action needed from you right now.
+</p>
+{% endblock %}

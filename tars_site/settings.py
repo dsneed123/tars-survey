@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "workers",
     "analytics",
     "billing",
+    "notifications",
 ]
 
 # ---------------------------------------------------------------------------
@@ -72,6 +73,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "pages.context_processors.site_url",
+                "notifications.context_processors.notifications",
             ],
         },
     },
