@@ -276,6 +276,167 @@
             color: var(--tars-accent);
             text-decoration: none;
         }
+
+        /* ── Loading Skeletons ───────────────────────────────── */
+        @keyframes skeleton-shimmer {
+            0%   { background-position: -600px 0; }
+            100% { background-position: 600px 0; }
+        }
+
+        .skeleton {
+            background: linear-gradient(
+                90deg,
+                var(--tars-border) 25%,
+                rgba(55,65,81,0.8) 50%,
+                var(--tars-border) 75%
+            );
+            background-size: 1200px 100%;
+            animation: skeleton-shimmer 1.6s ease-in-out infinite;
+            border-radius: 6px;
+            display: block;
+        }
+
+        .skeleton-text   { height: 0.9em; margin-bottom: 0.5rem; }
+        .skeleton-title  { height: 1.4em; margin-bottom: 0.75rem; }
+        .skeleton-circle { border-radius: 50%; }
+        .skeleton-btn    { height: 2.5rem; border-radius: 8px; }
+        .skeleton-card   {
+            background-color: var(--tars-surface);
+            border: 1px solid var(--tars-border);
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+        }
+        .skeleton-row {
+            background-color: var(--tars-surface);
+            border: 1px solid var(--tars-border);
+            border-radius: 12px;
+            padding: 1.1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        /* ── Toast Notification System ───────────────────────── */
+        #toast-container {
+            position: fixed;
+            top: 1.25rem;
+            right: 1.25rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            pointer-events: none;
+            max-width: 360px;
+            width: calc(100vw - 2.5rem);
+        }
+
+        .tars-toast {
+            pointer-events: all;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.85rem 1rem;
+            border-radius: 10px;
+            border: 1px solid;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+            font-size: 0.85rem;
+            line-height: 1.4;
+            color: var(--tars-text);
+            animation: toast-in 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tars-toast.toast-out {
+            animation: toast-out 0.22s ease-in forwards;
+        }
+
+        .tars-toast.toast-success {
+            background: rgba(16,185,129,0.12);
+            border-color: rgba(16,185,129,0.3);
+        }
+        .tars-toast.toast-error {
+            background: rgba(239,68,68,0.12);
+            border-color: rgba(239,68,68,0.3);
+        }
+        .tars-toast.toast-info {
+            background: rgba(99,102,241,0.12);
+            border-color: rgba(99,102,241,0.3);
+        }
+
+        .tars-toast-icon {
+            font-size: 1rem;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+        .tars-toast.toast-success .tars-toast-icon { color: var(--tars-green); }
+        .tars-toast.toast-error   .tars-toast-icon { color: #f87171; }
+        .tars-toast.toast-info    .tars-toast-icon { color: var(--tars-accent); }
+
+        .tars-toast-body { flex: 1; min-width: 0; }
+        .tars-toast-title {
+            font-weight: 600;
+            font-size: 0.82rem;
+            margin-bottom: 0.15rem;
+        }
+        .tars-toast-msg { color: var(--tars-muted); font-size: 0.8rem; }
+
+        .tars-toast-close {
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            color: var(--tars-muted);
+            font-size: 0.8rem;
+            line-height: 1;
+            flex-shrink: 0;
+            margin-top: 2px;
+            transition: color 0.15s;
+        }
+        .tars-toast-close:hover { color: var(--tars-text); }
+
+        .tars-toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 2px;
+            border-radius: 0 0 0 10px;
+            animation: toast-progress 5s linear forwards;
+        }
+        .tars-toast.toast-success .tars-toast-progress { background: rgba(16,185,129,0.5); }
+        .tars-toast.toast-error   .tars-toast-progress { background: rgba(239,68,68,0.5); }
+        .tars-toast.toast-info    .tars-toast-progress { background: rgba(99,102,241,0.5); }
+
+        @keyframes toast-in {
+            from { opacity: 0; transform: translateX(100%) scale(0.95); }
+            to   { opacity: 1; transform: translateX(0)    scale(1); }
+        }
+        @keyframes toast-out {
+            from { opacity: 1; transform: translateX(0) scale(1); }
+            to   { opacity: 0; transform: translateX(100%) scale(0.95); }
+        }
+        @keyframes toast-progress {
+            from { width: 100%; }
+            to   { width: 0%; }
+        }
+
+        /* ── Form Submit Spinner ─────────────────────────────── */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .btn-spinner {
+            display: inline-block;
+            width: 0.9em;
+            height: 0.9em;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.65s linear infinite;
+            vertical-align: -0.15em;
+            flex-shrink: 0;
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -418,7 +579,89 @@
     </div>
 </footer>
 
+<!-- Toast container -->
+<div id="toast-container" aria-live="polite" aria-atomic="false"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Toast notification system -->
+<script>
+(function () {
+    var ICONS = {
+        success: 'bi-check-circle-fill',
+        error:   'bi-exclamation-circle-fill',
+        info:    'bi-info-circle-fill'
+    };
+    var TITLES = { success: 'Success', error: 'Error', info: 'Info' };
+
+    window.showToast = function (message, type, title) {
+        type  = type  || 'info';
+        title = title || TITLES[type] || 'Info';
+        var container = document.getElementById('toast-container');
+        if (!container) return;
+
+        var toast = document.createElement('div');
+        toast.className = 'tars-toast toast-' + type;
+        toast.innerHTML =
+            '<i class="bi ' + ICONS[type] + ' tars-toast-icon"></i>' +
+            '<div class="tars-toast-body">' +
+                '<div class="tars-toast-title">' + title + '</div>' +
+                '<div class="tars-toast-msg">' + message + '</div>' +
+            '</div>' +
+            '<button class="tars-toast-close" aria-label="Close"><i class="bi bi-x-lg"></i></button>' +
+            '<div class="tars-toast-progress"></div>';
+
+        container.appendChild(toast);
+
+        var closeBtn = toast.querySelector('.tars-toast-close');
+        closeBtn.addEventListener('click', function () { dismissToast(toast); });
+
+        var timer = setTimeout(function () { dismissToast(toast); }, 5000);
+        toast._timer = timer;
+    };
+
+    function dismissToast(toast) {
+        clearTimeout(toast._timer);
+        toast.classList.add('toast-out');
+        toast.addEventListener('animationend', function () {
+            if (toast.parentNode) toast.parentNode.removeChild(toast);
+        }, { once: true });
+    }
+}());
+</script>
+
+<!-- Form submit loading states -->
+<script>
+(function () {
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (form.dataset.noLoadingState) return;
+
+        var btn = form.querySelector('button[type="submit"]');
+        if (!btn || btn.disabled) return;
+
+        // Capture original content before mutating
+        var originalHTML = btn.innerHTML;
+        var loadingLabel = btn.dataset.loadingLabel || 'Saving…';
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="btn-spinner me-2"></span>' + loadingLabel;
+
+        // Re-enable on page show (back/forward navigation) or after 15s fallback
+        window.addEventListener('pageshow', function restoreBtn() {
+            btn.disabled = false;
+            btn.innerHTML = originalHTML;
+            window.removeEventListener('pageshow', restoreBtn);
+        });
+        setTimeout(function () {
+            if (btn.disabled) {
+                btn.disabled = false;
+                btn.innerHTML = originalHTML;
+            }
+        }, 15000);
+    });
+}());
+</script>
 
 <!-- Floating nav: transparent at top, solid on scroll -->
 <script>
