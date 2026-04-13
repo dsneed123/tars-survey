@@ -127,9 +127,10 @@ CSRF_TRUSTED_ORIGINS = [
 # Allow Railway to pass the real scheme through the proxy
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
-# Cookie settings for HTTPS behind proxy
-CSRF_COOKIE_SECURE = not DEBUG
+# Security settings for production HTTPS
+SECURE_SSL_REDIRECT = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
 
 # Email configuration
 # In development (DEBUG=True), emails print to the terminal console.
