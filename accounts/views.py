@@ -1,5 +1,6 @@
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import redirect, render
+from django_ratelimit.decorators import ratelimit
 
 from analytics.utils import fire_event
 from members.models import MemberProfile
@@ -9,6 +10,7 @@ from .forms import LoginForm, RegisterForm
 from .models import CustomUser
 
 
+@ratelimit(key="ip", rate="5/m", method=["POST"], block=True)
 def accounts_login(request):
     if request.user.is_authenticated:
         return redirect("members:dashboard")

@@ -1,3 +1,4 @@
+import bleach
 from django import forms
 
 from projects.models import Project
@@ -6,6 +7,14 @@ from .models import Task
 
 
 class TaskForm(forms.ModelForm):
+    def clean(self):
+        cleaned = super().clean()
+        for field in ("title", "description"):
+            value = cleaned.get(field)
+            if isinstance(value, str):
+                cleaned[field] = bleach.clean(value, tags=[], strip=True)
+        return cleaned
+
     class Meta:
         model = Task
         fields = ["project", "title", "description", "priority"]

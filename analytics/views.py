@@ -5,6 +5,7 @@ from django.db.models import Count
 from django.db.models.functions import TruncDate
 from django.shortcuts import render
 from django.utils import timezone
+from django.views.decorators.cache import cache_page
 
 from accounts.models import CustomUser
 from projects.models import Project
@@ -15,6 +16,7 @@ from .models import Event, PageView
 
 
 @staff_member_required
+@cache_page(60)
 def analytics_dashboard(request):
     now = timezone.now()
 

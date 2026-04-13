@@ -1,8 +1,29 @@
+import bleach
 from django import forms
+
 from .models import Inquiry
+
+# Text fields that should have HTML stripped before saving.
+_TEXT_FIELDS = [
+    "contact_name",
+    "company_name",
+    "phone",
+    "industry",
+    "project_description",
+    "how_heard_about_us",
+    "primary_language",
+]
 
 
 class InquiryForm(forms.ModelForm):
+    def clean(self):
+        cleaned = super().clean()
+        for field in _TEXT_FIELDS:
+            value = cleaned.get(field)
+            if isinstance(value, str):
+                cleaned[field] = bleach.clean(value, tags=[], strip=True)
+        return cleaned
+
     class Meta:
         model = Inquiry
         fields = [

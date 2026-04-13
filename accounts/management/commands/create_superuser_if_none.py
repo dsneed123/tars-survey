@@ -13,7 +13,7 @@ class Command(BaseCommand):
             self.stdout.write("Superuser already exists, skipping.")
             return
 
-        email = os.environ.get("DJANGO_SUPERUSER_EMAIL", "admin@usetars.dev")
+        email = os.environ.get("DJANGO_SUPERUSER_EMAIL", "admin@tarsai.dev")
         password = os.environ.get("DJANGO_SUPERUSER_PASSWORD")
         if not password:
             self.stdout.write("DJANGO_SUPERUSER_PASSWORD not set, skipping.")

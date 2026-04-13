@@ -2,12 +2,14 @@ from django.db import connection
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils import timezone
+from django.views.decorators.cache import cache_page
 
 
 def health(request):
     return JsonResponse({"status": "ok"})
 
 
+@cache_page(5 * 60)
 def landing(request):
     return render(request, "pages/landing.html")
 

@@ -45,7 +45,7 @@ AUTH_USER_MODEL = "accounts.CustomUser"
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/dashboard/"
 
-SITE_URL = "https://usetars.dev"
+SITE_URL = "https://tarsai.dev"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -129,8 +129,8 @@ if not DEBUG and AWS_STORAGE_BUCKET_NAME:
     MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN or f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'}/"
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://usetars.dev",
-    "https://www.usetars.dev",
+    "https://tarsai.dev",
+    "https://www.tarsai.dev",
     "https://tars-survey-production.up.railway.app",
 ]
 

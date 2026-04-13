@@ -47,7 +47,7 @@ class Inquiry(models.Model):
     primary_language = models.CharField(max_length=200, blank=True)
     repo_url = models.URLField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="new")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="new", db_index=True)
 
     class Meta:
         ordering = ["-created_at"]

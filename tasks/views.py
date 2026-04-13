@@ -89,7 +89,11 @@ def task_add(request):
 
 @login_required
 def task_detail(request, pk):
-    task = get_object_or_404(Task, pk=pk, created_by=request.user)
+    task = get_object_or_404(
+        Task.objects.select_related("project", "created_by").prefetch_related("attachments"),
+        pk=pk,
+        created_by=request.user,
+    )
     attachments = task.attachments.all()
 
     # Build status timeline steps

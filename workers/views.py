@@ -10,6 +10,7 @@ from django.shortcuts import render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
+from django_ratelimit.decorators import ratelimit
 
 from analytics.utils import fire_event
 from notifications.utils import send_task_failed_email, send_task_pr_ready_email, send_task_started_email
@@ -44,6 +45,7 @@ def _require_worker(request):
 # POST /api/workers/register/
 # ---------------------------------------------------------------------------
 
+@ratelimit(key="ip", rate="30/m", block=True)
 @csrf_exempt
 @require_http_methods(["POST"])
 def register(request):
@@ -82,6 +84,7 @@ def register(request):
 # POST /api/workers/heartbeat/
 # ---------------------------------------------------------------------------
 
+@ratelimit(key="ip", rate="30/m", block=True)
 @csrf_exempt
 @require_http_methods(["POST"])
 def heartbeat(request):
@@ -121,6 +124,7 @@ _CACHE_WARM_BONUS = 10
 _CACHE_WARM_WINDOW_SECS = 3600
 
 
+@ratelimit(key="ip", rate="30/m", block=True)
 @csrf_exempt
 @require_http_methods(["GET"])
 @transaction.atomic
@@ -228,6 +232,7 @@ def _broadcast_task_update(task):
 # POST /api/workers/task/<id>/update/
 # ---------------------------------------------------------------------------
 
+@ratelimit(key="ip", rate="30/m", block=True)
 @csrf_exempt
 @require_http_methods(["POST"])
 def task_update(request, task_id):
