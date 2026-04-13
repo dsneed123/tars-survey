@@ -1,0 +1,252 @@
+{% extends "pages/docs/base.html" %}
+
+{% block title %}Changelog — TARS Docs{% endblock %}
+{% block meta_description %}<meta name="description" content="TARS platform changelog — recent updates, improvements, and bug fixes.">{% endblock %}
+
+{% block docs_extra_head %}
+<style>
+.changelog-entry {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+    padding-bottom: 2.5rem;
+    border-bottom: 1px solid var(--tars-border);
+}
+
+.changelog-entry:last-child {
+    border-bottom: none;
+}
+
+.changelog-date {
+    flex-shrink: 0;
+    width: 110px;
+    text-align: right;
+    padding-top: 0.15rem;
+}
+
+.changelog-date-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--tars-muted);
+    white-space: nowrap;
+}
+
+.changelog-dot-col {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+}
+
+.changelog-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--tars-accent);
+    flex-shrink: 0;
+    margin-top: 0.3rem;
+    border: 2px solid rgba(99,102,241,0.3);
+}
+
+.changelog-body { flex: 1; min-width: 0; }
+
+.changelog-version {
+    font-family: "Space Grotesk", system-ui;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--tars-text);
+    margin-bottom: 0.75rem;
+}
+
+.changelog-tag {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    margin-right: 0.35rem;
+    margin-bottom: 0.35rem;
+}
+
+.tag-new      { background: rgba(99,102,241,0.15); color: var(--tars-accent); }
+.tag-improved { background: rgba(16,185,129,0.12); color: var(--tars-green); }
+.tag-fixed    { background: rgba(245,158,11,0.12); color: #f59e0b; }
+.tag-removed  { background: rgba(239,68,68,0.12);  color: #ef4444; }
+
+.changelog-items {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0 0;
+}
+
+.changelog-items li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.3rem 0;
+    font-size: 0.875rem;
+    color: var(--tars-muted);
+    line-height: 1.6;
+}
+
+.changelog-items li::before {
+    content: "—";
+    flex-shrink: 0;
+    color: var(--tars-border);
+    margin-top: 0.05rem;
+}
+
+@media (max-width: 600px) {
+    .changelog-entry { flex-direction: column; gap: 0.5rem; }
+    .changelog-date { width: auto; text-align: left; }
+    .changelog-dot-col { display: none; }
+}
+</style>
+{% endblock %}
+
+{% block docs_content %}
+
+<h1>Changelog</h1>
+<p class="docs-lead">Recent updates, improvements, and fixes to the TARS platform.</p>
+
+<div class="changelog-entry">
+    <div class="changelog-date">
+        <div class="changelog-date-label">Apr 12, 2026</div>
+    </div>
+    <div class="changelog-dot-col"><div class="changelog-dot"></div></div>
+    <div class="changelog-body">
+        <div class="changelog-version">Documentation Site</div>
+        <span class="changelog-tag tag-new">New</span>
+        <ul class="changelog-items">
+            <li>Launched the documentation site with Getting Started, Worker Setup, API Reference, FAQ, and Changelog sections</li>
+            <li>Added platform status page at <code>/status/</code> showing live database and worker health</li>
+            <li>Added Docs link to main navigation and dashboard sidebar</li>
+        </ul>
+    </div>
+</div>
+
+<div class="changelog-entry">
+    <div class="changelog-date">
+        <div class="changelog-date-label">Apr 10, 2026</div>
+    </div>
+    <div class="changelog-dot-col"><div class="changelog-dot"></div></div>
+    <div class="changelog-body">
+        <div class="changelog-version">Comprehensive Test Suite &amp; CI Pipeline</div>
+        <span class="changelog-tag tag-new">New</span>
+        <ul class="changelog-items">
+            <li>Added end-to-end test suite covering authentication, project management, task submission, and worker API</li>
+            <li>Configured GitHub Actions CI pipeline with automated test runs on every pull request</li>
+            <li>Added coverage reporting with minimum 80% threshold enforcement</li>
+        </ul>
+    </div>
+</div>
+
+<div class="changelog-entry">
+    <div class="changelog-date">
+        <div class="changelog-date-label">Apr 8, 2026</div>
+    </div>
+    <div class="changelog-dot-col"><div class="changelog-dot"></div></div>
+    <div class="changelog-body">
+        <div class="changelog-version">Error Pages &amp; Loading States</div>
+        <span class="changelog-tag tag-new">New</span>
+        <span class="changelog-tag tag-improved">Improved</span>
+        <ul class="changelog-items">
+            <li>Designed custom 404, 403, and 500 error pages matching the platform's dark theme</li>
+            <li>Added skeleton loading states across the dashboard for a smoother perceived performance experience</li>
+            <li>Improved form submission feedback with inline loading spinners</li>
+        </ul>
+    </div>
+</div>
+
+<div class="changelog-entry">
+    <div class="changelog-date">
+        <div class="changelog-date-label">Apr 5, 2026</div>
+    </div>
+    <div class="changelog-dot-col"><div class="changelog-dot"></div></div>
+    <div class="changelog-body">
+        <div class="changelog-version">Email Sequences &amp; Notifications</div>
+        <span class="changelog-tag tag-new">New</span>
+        <ul class="changelog-items">
+            <li>Task lifecycle email notifications: started, PR ready, and failed states</li>
+            <li>In-app notification bell with real-time unread badge</li>
+            <li>Notification preferences page to manage email subscriptions</li>
+            <li>Mark-all-read and per-notification read tracking</li>
+        </ul>
+    </div>
+</div>
+
+<div class="changelog-entry">
+    <div class="changelog-date">
+        <div class="changelog-date-label">Apr 2, 2026</div>
+    </div>
+    <div class="changelog-dot-col"><div class="changelog-dot"></div></div>
+    <div class="changelog-body">
+        <div class="changelog-version">Billing &amp; Stripe Integration</div>
+        <span class="changelog-tag tag-new">New</span>
+        <ul class="changelog-items">
+            <li>Billing page with current plan, usage, and payment method overview</li>
+            <li>Stripe Checkout integration for plan upgrades</li>
+            <li>Stripe webhook handler for subscription lifecycle events</li>
+            <li>Usage metrics tracked per billing period</li>
+        </ul>
+    </div>
+</div>
+
+<div class="changelog-entry">
+    <div class="changelog-date">
+        <div class="changelog-date-label">Mar 28, 2026</div>
+    </div>
+    <div class="changelog-dot-col"><div class="changelog-dot"></div></div>
+    <div class="changelog-body">
+        <div class="changelog-version">Member Dashboard</div>
+        <span class="changelog-tag tag-new">New</span>
+        <ul class="changelog-items">
+            <li>Polished member dashboard with real-time activity feed via WebSockets</li>
+            <li>Stats overview: active projects, pending tasks, completed tasks</li>
+            <li>Quick task submission modal accessible from anywhere in the dashboard</li>
+            <li>Onboarding flow for new members: connect project → submit first task</li>
+        </ul>
+    </div>
+</div>
+
+<div class="changelog-entry">
+    <div class="changelog-date">
+        <div class="changelog-date-label">Mar 20, 2026</div>
+    </div>
+    <div class="changelog-dot-col"><div class="changelog-dot"></div></div>
+    <div class="changelog-body">
+        <div class="changelog-version">Worker API &amp; Task Queue</div>
+        <span class="changelog-tag tag-new">New</span>
+        <ul class="changelog-items">
+            <li>Worker registration and API key authentication</li>
+            <li>Heartbeat endpoint with automatic offline detection (5-minute timeout)</li>
+            <li>Priority-scored task queue with age bonus and project-affinity (cache-warm) scoring</li>
+            <li>Concurrent worker support with per-project serialization to prevent merge conflicts</li>
+            <li>Real-time task status broadcasts via Django Channels / WebSockets</li>
+        </ul>
+    </div>
+</div>
+
+<div class="changelog-entry">
+    <div class="changelog-date">
+        <div class="changelog-date-label">Mar 10, 2026</div>
+    </div>
+    <div class="changelog-dot-col"><div class="changelog-dot"></div></div>
+    <div class="changelog-body">
+        <div class="changelog-version">Initial Platform Launch</div>
+        <span class="changelog-tag tag-new">New</span>
+        <ul class="changelog-items">
+            <li>User authentication: registration, login, password reset</li>
+            <li>Project management: connect GitHub repositories with configurable default branch</li>
+            <li>Task submission with title, description, and priority</li>
+            <li>Marketing site: landing page, services page, and early-access inquiry form</li>
+            <li>Admin analytics dashboard with usage metrics</li>
+        </ul>
+    </div>
+</div>
+
+{% endblock %}

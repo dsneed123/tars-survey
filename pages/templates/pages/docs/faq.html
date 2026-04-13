@@ -1,0 +1,234 @@
+{% extends "pages/docs/base.html" %}
+
+{% block title %}FAQ — TARS Docs{% endblock %}
+{% block meta_description %}<meta name="description" content="Frequently asked questions about TARS — the autonomous coding agent.">{% endblock %}
+
+{% block docs_extra_head %}
+<style>
+.faq-item {
+    border: 1px solid var(--tars-border);
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+}
+
+.faq-question {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--tars-text);
+    background: var(--tars-surface);
+    border: none;
+    width: 100%;
+    text-align: left;
+    gap: 0.75rem;
+    transition: background 0.15s;
+}
+
+.faq-question:hover {
+    background: rgba(99,102,241,0.06);
+}
+
+.faq-question i.bi-chevron-down {
+    flex-shrink: 0;
+    font-size: 0.8rem;
+    color: var(--tars-muted);
+    transition: transform 0.2s;
+}
+
+.faq-item.open .faq-question i.bi-chevron-down {
+    transform: rotate(180deg);
+}
+
+.faq-answer {
+    display: none;
+    padding: 1rem 1.25rem 1.25rem;
+    color: var(--tars-muted);
+    font-size: 0.9rem;
+    line-height: 1.75;
+    border-top: 1px solid var(--tars-border);
+    background: var(--tars-bg);
+}
+
+.faq-item.open .faq-answer {
+    display: block;
+}
+
+.faq-answer a {
+    color: var(--tars-accent);
+    text-decoration: none;
+}
+
+.faq-answer a:hover { text-decoration: underline; }
+
+.faq-answer code {
+    background: rgba(99,102,241,0.12);
+    padding: 0.15em 0.4em;
+    border-radius: 5px;
+    color: #c4b5fd;
+    font-family: "JetBrains Mono","Fira Code",ui-monospace,monospace;
+    font-size: 0.875em;
+}
+</style>
+{% endblock %}
+
+{% block docs_content %}
+
+<h1>Frequently Asked Questions</h1>
+<p class="docs-lead">Quick answers to the most common questions about TARS.</p>
+
+<h2>General</h2>
+
+<div class="faq-item open">
+    <button class="faq-question" onclick="toggleFaq(this)">
+        <span>What is TARS?</span>
+        <i class="bi bi-chevron-down"></i>
+    </button>
+    <div class="faq-answer">
+        TARS is an autonomous coding agent that discovers tasks, implements code, runs your test suite, and opens pull requests — 24/7, without requiring human intervention. You describe what you want in plain English; TARS does the work.
+    </div>
+</div>
+
+<div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+        <span>What languages and frameworks does TARS support?</span>
+        <i class="bi bi-chevron-down"></i>
+    </button>
+    <div class="faq-answer">
+        TARS uses Claude AI, which has strong support for virtually every mainstream language and framework — Python, JavaScript/TypeScript, Go, Rust, Java, Ruby, PHP, C/C++, and more. It works with any framework your project uses (React, Django, Rails, Spring, etc.) because it reads and understands your existing codebase rather than relying on templates.
+    </div>
+</div>
+
+<div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+        <span>Does TARS merge code automatically?</span>
+        <i class="bi bi-chevron-down"></i>
+    </button>
+    <div class="faq-answer">
+        No. TARS opens a pull request and notifies you, but never merges to your default branch automatically. You review the PR and merge it yourself. TARS is designed to be a force multiplier for developers, not a replacement for human judgment on what ships to production.
+    </div>
+</div>
+
+<div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+        <span>Is my code safe with TARS?</span>
+        <i class="bi bi-chevron-down"></i>
+    </button>
+    <div class="faq-answer">
+        TARS workers clone your repository to perform their work, then delete the clone when finished. We never store your source code permanently. All communication is encrypted in transit over HTTPS. For maximum control, you can run <a href="{% url 'pages:docs_worker_setup' %}">self-hosted workers</a> — your code never leaves your own infrastructure.
+    </div>
+</div>
+
+<h2>Tasks &amp; Projects</h2>
+
+<div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+        <span>How long does a task take?</span>
+        <i class="bi bi-chevron-down"></i>
+    </button>
+    <div class="faq-answer">
+        Simple tasks (bug fixes, adding a field, writing tests for an existing function) typically complete in 3–8 minutes. Complex tasks (new features spanning multiple files, performance refactors) can take 15–30 minutes. Queue wait time depends on available workers and how many tasks are pending.
+    </div>
+</div>
+
+<div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+        <span>Can I run multiple tasks at the same time?</span>
+        <i class="bi bi-chevron-down"></i>
+    </button>
+    <div class="faq-answer">
+        Tasks for <em>different</em> projects run in parallel. Tasks within the <em>same</em> project are serialized — only one task runs at a time per project. This prevents merge conflicts caused by overlapping changes to the same codebase.
+    </div>
+</div>
+
+<div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+        <span>What happens if a task fails?</span>
+        <i class="bi bi-chevron-down"></i>
+    </button>
+    <div class="faq-answer">
+        If TARS encounters an error — tests fail, a build breaks, or Claude can't determine a safe implementation — the task is marked <code>failed</code> and you receive an email notification with the error details. You can review what was attempted, refine your task description, and resubmit.
+    </div>
+</div>
+
+<div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+        <span>How should I write a good task description?</span>
+        <i class="bi bi-chevron-down"></i>
+    </button>
+    <div class="faq-answer">
+        <strong>Be specific.</strong> Include: what you want, where in the codebase it should live, any constraints, and acceptance criteria if possible.<br><br>
+        <strong>Good:</strong> "Add a <code>GET /api/users/me/</code> endpoint that returns the authenticated user's profile (id, email, company_name, created_at). Use the existing DRF serializer pattern in <code>users/serializers.py</code>."<br><br>
+        <strong>Vague:</strong> "Add a user profile endpoint."<br><br>
+        TARS will do its best with vague tasks, but specific descriptions lead to better outcomes.
+    </div>
+</div>
+
+<div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+        <span>Does TARS run my tests?</span>
+        <i class="bi bi-chevron-down"></i>
+    </button>
+    <div class="faq-answer">
+        Yes. TARS automatically discovers and runs your test suite after making changes. It looks for <code>pytest</code>, <code>jest</code>, <code>npm test</code>, <code>go test</code>, <code>cargo test</code>, and similar commands. If tests fail, TARS attempts to fix the failures before opening a PR.
+    </div>
+</div>
+
+<div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+        <span>Can I connect a private repository?</span>
+        <i class="bi bi-chevron-down"></i>
+    </button>
+    <div class="faq-answer">
+        Yes. Provide a GitHub personal access token with <em>Contents: read &amp; write</em> and <em>Pull requests: read &amp; write</em> scopes, or set up a deploy key with write access. See the <a href="{% url 'pages:docs_getting_started' %}">Getting Started guide</a> for details.
+    </div>
+</div>
+
+<h2>Workers &amp; Billing</h2>
+
+<div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+        <span>What's the difference between managed and self-hosted workers?</span>
+        <i class="bi bi-chevron-down"></i>
+    </button>
+    <div class="faq-answer">
+        <strong>Managed workers</strong> run in TARS's cloud — nothing to set up, scales automatically.<br><br>
+        <strong>Self-hosted workers</strong> (Pro/Team plans) run on your own infrastructure. Your code never leaves your network, you control the hardware, and you can run as many concurrent workers as you need.
+    </div>
+</div>
+
+<div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+        <span>How is billing calculated?</span>
+        <i class="bi bi-chevron-down"></i>
+    </button>
+    <div class="faq-answer">
+        TARS uses a flat monthly subscription with a task quota. If you exceed your quota, additional tasks are billed per task. See the <a href="{% url 'members:billing' %}">billing page</a> for your current plan and usage.
+    </div>
+</div>
+
+<div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+        <span>Can I cancel at any time?</span>
+        <i class="bi bi-chevron-down"></i>
+    </button>
+    <div class="faq-answer">
+        Yes. Cancel from the billing page anytime. Your subscription remains active until the end of the current billing period.
+    </div>
+</div>
+
+<h2>Still have questions?</h2>
+<p>Reach out via the <a href="{% url 'inquiries:get_started' %}">contact form</a> and we'll get back to you within one business day.</p>
+
+<script>
+function toggleFaq(btn) {
+    var item = btn.closest('.faq-item');
+    item.classList.toggle('open');
+}
+</script>
+
+{% endblock %}

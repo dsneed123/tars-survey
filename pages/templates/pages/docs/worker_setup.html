@@ -1,0 +1,173 @@
+{% extends "pages/docs/base.html" %}
+
+{% block title %}Worker Setup — TARS Docs{% endblock %}
+{% block meta_description %}<meta name="description" content="How to set up a self-hosted TARS worker on your own machine or cloud instance.">{% endblock %}
+
+{% block docs_content %}
+
+<h1>Worker Setup</h1>
+<p class="docs-lead">Run a TARS worker on your own infrastructure. Self-hosted workers give you full control over the execution environment, no data leaves your network, and you can scale compute independently.</p>
+
+<div class="docs-note info">
+    <i class="bi bi-info-circle-fill"></i>
+    <div>
+        Self-hosted workers are available on the <strong>Pro</strong> and <strong>Team</strong> plans. Managed workers are included with all accounts.
+    </div>
+</div>
+
+<h2>Prerequisites</h2>
+<ul>
+    <li>Linux or macOS (Ubuntu 22.04+ recommended for production)</li>
+    <li>Python 3.10 or higher</li>
+    <li>Git 2.35+</li>
+    <li>Claude CLI installed and authenticated (<code>claude --version</code> should work)</li>
+    <li>Outbound HTTPS access to <code>api.anthropic.com</code> and your GitHub instance</li>
+    <li>A TARS worker API key (see below)</li>
+</ul>
+
+<h2>Step 1 — Obtain a Worker API Key</h2>
+<p>Contact TARS support or, if your plan includes self-hosted workers, register one programmatically via the <a href="{% url 'pages:docs_api_reference' %}#register">Worker Register API</a>:</p>
+
+<pre><code>curl -s -X POST https://tars.dev/api/workers/register/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "hostname": "my-worker-01",
+    "capacity": 2
+  }'</code></pre>
+
+<p>Save the returned <code>api_key</code> — you'll need it in the next step.</p>
+
+<h2>Step 2 — Install TARS Worker</h2>
+
+<div class="docs-step">
+    <div class="docs-step-num">1</div>
+    <div class="docs-step-body">
+        <h4>Clone the TARS worker repository</h4>
+        <pre><code>git clone https://github.com/tarsdev/tars-worker.git
+cd tars-worker</code></pre>
+    </div>
+</div>
+
+<div class="docs-step">
+    <div class="docs-step-num">2</div>
+    <div class="docs-step-body">
+        <h4>Create a Python virtual environment</h4>
+        <pre><code>python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt</code></pre>
+    </div>
+</div>
+
+<div class="docs-step">
+    <div class="docs-step-num">3</div>
+    <div class="docs-step-body">
+        <h4>Configure the worker</h4>
+        <p>Copy the example config and fill in your values:</p>
+        <pre><code>cp tars.conf.example tars.conf</code></pre>
+        <p>Edit <code>tars.conf</code>:</p>
+        <pre><code># Required
+TARS_API_URL=https://tars.dev
+TARS_WORKER_KEY=&lt;your-api-key&gt;
+
+# Optional
+TARS_WORKER_CAPACITY=2          # concurrent tasks
+TARS_POLL_INTERVAL=15           # seconds between polling
+TARS_REPOS_DIR=/var/tars/repos  # scratch directory for clones
+TARS_LOG_LEVEL=INFO</code></pre>
+    </div>
+</div>
+
+<div class="docs-step">
+    <div class="docs-step-num">4</div>
+    <div class="docs-step-body">
+        <h4>Start the worker</h4>
+        <pre><code>./tars.sh start</code></pre>
+        <p>Verify it's running:</p>
+        <pre><code>./tars.sh status</code></pre>
+        <p>You should see output like:</p>
+        <pre><code>TARS worker: running (PID 12345)
+Last heartbeat: 2 seconds ago
+Current load: 0 / 2</code></pre>
+    </div>
+</div>
+
+<h2>Step 3 — Running as a systemd Service</h2>
+<p>For production deployments, run TARS as a systemd service so it restarts automatically on reboot or failure.</p>
+
+<pre><code># /etc/systemd/system/tars-worker.service
+[Unit]
+Description=TARS Worker
+After=network.target
+
+[Service]
+Type=forking
+User=tars
+WorkingDirectory=/opt/tars-worker
+ExecStart=/opt/tars-worker/tars.sh start
+ExecStop=/opt/tars-worker/tars.sh stop
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+
+<pre><code>sudo systemctl daemon-reload
+sudo systemctl enable tars-worker
+sudo systemctl start tars-worker</code></pre>
+
+<h2>Step 4 — GitHub Access</h2>
+<p>The worker needs to clone and push to your repositories. Choose one of:</p>
+
+<h3>Option A — SSH deploy key (recommended)</h3>
+<pre><code># Generate a key pair (no passphrase)
+ssh-keygen -t ed25519 -C "tars-worker" -f ~/.ssh/tars_deploy
+
+# Add the public key as a deploy key in GitHub:
+# Repository → Settings → Deploy keys → Add deploy key
+# Check "Allow write access"
+cat ~/.ssh/tars_deploy.pub</code></pre>
+
+<p>Tell TARS to use this key by adding to <code>tars.conf</code>:</p>
+<pre><code>GIT_SSH_KEY=/home/tars/.ssh/tars_deploy</code></pre>
+
+<h3>Option B — GitHub personal access token</h3>
+<pre><code>GITHUB_TOKEN=ghp_xxxxxxxxxxxx</code></pre>
+
+<div class="docs-note warning">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <div>
+        GitHub tokens are stored in plain text in <code>tars.conf</code>. Restrict file permissions: <code>chmod 600 tars.conf</code> and run the worker as a dedicated low-privilege user.
+    </div>
+</div>
+
+<h2>Monitoring Your Worker</h2>
+<p>View live worker status in the <a href="{% url 'members:dashboard' %}">member dashboard</a> under <strong>Workers</strong> (admin accounts). Workers that miss 5 consecutive heartbeats (25 seconds) are marked offline automatically.</p>
+
+<h3>Useful commands</h3>
+<pre><code># View logs
+./tars.sh logs
+
+# Stop the worker gracefully
+./tars.sh stop
+
+# Run a single task poll cycle (for debugging)
+./tars.sh run-once</code></pre>
+
+<h2>Troubleshooting</h2>
+
+<h3>Worker shows offline in the dashboard</h3>
+<p>Check that the worker process is running (<code>./tars.sh status</code>), that <code>TARS_API_URL</code> is correct, and that outbound HTTPS to that URL isn't blocked by a firewall.</p>
+
+<h3>Tasks fail immediately with "Clone failed"</h3>
+<p>Verify your SSH key or GitHub token has write access to the repository and that the repository URL in your project settings is correct.</p>
+
+<h3>Claude CLI not found</h3>
+<p>Ensure <code>claude</code> is on the worker's <code>PATH</code> and is authenticated. Run <code>claude --version</code> as the same user that runs the worker process.</p>
+
+<h2>Next Steps</h2>
+<ul>
+    <li><a href="{% url 'pages:docs_api_reference' %}">API Reference</a> — integrate task submission into your CI/CD pipeline</li>
+    <li><a href="{% url 'pages:docs_faq' %}">FAQ</a> — common questions about workers and task execution</li>
+</ul>
+
+{% endblock %}

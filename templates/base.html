@@ -455,6 +455,7 @@
                 <li class="nav-item"><a class="nav-link" href="{% url 'pages:services' %}">Services</a></li>
                 <li class="nav-item"><a class="nav-link" href="#benefits">Benefits</a></li>
                 <li class="nav-item"><a class="nav-link" href="#how-it-works">How It Works</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'pages:docs_index' %}">Docs</a></li>
                 {% if user.is_authenticated %}
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'members:dashboard' %}">
@@ -560,6 +561,15 @@
                     <li><a href="#benefits">Benefits</a></li>
                     <li><a href="#how-it-works">How It Works</a></li>
                     <li><a href="{% url 'inquiries:get_started' %}">Get Started</a></li>
+                </ul>
+            </div>
+            <div class="col-md-2">
+                <p class="fw-semibold mb-2">Resources</p>
+                <ul class="list-unstyled small">
+                    <li><a href="{% url 'pages:docs_index' %}">Docs</a></li>
+                    <li><a href="{% url 'pages:docs_api_reference' %}">API Reference</a></li>
+                    <li><a href="{% url 'pages:docs_changelog' %}">Changelog</a></li>
+                    <li><a href="{% url 'pages:status' %}">Status</a></li>
                 </ul>
             </div>
             <div class="col-md-2">

@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+
+{% block title %}Platform Status — TARS{% endblock %}
+{% block meta_description %}<meta name="description" content="Current operational status of the TARS platform — API, database, and worker availability.">{% endblock %}
+
+{% block extra_head %}
+<style>
+.status-page {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 4rem 1.5rem 6rem;
+}
+
+.status-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.status-header h1 {
+    font-size: clamp(2rem, 4vw, 2.8rem);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: var(--tars-text);
+    margin-bottom: 0.5rem;
+}
+
+.status-header p {
+    color: var(--tars-muted);
+    font-size: 1rem;
+}
+
+/* Overall status banner */
+.overall-status {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    border-radius: 14px;
+    margin-bottom: 2rem;
+    border: 1px solid;
+}
+
+.overall-status.ok {
+    background: rgba(16,185,129,0.08);
+    border-color: rgba(16,185,129,0.3);
+}
+
+.overall-status.degraded {
+    background: rgba(245,158,11,0.08);
+    border-color: rgba(245,158,11,0.3);
+}
+
+.overall-status.outage {
+    background: rgba(239,68,68,0.08);
+    border-color: rgba(239,68,68,0.3);
+}
+
+.status-indicator {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.status-indicator::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    animation: pulse-ring 2s ease-out infinite;
+}
+
+.status-indicator.green {
+    background: var(--tars-green);
+}
+
+.status-indicator.green::after {
+    border: 2px solid rgba(16,185,129,0.4);
+}
+
+.status-indicator.yellow {
+    background: #f59e0b;
+}
+
+.status-indicator.yellow::after {
+    border: 2px solid rgba(245,158,11,0.4);
+}
+
+.status-indicator.red {
+    background: #ef4444;
+}
+
+.status-indicator.red::after {
+    border: 2px solid rgba(239,68,68,0.4);
+}
+
+@keyframes pulse-ring {
+    0%   { transform: scale(0.8); opacity: 1; }
+    100% { transform: scale(1.8); opacity: 0; }
+}
+
+.overall-status-text {
+    flex: 1;
+}
+
+.overall-status-text .label {
+    font-weight: 700;
+    font-size: 1rem;
+    font-family: "Space Grotesk", system-ui;
+}
+
+.overall-status.ok    .label { color: var(--tars-green); }
+.overall-status.degraded .label { color: #f59e0b; }
+.overall-status.outage .label  { color: #ef4444; }
+
+.overall-status-text .sublabel {
+    font-size: 0.82rem;
+    color: var(--tars-muted);
+    margin-top: 0.15rem;
+}
+
+/* Component rows */
+.component-card {
+    background: var(--tars-surface);
+    border: 1px solid var(--tars-border);
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    overflow: hidden;
+}
+
+.component-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+}
+
+.component-name {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.component-name i {
+    font-size: 1rem;
+    color: var(--tars-muted);
+    width: 20px;
+    text-align: center;
+}
+
+.component-name-text {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--tars-text);
+}
+
+.component-name-sub {
+    font-size: 0.75rem;
+    color: var(--tars-muted);
+    margin-top: 1px;
+}
+
+.component-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.comp-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.comp-dot.green  { background: var(--tars-green); }
+.comp-dot.yellow { background: #f59e0b; }
+.comp-dot.red    { background: #ef4444; }
+
+.comp-label.green  { color: var(--tars-green); }
+.comp-label.yellow { color: #f59e0b; }
+.comp-label.red    { color: #ef4444; }
+
+/* Updated time */
+.status-updated {
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--tars-muted);
+    margin-top: 2rem;
+}
+
+/* Incident history placeholder */
+.no-incidents {
+    text-align: center;
+    padding: 2rem;
+    color: var(--tars-muted);
+    font-size: 0.875rem;
+}
+
+.no-incidents i {
+    font-size: 2rem;
+    display: block;
+    margin-bottom: 0.75rem;
+    color: var(--tars-border);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="status-page">
+
+    <div class="status-header">
+        <h1>Platform Status</h1>
+        <p>Current operational status of all TARS services.</p>
+    </div>
+
+    <!-- Overall status banner -->
+    {% if overall_ok %}
+    <div class="overall-status ok">
+        <div class="status-indicator green"></div>
+        <div class="overall-status-text">
+            <div class="label">All Systems Operational</div>
+            <div class="sublabel">No issues detected across any TARS services.</div>
+        </div>
+    </div>
+    {% else %}
+    <div class="overall-status outage">
+        <div class="status-indicator red"></div>
+        <div class="overall-status-text">
+            <div class="label">Service Disruption</div>
+            <div class="sublabel">One or more services are experiencing issues. See details below.</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Component breakdown -->
+    <div class="component-card">
+
+        <!-- API Server -->
+        <div class="component-row" style="border-bottom:1px solid var(--tars-border);">
+            <div class="component-name">
+                <i class="bi bi-globe2"></i>
+                <div>
+                    <div class="component-name-text">API &amp; Web Server</div>
+                    <div class="component-name-sub">tars.dev</div>
+                </div>
+            </div>
+            <div class="component-status">
+                <div class="comp-dot green"></div>
+                <span class="comp-label green">Operational</span>
+            </div>
+        </div>
+
+        <!-- Database -->
+        <div class="component-row" style="border-bottom:1px solid var(--tars-border);">
+            <div class="component-name">
+                <i class="bi bi-database"></i>
+                <div>
+                    <div class="component-name-text">Database</div>
+                    <div class="component-name-sub">PostgreSQL</div>
+                </div>
+            </div>
+            <div class="component-status">
+                {% if db_ok %}
+                <div class="comp-dot green"></div>
+                <span class="comp-label green">Operational</span>
+                {% else %}
+                <div class="comp-dot red"></div>
+                <span class="comp-label red">Outage</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Workers -->
+        <div class="component-row">
+            <div class="component-name">
+                <i class="bi bi-cpu"></i>
+                <div>
+                    <div class="component-name-text">Task Workers</div>
+                    <div class="component-name-sub">
+                        {% if workers_online > 0 %}
+                            {{ workers_online }} worker{{ workers_online|pluralize }} active
+                        {% else %}
+                            No workers with recent heartbeat
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="component-status">
+                {% if workers_ok %}
+                <div class="comp-dot green"></div>
+                <span class="comp-label green">Operational</span>
+                {% else %}
+                <div class="comp-dot yellow"></div>
+                <span class="comp-label yellow">No workers online</span>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Recent incidents -->
+    <h2 style="font-size:1.1rem; font-weight:700; color:var(--tars-text); margin:2rem 0 1rem;">Recent Incidents</h2>
+    <div class="component-card">
+        <div class="no-incidents">
+            <i class="bi bi-check-circle"></i>
+            No incidents in the last 30 days.
+        </div>
+    </div>
+
+    <div class="status-updated">
+        Last checked at page load &mdash; <a href="" style="color:var(--tars-accent); text-decoration:none;" onclick="location.reload(); return false;">Refresh</a>
+    </div>
+
+</div>
+{% endblock %}
