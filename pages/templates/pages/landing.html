@@ -46,102 +46,182 @@
 
 {% block extra_head %}
 <style>
-    /* ── Hero ───────────────────────────────────────────── */
+    /* ── Scroll-reveal ──────────────────────────────────────── */
+    [data-reveal] {
+        opacity: 0;
+        transform: translateY(28px);
+        transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+                    transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    [data-reveal].is-visible {
+        opacity: 1;
+        transform: none;
+    }
+    [data-reveal-delay="1"] { transition-delay: 0.08s; }
+    [data-reveal-delay="2"] { transition-delay: 0.16s; }
+    [data-reveal-delay="3"] { transition-delay: 0.24s; }
+    [data-reveal-delay="4"] { transition-delay: 0.32s; }
+
+    /* ── Hero ───────────────────────────────────────────────── */
     .hero {
         min-height: 92vh;
         display: flex;
         align-items: center;
         position: relative;
         overflow: hidden;
+        padding-top: 4rem;
+        padding-bottom: 4rem;
     }
 
-    .hero::before {
-        content: "";
+    /* Animated gradient background */
+    .hero-bg {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        overflow: hidden;
+    }
+
+    .hero-bg-gradient {
         position: absolute;
         inset: 0;
         background:
-            radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,0.25) 0%, transparent 60%),
-            radial-gradient(ellipse 60% 40% at 80% 80%, rgba(16,185,129,0.12) 0%, transparent 50%);
+            radial-gradient(ellipse 90% 70% at 50% -5%, rgba(99, 102, 241, 0.28) 0%, transparent 55%),
+            radial-gradient(ellipse 50% 40% at 85% 85%, rgba(139, 92, 246, 0.16) 0%, transparent 50%),
+            radial-gradient(ellipse 35% 30% at 5% 70%, rgba(16, 185, 129, 0.1) 0%, transparent 55%);
+        animation: hero-breathe 10s ease-in-out infinite alternate;
+    }
+
+    @keyframes hero-breathe {
+        0%   { opacity: 0.75; transform: scale(1); }
+        100% { opacity: 1;    transform: scale(1.04); }
+    }
+
+    /* Dot-grid overlay */
+    .hero-grid {
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(circle, rgba(255, 255, 255, 0.055) 1px, transparent 1px);
+        background-size: 36px 36px;
+        mask-image: radial-gradient(ellipse 90% 90% at 50% 40%, rgba(0,0,0,0.9) 0%, transparent 75%);
+        -webkit-mask-image: radial-gradient(ellipse 90% 90% at 50% 40%, rgba(0,0,0,0.9) 0%, transparent 75%);
+    }
+
+    /* Floating orb accents */
+    .hero-orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(60px);
         pointer-events: none;
+    }
+
+    .hero-orb-1 {
+        width: 480px;
+        height: 480px;
+        background: radial-gradient(circle, rgba(99, 102, 241, 0.18) 0%, transparent 70%);
+        top: -120px;
+        left: 55%;
+        animation: orb-float-1 18s ease-in-out infinite;
+    }
+
+    .hero-orb-2 {
+        width: 320px;
+        height: 320px;
+        background: radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, transparent 70%);
+        bottom: 0;
+        right: 5%;
+        animation: orb-float-2 22s ease-in-out infinite;
+    }
+
+    @keyframes orb-float-1 {
+        0%, 100% { transform: translate(0, 0); }
+        33%       { transform: translate(-40px, 30px); }
+        66%       { transform: translate(30px, -20px); }
+    }
+
+    @keyframes orb-float-2 {
+        0%, 100% { transform: translate(0, 0); }
+        50%       { transform: translate(-30px, -40px); }
     }
 
     .hero-badge {
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        background: rgba(99,102,241,0.12);
-        border: 1px solid rgba(99,102,241,0.35);
+        background: rgba(99, 102, 241, 0.12);
+        border: 1px solid rgba(99, 102, 241, 0.35);
         border-radius: 999px;
         padding: 6px 16px;
-        font-size: 0.8rem;
+        font-size: 0.78rem;
         font-weight: 600;
         color: #a5b4fc;
-        letter-spacing: 0.04em;
+        letter-spacing: 0.06em;
         text-transform: uppercase;
-        margin-bottom: 1.5rem;
+        margin-bottom: 1.75rem;
     }
 
-    .hero-badge .dot {
+    .hero-badge .pulse-dot {
         width: 7px;
         height: 7px;
         border-radius: 50%;
         background: var(--tars-green);
         animation: pulse 2s infinite;
+        flex-shrink: 0;
     }
 
     @keyframes pulse {
         0%, 100% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.5; transform: scale(1.4); }
+        50%       { opacity: 0.5; transform: scale(1.5); }
     }
 
     .hero h1 {
         font-size: clamp(2.8rem, 6vw, 5rem);
         font-weight: 800;
-        line-height: 1.08;
+        line-height: 1.06;
         letter-spacing: -0.04em;
         margin-bottom: 1.5rem;
     }
 
     .hero h1 .gradient-text {
-        background: linear-gradient(135deg, #818cf8 0%, #6366f1 40%, #10b981 100%);
+        background: linear-gradient(135deg, #818cf8 0%, #6366f1 45%, #10b981 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
     }
 
     .hero-sub {
-        font-size: 1.2rem;
+        font-size: 1.15rem;
         color: var(--tars-muted);
-        max-width: 560px;
-        line-height: 1.65;
+        max-width: 540px;
+        line-height: 1.7;
         margin-bottom: 2.5rem;
     }
 
     .hero-actions {
         display: flex;
         flex-wrap: wrap;
-        gap: 1rem;
+        gap: 0.875rem;
         align-items: center;
     }
 
-    .hero-stat {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+    .hero-divider {
+        width: 1px;
+        height: 36px;
+        background: var(--tars-border);
     }
 
     .hero-stat .stat-value {
-        font-size: 1.8rem;
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        font-size: 1.75rem;
         font-weight: 800;
         color: var(--tars-text);
         line-height: 1;
     }
 
     .hero-stat .stat-label {
-        font-size: 0.75rem;
+        font-size: 0.72rem;
         color: var(--tars-muted);
         text-transform: uppercase;
-        letter-spacing: 0.06em;
+        letter-spacing: 0.07em;
         margin-top: 4px;
     }
 
@@ -152,7 +232,9 @@
         overflow: hidden;
         font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
         font-size: 0.82rem;
-        box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+        box-shadow: 0 40px 100px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(99, 102, 241, 0.08);
+        position: relative;
+        z-index: 1;
     }
 
     .terminal-bar {
@@ -163,7 +245,7 @@
         gap: 8px;
     }
 
-    .terminal-bar .dot {
+    .terminal-bar .t-dot {
         width: 12px;
         height: 12px;
         border-radius: 50%;
@@ -171,28 +253,77 @@
 
     .terminal-body {
         padding: 20px 22px;
-        line-height: 1.8;
+        line-height: 1.85;
         color: #d1d5db;
     }
 
-    .terminal-body .prompt { color: var(--tars-green); }
-    .terminal-body .cmd { color: #a5b4fc; }
-    .terminal-body .out { color: var(--tars-muted); }
+    .terminal-body .prompt  { color: var(--tars-green); }
+    .terminal-body .cmd     { color: #a5b4fc; }
+    .terminal-body .out     { color: var(--tars-muted); }
     .terminal-body .success { color: var(--tars-green); }
 
-    /* ── Benefits ───────────────────────────────────────── */
+    /* ── Logo Bar ───────────────────────────────────────────── */
+    .logo-bar {
+        border-top: 1px solid var(--tars-border);
+        border-bottom: 1px solid var(--tars-border);
+        padding: 2.75rem 0;
+        overflow: hidden;
+    }
+
+    .logo-bar-label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--tars-muted);
+        text-align: center;
+        margin-bottom: 1.75rem;
+        opacity: 0.7;
+    }
+
+    .logo-bar-logos {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 2rem 3rem;
+    }
+
+    .logo-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: rgba(156, 163, 175, 0.4);
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        font-weight: 700;
+        font-size: 0.95rem;
+        letter-spacing: -0.01em;
+        transition: color 0.25s;
+        user-select: none;
+    }
+
+    .logo-item:hover {
+        color: rgba(156, 163, 175, 0.65);
+    }
+
+    .logo-item svg {
+        opacity: 0.7;
+    }
+
+    /* ── Benefits ───────────────────────────────────────────── */
     .benefit-card {
         background: var(--tars-surface);
         border: 1px solid var(--tars-border);
         border-radius: 16px;
         padding: 2rem;
         height: 100%;
-        transition: border-color 0.25s, transform 0.25s;
+        transition: border-color 0.25s, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s;
     }
 
     .benefit-card:hover {
-        border-color: var(--tars-accent);
-        transform: translateY(-4px);
+        border-color: rgba(99, 102, 241, 0.5);
+        transform: translateY(-6px) scale(1.01);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(99, 102, 241, 0.12);
     }
 
     .benefit-icon {
@@ -202,17 +333,17 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.4rem;
+        font-size: 1.35rem;
         margin-bottom: 1.25rem;
     }
 
-    /* ── How It Works ───────────────────────────────────── */
+    /* ── How It Works ───────────────────────────────────────── */
     .step-number {
         width: 48px;
         height: 48px;
         border-radius: 50%;
-        background: rgba(99,102,241,0.15);
-        border: 1.5px solid rgba(99,102,241,0.4);
+        background: rgba(99, 102, 241, 0.15);
+        border: 1.5px solid rgba(99, 102, 241, 0.4);
         color: #a5b4fc;
         font-size: 1rem;
         font-weight: 700;
@@ -220,23 +351,16 @@
         align-items: center;
         justify-content: center;
         flex-shrink: 0;
-    }
-
-    .step-connector {
-        width: 2px;
-        background: linear-gradient(to bottom, rgba(99,102,241,0.4), transparent);
-        flex-grow: 1;
-        min-height: 40px;
-        margin: 8px auto;
+        font-family: "Space Grotesk", system-ui, sans-serif;
     }
 
     section {
-        padding-top: 5rem;
-        padding-bottom: 5rem;
+        padding-top: 5.5rem;
+        padding-bottom: 5.5rem;
     }
 
     .section-label {
-        font-size: 0.75rem;
+        font-size: 0.72rem;
         font-weight: 700;
         letter-spacing: 0.12em;
         text-transform: uppercase;
@@ -245,10 +369,17 @@
     }
 
     .section-title {
-        font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+        font-size: clamp(1.8rem, 3.5vw, 2.75rem);
         font-weight: 800;
         letter-spacing: -0.03em;
         margin-bottom: 1rem;
+        line-height: 1.15;
+    }
+
+    .section-sub {
+        font-size: 1.05rem;
+        color: var(--tars-muted);
+        line-height: 1.65;
     }
 
     /* ── Use Cases ──────────────────────────────────────────── */
@@ -258,12 +389,13 @@
         border-radius: 16px;
         padding: 2rem;
         height: 100%;
-        transition: border-color 0.25s, transform 0.25s;
+        transition: border-color 0.25s, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s;
     }
 
     .usecase-card:hover {
-        border-color: var(--tars-accent);
-        transform: translateY(-4px);
+        border-color: rgba(99, 102, 241, 0.5);
+        transform: translateY(-6px) scale(1.01);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(99, 102, 241, 0.12);
     }
 
     .usecase-icon {
@@ -273,7 +405,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.4rem;
+        font-size: 1.35rem;
         margin-bottom: 1.25rem;
     }
 
@@ -282,37 +414,39 @@
         background: var(--tars-surface);
         border-top: 1px solid var(--tars-border);
         border-bottom: 1px solid var(--tars-border);
-        padding: 3.5rem 0;
+        padding: 4rem 0;
     }
 
     .metric-item {
         text-align: center;
-        padding: 0 1rem;
+        padding: 0 1.5rem;
     }
 
     .metric-value {
+        font-family: "Space Grotesk", system-ui, sans-serif;
         font-size: clamp(2rem, 4vw, 3rem);
         font-weight: 800;
         line-height: 1;
-        background: linear-gradient(135deg, #818cf8 0%, #6366f1 40%, #10b981 100%);
+        background: linear-gradient(135deg, #818cf8 0%, #6366f1 45%, #10b981 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
     }
 
     .metric-label {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
         font-weight: 600;
         color: var(--tars-muted);
         text-transform: uppercase;
-        letter-spacing: 0.08em;
-        margin-top: 0.5rem;
+        letter-spacing: 0.09em;
+        margin-top: 0.6rem;
     }
 
     .metric-divider {
         width: 1px;
         background: var(--tars-border);
         align-self: stretch;
+        min-height: 48px;
     }
 
     /* ── Testimonials ───────────────────────────────────────── */
@@ -322,28 +456,29 @@
         border-radius: 16px;
         padding: 2rem;
         height: 100%;
-        transition: border-color 0.25s, transform 0.25s;
+        transition: border-color 0.25s, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s;
         position: relative;
     }
 
     .testimonial-card:hover {
-        border-color: var(--tars-accent);
-        transform: translateY(-4px);
+        border-color: rgba(99, 102, 241, 0.5);
+        transform: translateY(-6px) scale(1.01);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(99, 102, 241, 0.1);
     }
 
     .testimonial-quote {
-        font-size: 3rem;
+        font-size: 2.8rem;
         line-height: 1;
         color: var(--tars-accent);
-        opacity: 0.4;
-        margin-bottom: 0.5rem;
+        opacity: 0.35;
+        margin-bottom: 0.25rem;
         font-family: Georgia, serif;
     }
 
     .testimonial-text {
         color: var(--tars-text);
-        font-size: 0.98rem;
-        line-height: 1.7;
+        font-size: 0.96rem;
+        line-height: 1.75;
         margin-bottom: 1.5rem;
     }
 
@@ -354,21 +489,75 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1rem;
+        font-size: 0.85rem;
         font-weight: 700;
         flex-shrink: 0;
+        font-family: "Space Grotesk", system-ui, sans-serif;
     }
 
     .testimonial-name {
+        font-family: "Space Grotesk", system-ui, sans-serif;
         font-weight: 700;
-        font-size: 0.95rem;
+        font-size: 0.93rem;
         color: var(--tars-text);
         line-height: 1.2;
     }
 
     .testimonial-role {
-        font-size: 0.8rem;
+        font-size: 0.78rem;
         color: var(--tars-muted);
+    }
+
+    /* ── CTA Section ────────────────────────────────────────── */
+    .cta-section {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .cta-section::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+            radial-gradient(ellipse 80% 80% at 50% 100%, rgba(99, 102, 241, 0.2) 0%, transparent 60%),
+            radial-gradient(ellipse 40% 40% at 80% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 50%);
+        pointer-events: none;
+    }
+
+    /* ── Responsive ─────────────────────────────────────────── */
+    @media (max-width: 767.98px) {
+        .hero h1 {
+            font-size: clamp(2.2rem, 8vw, 3.2rem);
+        }
+        .hero-sub {
+            font-size: 1rem;
+        }
+        .hero-terminal {
+            font-size: 0.75rem;
+        }
+        .logo-bar-logos {
+            gap: 1.5rem 2rem;
+        }
+        .metric-item {
+            padding: 0 0.75rem;
+        }
+        section {
+            padding-top: 4rem;
+            padding-bottom: 4rem;
+        }
+    }
+
+    @media (max-width: 375px) {
+        .hero h1 {
+            font-size: 2rem;
+        }
+        .hero-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .hero-actions .btn {
+            text-align: center;
+        }
     }
 </style>
 {% endblock %}
@@ -377,11 +566,19 @@
 
 <!-- ── Hero ───────────────────────────────────────────────── -->
 <section class="hero">
-    <div class="container">
+    <!-- Animated background layers -->
+    <div class="hero-bg" aria-hidden="true">
+        <div class="hero-bg-gradient"></div>
+        <div class="hero-grid"></div>
+        <div class="hero-orb hero-orb-1"></div>
+        <div class="hero-orb hero-orb-2"></div>
+    </div>
+
+    <div class="container position-relative">
         <div class="row align-items-center gy-5">
             <div class="col-lg-6">
                 <div class="hero-badge">
-                    <span class="dot"></span>
+                    <span class="pulse-dot"></span>
                     Now in early access
                 </div>
                 <h1>
@@ -399,17 +596,17 @@
                         See How It Works
                     </a>
                 </div>
-                <div class="d-flex gap-4 mt-3">
+                <div class="d-flex gap-4 mt-3 align-items-center">
                     <div class="hero-stat">
                         <span class="stat-value">24/7</span>
                         <span class="stat-label">Always On</span>
                     </div>
-                    <div style="width:1px; background:var(--tars-border);"></div>
+                    <div class="hero-divider"></div>
                     <div class="hero-stat">
                         <span class="stat-value">100%</span>
                         <span class="stat-label">Automated</span>
                     </div>
-                    <div style="width:1px; background:var(--tars-border);"></div>
+                    <div class="hero-divider"></div>
                     <div class="hero-stat">
                         <span class="stat-value">0</span>
                         <span class="stat-label">Idle Hours</span>
@@ -419,18 +616,18 @@
             <div class="col-lg-6">
                 <div class="hero-terminal">
                     <div class="terminal-bar">
-                        <div class="dot" style="background:#ef4444;"></div>
-                        <div class="dot" style="background:#f59e0b;"></div>
-                        <div class="dot" style="background:#10b981;"></div>
+                        <div class="t-dot" style="background:#ef4444;"></div>
+                        <div class="t-dot" style="background:#f59e0b;"></div>
+                        <div class="t-dot" style="background:#10b981;"></div>
                         <span style="color:#6b7280; font-size:0.78rem; margin-left:8px;">tars — autonomous agent</span>
                     </div>
                     <div class="terminal-body">
                         <div><span class="prompt">tars@agent</span>:<span class="cmd"> Scanning task queue...</span></div>
-                        <div class="out">  → Found 3 open tasks in dsneed123/my-app</div>
-                        <div class="out">  → Selecting: "Add user authentication endpoint"</div>
+                        <div class="out">  &rarr; Found 3 open tasks in dsneed123/my-app</div>
+                        <div class="out">  &rarr; Selecting: "Add user authentication endpoint"</div>
                         <div><span class="prompt">tars@agent</span>:<span class="cmd"> Implementing changes...</span></div>
-                        <div class="out">  → Writing src/auth/views.py</div>
-                        <div class="out">  → Writing tests/test_auth.py</div>
+                        <div class="out">  &rarr; Writing src/auth/views.py</div>
+                        <div class="out">  &rarr; Writing tests/test_auth.py</div>
                         <div><span class="prompt">tars@agent</span>:<span class="cmd"> Running test suite...</span></div>
                         <div class="success">  ✓ 42 tests passed (0 failed)</div>
                         <div><span class="prompt">tars@agent</span>:<span class="cmd"> Opening pull request...</span></div>
@@ -443,48 +640,81 @@
     </div>
 </section>
 
+<!-- ── Logo Bar ────────────────────────────────────────────── -->
+<div class="logo-bar">
+    <div class="container">
+        <p class="logo-bar-label">Trusted by developers at</p>
+        <div class="logo-bar-logos">
+            <div class="logo-item">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M9 0L16.794 4.5V13.5L9 18L1.206 13.5V4.5L9 0Z"/></svg>
+                <span>Apexio</span>
+            </div>
+            <div class="logo-item">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="8" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="9" r="3.5" fill="currentColor"/></svg>
+                <span>Orbit Labs</span>
+            </div>
+            <div class="logo-item">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="8" height="8" rx="2"/><rect x="10" y="0" width="8" height="8" rx="2"/><rect x="0" y="10" width="8" height="8" rx="2"/><rect x="10" y="10" width="8" height="8" rx="2"/></svg>
+                <span>Launchpad</span>
+            </div>
+            <div class="logo-item">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9 C4 3, 8 3, 9 9 C10 15, 14 15, 17 9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+                <span>Crestline</span>
+            </div>
+            <div class="logo-item">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M9 1L17 16H1L9 1Z"/></svg>
+                <span>Vega Systems</span>
+            </div>
+            <div class="logo-item">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="2" width="18" height="3" rx="1.5"/><rect x="0" y="7.5" width="13" height="3" rx="1.5"/><rect x="0" y="13" width="18" height="3" rx="1.5"/></svg>
+                <span>Pulsefield</span>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- ── Benefits ───────────────────────────────────────────── -->
 <section id="benefits">
     <div class="container">
-        <div class="text-center mb-5">
+        <div class="text-center mb-5" data-reveal>
             <div class="section-label">Why TARS</div>
             <h2 class="section-title">Everything your dev team needs,<br>running autonomously.</h2>
-            <p class="text-muted mx-auto" style="max-width:520px;">Stop waiting on engineers. TARS keeps your backlog moving day and night so you can focus on strategy, not execution.</p>
+            <p class="section-sub mx-auto" style="max-width:520px;">Stop waiting on engineers. TARS keeps your backlog moving day and night so you can focus on strategy, not execution.</p>
         </div>
         <div class="row g-4">
-            <div class="col-md-6 col-lg-3">
+            <div class="col-md-6 col-lg-3" data-reveal data-reveal-delay="1">
                 <div class="benefit-card">
                     <div class="benefit-icon" style="background:rgba(99,102,241,0.15);">
                         <i class="bi bi-moon-stars-fill" style="color:#818cf8;"></i>
                     </div>
-                    <h3 class="h5 fw-700 mb-2">24/7 Autonomous Development</h3>
+                    <h3 class="h5 mb-2" style="font-weight:700;">24/7 Autonomous Development</h3>
                     <p class="small text-muted mb-0">TARS works through nights, weekends, and holidays. Your repository never sits idle while features wait for a developer to clock in.</p>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-3">
+            <div class="col-md-6 col-lg-3" data-reveal data-reveal-delay="2">
                 <div class="benefit-card">
                     <div class="benefit-icon" style="background:rgba(16,185,129,0.12);">
                         <i class="bi bi-shield-check-fill" style="color:#10b981;"></i>
                     </div>
-                    <h3 class="h5 fw-700 mb-2">Auto-Testing &amp; Quality Assurance</h3>
+                    <h3 class="h5 mb-2" style="font-weight:700;">Auto-Testing &amp; Quality Assurance</h3>
                     <p class="small text-muted mb-0">Every change is accompanied by tests. TARS runs the full suite before opening a PR, so broken code never reaches your main branch.</p>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-3">
+            <div class="col-md-6 col-lg-3" data-reveal data-reveal-delay="3">
                 <div class="benefit-card">
                     <div class="benefit-icon" style="background:rgba(251,191,36,0.12);">
                         <i class="bi bi-git" style="color:#fbbf24;"></i>
                     </div>
-                    <h3 class="h5 fw-700 mb-2">GitHub Integration &amp; PR Workflow</h3>
+                    <h3 class="h5 mb-2" style="font-weight:700;">GitHub Integration &amp; PR Workflow</h3>
                     <p class="small text-muted mb-0">TARS clones your repo, commits on a feature branch, and opens pull requests with descriptive summaries — ready for human review.</p>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-3">
+            <div class="col-md-6 col-lg-3" data-reveal data-reveal-delay="4">
                 <div class="benefit-card">
                     <div class="benefit-icon" style="background:rgba(236,72,153,0.12);">
                         <i class="bi bi-graph-up-arrow" style="color:#ec4899;"></i>
                     </div>
-                    <h3 class="h5 fw-700 mb-2">Cost-Effective Scaling</h3>
+                    <h3 class="h5 mb-2" style="font-weight:700;">Cost-Effective Scaling</h3>
                     <p class="small text-muted mb-0">Scale your output without scaling headcount. Add repositories and task definitions, not salaries. Ship more for a fraction of the cost.</p>
                 </div>
             </div>
@@ -495,33 +725,33 @@
 <!-- ── How It Works ───────────────────────────────────────── -->
 <section id="how-it-works" style="background:var(--tars-surface); border-top:1px solid var(--tars-border); border-bottom:1px solid var(--tars-border);">
     <div class="container">
-        <div class="text-center mb-5">
+        <div class="text-center mb-5" data-reveal>
             <div class="section-label">Process</div>
             <h2 class="section-title">Three steps to autonomous delivery.</h2>
-            <p class="text-muted mx-auto" style="max-width:480px;">Getting started takes minutes. Once configured, TARS handles the rest — indefinitely.</p>
+            <p class="section-sub mx-auto" style="max-width:480px;">Getting started takes minutes. Once configured, TARS handles the rest — indefinitely.</p>
         </div>
         <div class="row justify-content-center g-4">
-            <div class="col-md-4">
+            <div class="col-md-4" data-reveal data-reveal-delay="1">
                 <div class="text-center px-3">
                     <div class="step-number mx-auto mb-4">1</div>
-                    <div style="font-size:2.5rem; margin-bottom:1rem;">🗂️</div>
-                    <h3 class="h4 fw-700 mb-2">Define Your Project</h3>
+                    <div style="font-size:2.4rem; margin-bottom:1rem;">🗂️</div>
+                    <h3 class="h4 mb-2" style="font-weight:700;">Define Your Project</h3>
                     <p class="text-muted small">Connect your GitHub repository and describe your tasks in plain English or structured YAML. Set priorities, constraints, and acceptance criteria.</p>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-4" data-reveal data-reveal-delay="2">
                 <div class="text-center px-3">
                     <div class="step-number mx-auto mb-4">2</div>
-                    <div style="font-size:2.5rem; margin-bottom:1rem;">🤖</div>
-                    <h3 class="h4 fw-700 mb-2">TARS Builds It</h3>
+                    <div style="font-size:2.4rem; margin-bottom:1rem;">🤖</div>
+                    <h3 class="h4 mb-2" style="font-weight:700;">TARS Builds It</h3>
                     <p class="text-muted small">TARS picks up tasks, reads your codebase, writes implementation code, creates tests, and validates the output — all using Claude, Anthropic's frontier AI.</p>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-4" data-reveal data-reveal-delay="3">
                 <div class="text-center px-3">
                     <div class="step-number mx-auto mb-4">3</div>
-                    <div style="font-size:2.5rem; margin-bottom:1rem;">🚀</div>
-                    <h3 class="h4 fw-700 mb-2">Review &amp; Deploy</h3>
+                    <div style="font-size:2.4rem; margin-bottom:1rem;">🚀</div>
+                    <h3 class="h4 mb-2" style="font-weight:700;">Review &amp; Deploy</h3>
                     <p class="text-muted small">Inspect the pull request, leave comments, and merge when satisfied. TARS logs every action to Discord so your team stays informed automatically.</p>
                 </div>
             </div>
@@ -532,45 +762,45 @@
 <!-- ── Use Cases ─────────────────────────────────────────── -->
 <section id="use-cases">
     <div class="container">
-        <div class="text-center mb-5">
+        <div class="text-center mb-5" data-reveal>
             <div class="section-label">Who It's For</div>
             <h2 class="section-title">Built for every team that ships.</h2>
-            <p class="text-muted mx-auto" style="max-width:520px;">Whether you're a solo founder or a 50-person engineering org, TARS adapts to the way you work.</p>
+            <p class="section-sub mx-auto" style="max-width:520px;">Whether you're a solo founder or a 50-person engineering org, TARS adapts to the way you work.</p>
         </div>
         <div class="row g-4">
-            <div class="col-md-6 col-lg-3">
+            <div class="col-md-6 col-lg-3" data-reveal data-reveal-delay="1">
                 <div class="usecase-card">
                     <div class="usecase-icon" style="background:rgba(99,102,241,0.15);">
                         <i class="bi bi-rocket-takeoff-fill" style="color:#818cf8;"></i>
                     </div>
-                    <h5 class="fw-700 mb-2">Startups</h5>
+                    <h5 class="mb-2" style="font-weight:700;">Startups</h5>
                     <p class="small text-muted mb-0">Move fast and ship MVPs overnight. TARS keeps your backlog clearing even when your team is heads-down on product strategy.</p>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-3">
+            <div class="col-md-6 col-lg-3" data-reveal data-reveal-delay="2">
                 <div class="usecase-card">
                     <div class="usecase-icon" style="background:rgba(16,185,129,0.12);">
                         <i class="bi bi-building-fill" style="color:#10b981;"></i>
                     </div>
-                    <h5 class="fw-700 mb-2">Agencies</h5>
+                    <h5 class="mb-2" style="font-weight:700;">Agencies</h5>
                     <p class="small text-muted mb-0">Scale dev capacity without hiring. Deliver more client projects simultaneously and hit deadlines without burning out your team.</p>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-3">
+            <div class="col-md-6 col-lg-3" data-reveal data-reveal-delay="3">
                 <div class="usecase-card">
                     <div class="usecase-icon" style="background:rgba(251,191,36,0.12);">
                         <i class="bi bi-diagram-3-fill" style="color:#fbbf24;"></i>
                     </div>
-                    <h5 class="fw-700 mb-2">Enterprise Teams</h5>
+                    <h5 class="mb-2" style="font-weight:700;">Enterprise Teams</h5>
                     <p class="small text-muted mb-0">Automate maintenance and bug fixes across multiple repos. Free senior engineers for architecture and innovation, not toil.</p>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-3">
+            <div class="col-md-6 col-lg-3" data-reveal data-reveal-delay="4">
                 <div class="usecase-card">
                     <div class="usecase-icon" style="background:rgba(236,72,153,0.12);">
                         <i class="bi bi-person-fill" style="color:#ec4899;"></i>
                     </div>
-                    <h5 class="fw-700 mb-2">Solo Founders</h5>
+                    <h5 class="mb-2" style="font-weight:700;">Solo Founders</h5>
                     <p class="small text-muted mb-0">Your AI engineering team, available 24/7. Stop choosing between building and everything else — TARS handles the code so you don't have to.</p>
                 </div>
             </div>
@@ -579,7 +809,7 @@
 </section>
 
 <!-- ── Metrics Bar ────────────────────────────────────────── -->
-<div class="metrics-bar" id="metrics-bar">
+<div class="metrics-bar" id="metrics-bar" data-reveal>
     <div class="container">
         <div class="d-flex flex-wrap justify-content-center align-items-center gap-4">
             <div class="metric-item">
@@ -608,13 +838,13 @@
 <!-- ── Testimonials ───────────────────────────────────────── -->
 <section id="testimonials">
     <div class="container">
-        <div class="text-center mb-5">
+        <div class="text-center mb-5" data-reveal>
             <div class="section-label">Social Proof</div>
             <h2 class="section-title">Teams shipping faster with TARS.</h2>
-            <p class="text-muted mx-auto" style="max-width:480px;">Early-access teams are already seeing the difference. Here's what they have to say.</p>
+            <p class="section-sub mx-auto" style="max-width:480px;">Early-access teams are already seeing the difference. Here's what they have to say.</p>
         </div>
         <div class="row g-4">
-            <div class="col-md-4">
+            <div class="col-md-4" data-reveal data-reveal-delay="1">
                 <div class="testimonial-card">
                     <div class="testimonial-quote">&ldquo;</div>
                     <p class="testimonial-text">TARS opened 12 pull requests over a single weekend while the team was at an offsite. We came back Monday to a cleared backlog. It's changed how we think about velocity.</p>
@@ -627,7 +857,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-4" data-reveal data-reveal-delay="2">
                 <div class="testimonial-card">
                     <div class="testimonial-quote">&ldquo;</div>
                     <p class="testimonial-text">We run three client projects in parallel with a team of two. TARS handles maintenance tasks and small features overnight — our clients think we have a much bigger team.</p>
@@ -640,7 +870,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-4" data-reveal data-reveal-delay="3">
                 <div class="testimonial-card">
                     <div class="testimonial-quote">&ldquo;</div>
                     <p class="testimonial-text">Bug tickets that used to sit for two weeks are getting fixed in hours. TARS writes the tests, opens the PR, and posts to Discord so nothing slips through the cracks.</p>
@@ -657,56 +887,70 @@
     </div>
 </section>
 
-<script>
-(function () {
-    function animateCounter(el) {
-        var target = parseFloat(el.dataset.target);
-        var suffix = el.dataset.suffix || '';
-        var decimals = parseInt(el.dataset.decimal || '0', 10);
-        var duration = 1600;
-        var start = null;
-
-        function step(timestamp) {
-            if (!start) start = timestamp;
-            var progress = Math.min((timestamp - start) / duration, 1);
-            // ease-out cubic
-            var eased = 1 - Math.pow(1 - progress, 3);
-            var current = (target * eased).toFixed(decimals);
-            el.textContent = current + suffix;
-            if (progress < 1) requestAnimationFrame(step);
-        }
-
-        requestAnimationFrame(step);
-    }
-
-    var counters = document.querySelectorAll('#metrics-bar [data-target]');
-    if (!counters.length) return;
-
-    var observed = false;
-    var observer = new IntersectionObserver(function (entries) {
-        if (observed) return;
-        entries.forEach(function (entry) {
-            if (entry.isIntersecting) {
-                observed = true;
-                counters.forEach(animateCounter);
-                observer.disconnect();
-            }
-        });
-    }, { threshold: 0.3 });
-
-    observer.observe(document.getElementById('metrics-bar'));
-}());
-</script>
-
 <!-- ── CTA ────────────────────────────────────────────────── -->
-<section>
-    <div class="container text-center">
+<section class="cta-section" data-reveal>
+    <div class="container text-center position-relative">
         <h2 class="section-title mb-3">Ready to put your backlog on autopilot?</h2>
-        <p class="text-muted mb-4 mx-auto" style="max-width:480px;">Join early-access teams already shipping faster with TARS. No credit card required to start.</p>
+        <p class="section-sub mb-4 mx-auto" style="max-width:480px;">Join early-access teams already shipping faster with TARS. No credit card required to start.</p>
         <a href="{% url 'inquiries:get_started' %}" class="btn btn-accent btn-lg px-5">
             Get Early Access &rarr;
         </a>
     </div>
 </section>
 
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    /* ── Metrics counter animation ──────────────────────────── */
+    function animateCounter(el) {
+        var target   = parseFloat(el.dataset.target);
+        var suffix   = el.dataset.suffix || '';
+        var decimals = parseInt(el.dataset.decimal || '0', 10);
+        var duration = 1800;
+        var start    = null;
+
+        function step(timestamp) {
+            if (!start) start = timestamp;
+            var progress = Math.min((timestamp - start) / duration, 1);
+            var eased    = 1 - Math.pow(1 - progress, 3);
+            el.textContent = (target * eased).toFixed(decimals) + suffix;
+            if (progress < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+    }
+
+    var counters     = document.querySelectorAll('#metrics-bar [data-target]');
+    var counterFired = false;
+    if (counters.length) {
+        new IntersectionObserver(function (entries) {
+            if (counterFired) return;
+            entries.forEach(function (entry) {
+                if (entry.isIntersecting) {
+                    counterFired = true;
+                    counters.forEach(animateCounter);
+                }
+            });
+        }, { threshold: 0.3 }).observe(document.getElementById('metrics-bar'));
+    }
+
+    /* ── Scroll-reveal ──────────────────────────────────────── */
+    var revealEls = document.querySelectorAll('[data-reveal]');
+    if (!revealEls.length) return;
+
+    var revealObserver = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                revealObserver.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+    revealEls.forEach(function (el) {
+        revealObserver.observe(el);
+    });
+}());
+</script>
 {% endblock %}
