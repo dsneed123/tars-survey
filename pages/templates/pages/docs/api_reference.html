@@ -1,0 +1,280 @@
+{% extends "pages/docs/base.html" %}
+
+{% block title %}API Reference — TARS Docs{% endblock %}
+{% block meta_description %}<meta name="description" content="Full API reference for TARS — worker registration, heartbeat, task assignment, and webhook endpoints.">{% endblock %}
+
+{% block docs_content %}
+
+<h1>API Reference</h1>
+<p class="docs-lead">All TARS API endpoints, request/response schemas, authentication headers, and error codes.</p>
+
+<h2>Authentication</h2>
+<p>Worker API endpoints require a worker API key passed in the <code>X-Worker-Key</code> HTTP header:</p>
+
+<pre><code>X-Worker-Key: &lt;your-worker-api-key&gt;</code></pre>
+
+<p>Webhook endpoints use Stripe's signature verification — see the <a href="#webhooks">Webhooks</a> section.</p>
+
+<div class="docs-note info">
+    <i class="bi bi-info-circle-fill"></i>
+    <div>
+        All endpoints communicate over HTTPS. HTTP requests are redirected to HTTPS.
+    </div>
+</div>
+
+<h2>Base URL</h2>
+<pre><code>https://tars.dev</code></pre>
+
+<h2>Error Responses</h2>
+<p>All errors return JSON with an <code>error</code> field:</p>
+
+<pre><code>{
+  "error": "Invalid or missing X-Worker-Key"
+}</code></pre>
+
+<table class="api-param-table" style="margin:1rem 0;">
+    <thead>
+        <tr>
+            <th>Status Code</th>
+            <th>Meaning</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>400</td><td>Bad request — invalid JSON or missing required field</td></tr>
+        <tr><td>401</td><td>Unauthorized — missing or invalid <code>X-Worker-Key</code></td></tr>
+        <tr><td>404</td><td>Resource not found</td></tr>
+        <tr><td>405</td><td>Method not allowed</td></tr>
+        <tr><td>500</td><td>Internal server error</td></tr>
+    </tbody>
+</table>
+
+<h2 id="register">POST /api/workers/register/</h2>
+
+<div class="api-endpoint">
+    <div class="api-endpoint-header">
+        <span class="api-method post">POST</span>
+        <span class="api-path">/api/workers/register/</span>
+    </div>
+    <div class="api-endpoint-body">
+        <p>Register a new worker. Returns an API key that must be passed with all subsequent worker requests.</p>
+
+        <h3>Request Body</h3>
+        <table class="api-param-table">
+            <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td>hostname<span class="param-required">required</span></td>
+                    <td>string</td>
+                    <td>Unique identifier for this worker (e.g. machine hostname or a UUID)</td>
+                </tr>
+                <tr>
+                    <td>capacity<span class="param-optional">optional</span></td>
+                    <td>integer</td>
+                    <td>Maximum number of concurrent tasks. Defaults to <code>1</code>.</td>
+                </tr>
+                <tr>
+                    <td>specs<span class="param-optional">optional</span></td>
+                    <td>string</td>
+                    <td>Free-form text describing the worker's hardware (e.g. "8-core / 32GB RAM")</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Example Request</h3>
+        <pre><code>curl -s -X POST https://tars.dev/api/workers/register/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "hostname": "worker-us-east-01",
+    "capacity": 2,
+    "specs": "8-core / 16GB RAM"
+  }'</code></pre>
+
+        <h3>Example Response — 201 Created</h3>
+        <pre><code>{
+  "worker_id": 42,
+  "api_key": "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+}</code></pre>
+    </div>
+</div>
+
+<h2>POST /api/workers/heartbeat/</h2>
+
+<div class="api-endpoint">
+    <div class="api-endpoint-header">
+        <span class="api-method post">POST</span>
+        <span class="api-path">/api/workers/heartbeat/</span>
+    </div>
+    <div class="api-endpoint-body">
+        <p>Signal that the worker is still alive. Send this every 15–30 seconds. Workers that miss heartbeats for more than 5 minutes are marked offline.</p>
+
+        <h3>Headers</h3>
+        <pre><code>X-Worker-Key: &lt;api-key&gt;</code></pre>
+
+        <h3>Request Body (all optional)</h3>
+        <table class="api-param-table">
+            <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td>current_load<span class="param-optional">optional</span></td>
+                    <td>integer</td>
+                    <td>Number of tasks currently running on this worker</td>
+                </tr>
+                <tr>
+                    <td>status<span class="param-optional">optional</span></td>
+                    <td>string</td>
+                    <td>One of <code>online</code>, <code>busy</code>, <code>offline</code>, <code>maintenance</code></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Example Request</h3>
+        <pre><code>curl -s -X POST https://tars.dev/api/workers/heartbeat/ \
+  -H "X-Worker-Key: f47ac10b-58cc-4372-a567-0e02b2c3d479" \
+  -H "Content-Type: application/json" \
+  -d '{"current_load": 1, "status": "busy"}'</code></pre>
+
+        <h3>Example Response — 200 OK</h3>
+        <pre><code>{"ok": true}</code></pre>
+    </div>
+</div>
+
+<h2>GET /api/workers/next-task/</h2>
+
+<div class="api-endpoint">
+    <div class="api-endpoint-header">
+        <span class="api-method get">GET</span>
+        <span class="api-path">/api/workers/next-task/</span>
+    </div>
+    <div class="api-endpoint-body">
+        <p>Claim the next available task from the queue. Returns <code>null</code> if the worker is at capacity or no tasks are pending. Uses an optimistic scoring algorithm that considers task priority, wait time, and project affinity.</p>
+
+        <h3>Headers</h3>
+        <pre><code>X-Worker-Key: &lt;api-key&gt;</code></pre>
+
+        <h3>Example Request</h3>
+        <pre><code>curl -s https://tars.dev/api/workers/next-task/ \
+  -H "X-Worker-Key: f47ac10b-58cc-4372-a567-0e02b2c3d479"</code></pre>
+
+        <h3>Example Response — task available</h3>
+        <pre><code>{
+  "task": {
+    "id": 1337,
+    "title": "Fix the 500 error on password reset",
+    "description": "Occurs when the reset token is expired. Should return 400 with a user-friendly message.",
+    "priority": 5,
+    "project": {
+      "id": 12,
+      "name": "backend-api",
+      "github_repo": "acme-corp/backend-api",
+      "default_branch": "main"
+    }
+  }
+}</code></pre>
+
+        <h3>Example Response — no task available</h3>
+        <pre><code>{"task": null}</code></pre>
+    </div>
+</div>
+
+<h2>POST /api/workers/task/&lt;id&gt;/update/</h2>
+
+<div class="api-endpoint">
+    <div class="api-endpoint-header">
+        <span class="api-method post">POST</span>
+        <span class="api-path">/api/workers/task/&lt;id&gt;/update/</span>
+    </div>
+    <div class="api-endpoint-body">
+        <p>Update the status or metadata of an assigned task. Called at each stage of execution to report progress. Triggers email notifications and WebSocket broadcasts to the dashboard.</p>
+
+        <h3>Headers</h3>
+        <pre><code>X-Worker-Key: &lt;api-key&gt;</code></pre>
+
+        <h3>Request Body</h3>
+        <table class="api-param-table">
+            <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td>status<span class="param-optional">optional</span></td>
+                    <td>string</td>
+                    <td>
+                        Task status. One of:<br>
+                        <code>pending</code> · <code>assigned</code> · <code>in_progress</code> · <code>reviewing</code> · <code>completed</code> · <code>failed</code>
+                    </td>
+                </tr>
+                <tr>
+                    <td>branch_name<span class="param-optional">optional</span></td>
+                    <td>string</td>
+                    <td>Git branch name where the changes are committed</td>
+                </tr>
+                <tr>
+                    <td>pr_url<span class="param-optional">optional</span></td>
+                    <td>string</td>
+                    <td>Full URL of the GitHub pull request</td>
+                </tr>
+                <tr>
+                    <td>error_message<span class="param-optional">optional</span></td>
+                    <td>string</td>
+                    <td>Human-readable error message (when status is <code>failed</code>)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Task Lifecycle</h3>
+        <p>A typical task progresses through these states:</p>
+        <pre><code>pending → assigned → in_progress → reviewing → completed</code></pre>
+        <p>On failure at any stage:</p>
+        <pre><code>pending → assigned → in_progress → failed</code></pre>
+
+        <h3>Example Request — starting work</h3>
+        <pre><code>curl -s -X POST https://tars.dev/api/workers/task/1337/update/ \
+  -H "X-Worker-Key: f47ac10b-58cc-4372-a567-0e02b2c3d479" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "in_progress"}'</code></pre>
+
+        <h3>Example Request — PR opened</h3>
+        <pre><code>curl -s -X POST https://tars.dev/api/workers/task/1337/update/ \
+  -H "X-Worker-Key: f47ac10b-58cc-4372-a567-0e02b2c3d479" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "status": "reviewing",
+    "branch_name": "tars/fix-password-reset-1337",
+    "pr_url": "https://github.com/acme-corp/backend-api/pull/88"
+  }'</code></pre>
+
+        <h3>Example Response — 200 OK</h3>
+        <pre><code>{
+  "ok": true,
+  "task_id": 1337,
+  "status": "reviewing"
+}</code></pre>
+    </div>
+</div>
+
+<h2>GET /health/</h2>
+
+<div class="api-endpoint">
+    <div class="api-endpoint-header">
+        <span class="api-method get">GET</span>
+        <span class="api-path">/health/</span>
+    </div>
+    <div class="api-endpoint-body">
+        <p>Simple health check endpoint — no authentication required. Returns <code>200 OK</code> if the API server is running.</p>
+
+        <h3>Example Response — 200 OK</h3>
+        <pre><code>{"status": "ok"}</code></pre>
+    </div>
+</div>
+
+<h2 id="webhooks">Webhooks</h2>
+
+<h3>POST /webhooks/stripe/</h3>
+<p>Stripe sends payment events to this endpoint. TARS verifies the <code>Stripe-Signature</code> header using your webhook signing secret before processing events.</p>
+
+<div class="docs-note warning">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <div>
+        This endpoint is for Stripe's use only. Do not POST to it directly — all requests without a valid Stripe signature are rejected.
+    </div>
+</div>
+
+{% endblock %}

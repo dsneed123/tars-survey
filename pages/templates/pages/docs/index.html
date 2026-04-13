@@ -1,0 +1,81 @@
+{% extends "pages/docs/base.html" %}
+
+{% block title %}Documentation — TARS{% endblock %}
+{% block meta_description %}<meta name="description" content="TARS documentation — guides, API reference, and resources for getting the most out of your autonomous coding agent.">{% endblock %}
+
+{% block docs_content %}
+
+<h1>TARS Documentation</h1>
+<p class="docs-lead">Everything you need to set up, configure, and get the most out of TARS — your autonomous coding agent that writes, tests, and ships code around the clock.</p>
+
+<h2>Quick Navigation</h2>
+
+<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:1rem; margin-bottom:2rem;">
+
+    <a href="{% url 'pages:docs_getting_started' %}" style="text-decoration:none;">
+        <div style="background:var(--tars-surface); border:1px solid var(--tars-border); border-radius:12px; padding:1.25rem; transition:border-color 0.2s, transform 0.15s;" onmouseover="this.style.borderColor='var(--tars-accent)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='var(--tars-border)'; this.style.transform='';">
+            <i class="bi bi-rocket-takeoff" style="font-size:1.5rem; color:var(--tars-accent); display:block; margin-bottom:0.75rem;"></i>
+            <div style="font-weight:700; color:var(--tars-text); margin-bottom:0.25rem; font-family:'Space Grotesk',system-ui;">Getting Started</div>
+            <div style="font-size:0.82rem; color:var(--tars-muted); line-height:1.5;">Sign up, connect your first project, and submit your first task.</div>
+        </div>
+    </a>
+
+    <a href="{% url 'pages:docs_worker_setup' %}" style="text-decoration:none;">
+        <div style="background:var(--tars-surface); border:1px solid var(--tars-border); border-radius:12px; padding:1.25rem; transition:border-color 0.2s, transform 0.15s;" onmouseover="this.style.borderColor='var(--tars-accent)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='var(--tars-border)'; this.style.transform='';">
+            <i class="bi bi-cpu" style="font-size:1.5rem; color:var(--tars-accent); display:block; margin-bottom:0.75rem;"></i>
+            <div style="font-weight:700; color:var(--tars-text); margin-bottom:0.25rem; font-family:'Space Grotesk',system-ui;">Worker Setup</div>
+            <div style="font-size:0.82rem; color:var(--tars-muted); line-height:1.5;">Run a self-hosted TARS worker on your own machine or cloud instance.</div>
+        </div>
+    </a>
+
+    <a href="{% url 'pages:docs_api_reference' %}" style="text-decoration:none;">
+        <div style="background:var(--tars-surface); border:1px solid var(--tars-border); border-radius:12px; padding:1.25rem; transition:border-color 0.2s, transform 0.15s;" onmouseover="this.style.borderColor='var(--tars-accent)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='var(--tars-border)'; this.style.transform='';">
+            <i class="bi bi-braces" style="font-size:1.5rem; color:var(--tars-accent); display:block; margin-bottom:0.75rem;"></i>
+            <div style="font-weight:700; color:var(--tars-text); margin-bottom:0.25rem; font-family:'Space Grotesk',system-ui;">API Reference</div>
+            <div style="font-size:0.82rem; color:var(--tars-muted); line-height:1.5;">Full reference for all worker and webhook API endpoints.</div>
+        </div>
+    </a>
+
+    <a href="{% url 'pages:docs_faq' %}" style="text-decoration:none;">
+        <div style="background:var(--tars-surface); border:1px solid var(--tars-border); border-radius:12px; padding:1.25rem; transition:border-color 0.2s, transform 0.15s;" onmouseover="this.style.borderColor='var(--tars-accent)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='var(--tars-border)'; this.style.transform='';">
+            <i class="bi bi-question-circle" style="font-size:1.5rem; color:var(--tars-accent); display:block; margin-bottom:0.75rem;"></i>
+            <div style="font-weight:700; color:var(--tars-text); margin-bottom:0.25rem; font-family:'Space Grotesk',system-ui;">FAQ</div>
+            <div style="font-size:0.82rem; color:var(--tars-muted); line-height:1.5;">Answers to common questions about TARS and how it works.</div>
+        </div>
+    </a>
+
+</div>
+
+<h2>How TARS Works</h2>
+<p>TARS is an autonomous coding agent that operates as a continuous loop:</p>
+<ol>
+    <li><strong>You submit a task</strong> — describe what you want built, fixed, or improved in plain English.</li>
+    <li><strong>TARS picks it up</strong> — a worker claims your task from the queue and begins analyzing your repository.</li>
+    <li><strong>Code is written</strong> — TARS uses Claude AI to write production-ready code, following your repo's existing patterns and conventions.</li>
+    <li><strong>Tests run</strong> — the worker executes your test suite to verify correctness before proceeding.</li>
+    <li><strong>A PR is opened</strong> — TARS commits the changes to a branch and opens a pull request on GitHub for your review.</li>
+    <li><strong>You review &amp; merge</strong> — you stay in control. No code ships without your approval.</li>
+</ol>
+
+<div class="docs-note info">
+    <i class="bi bi-info-circle-fill"></i>
+    <div>
+        <strong>One task at a time per project.</strong> TARS serializes tasks within each project to avoid merge conflicts — while your task is being worked on, additional tasks queue up and run in order.
+    </div>
+</div>
+
+<h2>Platform Concepts</h2>
+
+<h3>Projects</h3>
+<p>A <strong>project</strong> is a connected GitHub repository. Once connected, you can submit unlimited tasks against it. TARS clones your repo, works on a fresh branch, then opens a PR.</p>
+
+<h3>Tasks</h3>
+<p>A <strong>task</strong> is a unit of work you want TARS to complete — anything from "Fix the null pointer exception in the auth flow" to "Add a dark mode toggle to the settings page." Tasks move through a lifecycle: <code>pending → assigned → in_progress → reviewing → completed</code>.</p>
+
+<h3>Workers</h3>
+<p>A <strong>worker</strong> is the compute node that actually runs TARS. Managed workers run in TARS's cloud. For self-hosted plans, you can run workers on your own infrastructure — see the <a href="{% url 'pages:docs_worker_setup' %}">Worker Setup guide</a>.</p>
+
+<h2>Need Help?</h2>
+<p>Can't find what you're looking for? <a href="{% url 'inquiries:get_started' %}">Contact us</a> and we'll get back to you within one business day.</p>
+
+{% endblock %}

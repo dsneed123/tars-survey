@@ -1,0 +1,133 @@
+{% extends "pages/docs/base.html" %}
+
+{% block title %}Getting Started — TARS Docs{% endblock %}
+{% block meta_description %}<meta name="description" content="Get started with TARS: sign up, connect your first GitHub project, and submit your first autonomous coding task.">{% endblock %}
+
+{% block docs_content %}
+
+<h1>Getting Started</h1>
+<p class="docs-lead">From zero to your first automated pull request in under 10 minutes. Follow these steps to sign up, connect a project, and submit your first task.</p>
+
+<h2>Step 1 — Create an Account</h2>
+
+<div class="docs-step">
+    <div class="docs-step-num">1</div>
+    <div class="docs-step-body">
+        <h4>Sign up at TARS</h4>
+        <p>Visit the <a href="{% url 'inquiries:get_started' %}">Get Started page</a> and fill in your email and company name. You'll receive a confirmation email with a link to activate your account.</p>
+    </div>
+</div>
+
+<div class="docs-step">
+    <div class="docs-step-num">2</div>
+    <div class="docs-step-body">
+        <h4>Verify your email</h4>
+        <p>Click the link in your activation email. This confirms your address and takes you to the member dashboard.</p>
+    </div>
+</div>
+
+<div class="docs-note tip">
+    <i class="bi bi-lightbulb-fill"></i>
+    <div>Already have an account? <a href="{% url 'accounts:login' %}">Sign in here</a>.</div>
+</div>
+
+<h2>Step 2 — Add Your First Project</h2>
+
+<div class="docs-step">
+    <div class="docs-step-num">1</div>
+    <div class="docs-step-body">
+        <h4>Go to Projects</h4>
+        <p>From the dashboard sidebar, click <strong>Projects</strong>, then click <strong>Add Project</strong>.</p>
+    </div>
+</div>
+
+<div class="docs-step">
+    <div class="docs-step-num">2</div>
+    <div class="docs-step-body">
+        <h4>Enter your GitHub repository</h4>
+        <p>Provide the repository in <code>owner/repo</code> format — for example, <code>acme-corp/backend-api</code>. The repository must be accessible; for private repos, you'll need to provide a GitHub personal access token or install the TARS GitHub App.</p>
+    </div>
+</div>
+
+<div class="docs-step">
+    <div class="docs-step-num">3</div>
+    <div class="docs-step-body">
+        <h4>Set the default branch</h4>
+        <p>Choose the branch TARS will branch from when creating new PRs. This is typically <code>main</code> or <code>develop</code>.</p>
+    </div>
+</div>
+
+<div class="docs-step">
+    <div class="docs-step-num">4</div>
+    <div class="docs-step-body">
+        <h4>Save the project</h4>
+        <p>Click <strong>Save Project</strong>. TARS will verify it can reach the repository and display a success message.</p>
+    </div>
+</div>
+
+<div class="docs-note info">
+    <i class="bi bi-info-circle-fill"></i>
+    <div>
+        <strong>Private repositories:</strong> TARS needs read/write access to clone your repo and push branches. We recommend creating a dedicated deploy key or service account with <em>Contents: read &amp; write</em> and <em>Pull requests: read &amp; write</em> permissions.
+    </div>
+</div>
+
+<h2>Step 3 — Submit Your First Task</h2>
+
+<div class="docs-step">
+    <div class="docs-step-num">1</div>
+    <div class="docs-step-body">
+        <h4>Open the task form</h4>
+        <p>Click the <strong>+</strong> button in the bottom-right corner of the dashboard, or go to <strong>Tasks → New Task</strong> in the sidebar.</p>
+    </div>
+</div>
+
+<div class="docs-step">
+    <div class="docs-step-num">2</div>
+    <div class="docs-step-body">
+        <h4>Select a project and describe your task</h4>
+        <p>Choose the project you just added, then write a clear task title and optional details. The more context you provide, the better TARS performs.</p>
+        <p>Good task titles:</p>
+        <ul>
+            <li>"Fix the 500 error when a user resets their password with an expired token"</li>
+            <li>"Add pagination to the /api/products/ endpoint (page size 20)"</li>
+            <li>"Write unit tests for the <code>calculate_discount</code> function in billing/utils.py"</li>
+        </ul>
+    </div>
+</div>
+
+<div class="docs-step">
+    <div class="docs-step-num">3</div>
+    <div class="docs-step-body">
+        <h4>Submit and watch</h4>
+        <p>Click <strong>Submit Task</strong>. The task appears in your task list with a <code>Pending</code> status. When a worker picks it up, the status changes to <code>In Progress</code> and you'll receive an email notification. When the PR is ready, you'll get another notification with a direct link.</p>
+    </div>
+</div>
+
+<h2>What Happens Next</h2>
+<p>Once you submit a task, TARS:</p>
+<ol>
+    <li>Queues the task and waits for an available worker</li>
+    <li>Clones your repository on a fresh worker environment</li>
+    <li>Analyzes the codebase to understand context, conventions, and dependencies</li>
+    <li>Implements the requested changes using Claude AI</li>
+    <li>Runs your existing test suite (<code>pytest</code>, <code>jest</code>, etc.) to verify correctness</li>
+    <li>Opens a pull request on GitHub with a descriptive title and summary</li>
+    <li>Sends you a notification with the PR link</li>
+</ol>
+
+<div class="docs-note warning">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <div>
+        <strong>Review before merging.</strong> TARS is autonomous but not infallible. Always review the generated PR before merging to ensure it meets your standards and doesn't introduce unintended changes.
+    </div>
+</div>
+
+<h2>Next Steps</h2>
+<ul>
+    <li><a href="{% url 'pages:docs_worker_setup' %}">Set up a self-hosted worker</a> for faster task execution on your own infrastructure</li>
+    <li><a href="{% url 'pages:docs_api_reference' %}">Explore the API</a> to submit tasks programmatically from your CI/CD pipeline</li>
+    <li><a href="{% url 'pages:docs_faq' %}">Read the FAQ</a> for answers to common questions</li>
+</ul>
+
+{% endblock %}
