@@ -1,9 +1,79 @@
+import json
+import logging
+import urllib.error
+import urllib.request
+from datetime import datetime, timezone
+
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.http import require_POST
+
+from tasks.models import Task
 
 from .forms import ProjectForm, ProjectSettingsForm
 from .models import Project
+
+logger = logging.getLogger(__name__)
+
+
+def _github_request(path, token=None):
+    """Make an authenticated GitHub API GET request. Returns parsed JSON or None on error."""
+    url = f"https://api.github.com{path}"
+    req = urllib.request.Request(url)
+    req.add_header("Accept", "application/vnd.github+json")
+    req.add_header("X-GitHub-Api-Version", "2022-11-28")
+    req.add_header("User-Agent", "TARS-Survey/1.0")
+    if token:
+        req.add_header("Authorization", f"Bearer {token}")
+    try:
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            return json.loads(resp.read())
+    except urllib.error.HTTPError as exc:
+        logger.warning("GitHub API HTTP error for %s: %s", path, exc.code)
+        return None
+    except Exception as exc:
+        logger.warning("GitHub API error for %s: %s", path, exc)
+        return None
+
+
+def _parse_gh_date(date_str):
+    """Parse a GitHub ISO 8601 date string into a datetime object."""
+    if not date_str:
+        return None
+    try:
+        return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        return None
+
+
+def _format_commit(c):
+    sha = c.get("sha", "")
+    commit_obj = c.get("commit", {})
+    author = commit_obj.get("author", {})
+    message = (commit_obj.get("message", "") or "").split("\n")[0]
+    return {
+        "sha": sha,
+        "sha_short": sha[:7],
+        "message": message,
+        "author": author.get("name", ""),
+        "date": _parse_gh_date(author.get("date", "")),
+        "html_url": c.get("html_url", ""),
+    }
+
+
+def _format_pr(pr):
+    return {
+        "number": pr.get("number"),
+        "title": pr.get("title", ""),
+        "url": pr.get("html_url", ""),
+        "state": pr.get("state", ""),
+        "merged_at": _parse_gh_date(pr.get("merged_at", "")),
+        "created_at": _parse_gh_date(pr.get("created_at", "")),
+        "head": pr.get("head", {}).get("ref", ""),
+    }
 
 
 @login_required
@@ -30,7 +100,154 @@ def project_add(request):
 @login_required
 def project_detail(request, pk):
     project = get_object_or_404(Project, pk=pk, owner=request.user)
-    return render(request, "projects/project_detail.html", {"project": project})
+    token = getattr(settings, "GITHUB_TOKEN", "")
+
+    commits = []
+    tars_branches = []
+    open_prs = []
+    merged_prs = []
+    github_available = False
+
+    if project.github_repo:
+        repo = project.github_repo
+        branch = project.default_branch or "main"
+
+        raw_commits = _github_request(
+            f"/repos/{repo}/commits?sha={branch}&per_page=20", token
+        )
+        if isinstance(raw_commits, list):
+            github_available = True
+            commits = [_format_commit(c) for c in raw_commits]
+
+        raw_branches = _github_request(f"/repos/{repo}/branches?per_page=100", token)
+        if isinstance(raw_branches, list):
+            for b in raw_branches:
+                name = b.get("name", "")
+                if name.startswith("tars/"):
+                    tars_branches.append({
+                        "name": name,
+                        "sha_short": (b.get("commit", {}).get("sha", "") or "")[:7],
+                        "url": f"https://github.com/{repo}/tree/{name}",
+                    })
+
+        raw_open_prs = _github_request(
+            f"/repos/{repo}/pulls?state=open&per_page=20", token
+        )
+        if isinstance(raw_open_prs, list):
+            open_prs = [
+                _format_pr(pr)
+                for pr in raw_open_prs
+                if pr.get("head", {}).get("ref", "").startswith("tars/")
+            ]
+
+        raw_closed_prs = _github_request(
+            f"/repos/{repo}/pulls?state=closed&sort=updated&per_page=20", token
+        )
+        if isinstance(raw_closed_prs, list):
+            merged_prs = [
+                _format_pr(pr)
+                for pr in raw_closed_prs
+                if pr.get("head", {}).get("ref", "").startswith("tars/")
+                and pr.get("merged_at")
+            ][:5]
+
+    recent_tasks = list(
+        Task.objects.filter(project=project).order_by("-created_at")[:5]
+    )
+    open_pr_count = len(open_prs)
+    task_count = Task.objects.filter(project=project).count()
+
+    return render(
+        request,
+        "projects/project_detail.html",
+        {
+            "project": project,
+            "commits": commits,
+            "tars_branches": tars_branches,
+            "open_prs": open_prs,
+            "merged_prs": merged_prs,
+            "recent_tasks": recent_tasks,
+            "open_pr_count": open_pr_count,
+            "task_count": task_count,
+            "github_available": github_available,
+        },
+    )
+
+
+@login_required
+@require_POST
+def project_rollback(request, pk):
+    """Create a revert task for a given commit SHA."""
+    project = get_object_or_404(Project, pk=pk, owner=request.user)
+    sha = request.POST.get("sha", "").strip()
+    commit_message = request.POST.get("message", "").strip()
+
+    if not sha or len(sha) < 7:
+        messages.error(request, "Invalid commit SHA.")
+        return redirect("projects:detail", pk=project.pk)
+
+    short_sha = sha[:7]
+    title = f"Revert to commit {short_sha}"
+    if commit_message:
+        description = (
+            f"Revert the repository to commit `{sha}`.\n\n"
+            f"**Commit message:** {commit_message}\n\n"
+            f"Run `git revert` to undo changes introduced after this commit, "
+            f"creating a new commit that restores the repository state."
+        )
+    else:
+        description = (
+            f"Revert the repository to commit `{sha}`.\n\n"
+            f"Run `git revert` to undo changes introduced after this commit, "
+            f"creating a new commit that restores the repository state."
+        )
+
+    task = Task.objects.create(
+        project=project,
+        created_by=request.user,
+        title=title,
+        description=description,
+        priority=70,
+    )
+    _forward_task_to_controller(task)
+    messages.success(request, f'Rollback task created: "{title}"')
+    return redirect("tasks:detail", pk=task.pk)
+
+
+@login_required
+def project_commit_diff(request, pk, sha):
+    """Return JSON with diff details for a single commit."""
+    project = get_object_or_404(Project, pk=pk, owner=request.user)
+    # Validate sha is hex-only to prevent path injection
+    if not sha or not all(c in "0123456789abcdefABCDEF" for c in sha):
+        return JsonResponse({"error": "Invalid SHA."}, status=400)
+
+    token = getattr(settings, "GITHUB_TOKEN", "")
+    data = _github_request(f"/repos/{project.github_repo}/commits/{sha}", token)
+    if not data or not isinstance(data, dict):
+        return JsonResponse({"error": "Could not fetch commit data from GitHub."}, status=502)
+
+    commit_obj = data.get("commit", {})
+    author = commit_obj.get("author", {})
+    files = [
+        {
+            "filename": f.get("filename", ""),
+            "status": f.get("status", ""),
+            "additions": f.get("additions", 0),
+            "deletions": f.get("deletions", 0),
+            "patch": f.get("patch", ""),
+        }
+        for f in data.get("files", [])
+    ]
+
+    return JsonResponse({
+        "sha": data.get("sha", ""),
+        "message": commit_obj.get("message", ""),
+        "author": author.get("name", ""),
+        "date": author.get("date", ""),
+        "stats": data.get("stats", {}),
+        "files": files,
+    })
 
 
 @login_required
@@ -54,3 +271,40 @@ def project_settings(request, pk):
         "projects/project_settings.html",
         {"project": project, "form": form},
     )
+
+
+def _forward_task_to_controller(task):
+    """Send a newly created task to the TARS controller API."""
+    import requests as http_requests
+
+    url = getattr(settings, "TARS_CONTROLLER_URL", "")
+    api_key = getattr(settings, "TARS_API_KEY", "")
+    if not url or not api_key:
+        logger.info("TARS_CONTROLLER_URL or TARS_API_KEY not set, skipping forward.")
+        return
+
+    payload = {
+        "project": task.project.github_repo,
+        "task_type": "tars-code",
+        "title": task.title,
+        "description": task.description,
+        "priority": task.priority,
+        "user_id": str(task.created_by_id),
+    }
+    try:
+        resp = http_requests.post(
+            f"{url.rstrip('/')}/api/tasks",
+            json=payload,
+            headers={"X-API-Key": api_key},
+            timeout=10,
+        )
+        if resp.ok:
+            logger.info(
+                "Task %s forwarded to controller: %s",
+                task.pk,
+                resp.json().get("task", {}).get("id"),
+            )
+        else:
+            logger.warning("Controller rejected task %s: %s", task.pk, resp.text)
+    except Exception as exc:
+        logger.warning("Failed to forward task %s to controller: %s", task.pk, exc)

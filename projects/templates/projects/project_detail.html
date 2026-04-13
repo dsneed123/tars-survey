@@ -122,6 +122,298 @@
         color: var(--tars-accent);
         font-size: 1.1rem;
     }
+
+    /* ── Git history timeline ─────────────────────────────────── */
+    .git-timeline {
+        position: relative;
+        padding-left: 1.5rem;
+    }
+
+    .git-timeline::before {
+        content: "";
+        position: absolute;
+        left: 0.45rem;
+        top: 0.6rem;
+        bottom: 0.6rem;
+        width: 2px;
+        background: var(--tars-border);
+    }
+
+    .git-commit {
+        position: relative;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.85rem;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid rgba(31,41,55,0.6);
+        cursor: pointer;
+        transition: background 0.15s;
+        border-radius: 6px;
+        padding-left: 0.5rem;
+        margin-left: -0.5rem;
+    }
+
+    .git-commit:last-child {
+        border-bottom: none;
+    }
+
+    .git-commit:hover {
+        background: rgba(99,102,241,0.05);
+    }
+
+    .git-commit::before {
+        content: "";
+        position: absolute;
+        left: -1.22rem;
+        top: 1.1rem;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--tars-border);
+        border: 2px solid var(--tars-bg);
+        transition: background 0.15s;
+    }
+
+    .git-commit:hover::before {
+        background: var(--tars-accent);
+    }
+
+    .git-commit-sha {
+        font-family: monospace;
+        font-size: 0.78rem;
+        color: var(--tars-accent);
+        background: rgba(99,102,241,0.1);
+        border: 1px solid rgba(99,102,241,0.2);
+        border-radius: 5px;
+        padding: 0.15rem 0.4rem;
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+
+    .git-commit-body {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .git-commit-message {
+        font-size: 0.875rem;
+        color: var(--tars-text);
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .git-commit-meta {
+        font-size: 0.72rem;
+        color: var(--tars-muted);
+        margin-top: 0.15rem;
+    }
+
+    .git-commit-actions {
+        display: flex;
+        gap: 0.4rem;
+        flex-shrink: 0;
+        opacity: 0;
+        transition: opacity 0.15s;
+    }
+
+    .git-commit:hover .git-commit-actions {
+        opacity: 1;
+    }
+
+    /* ── PR list ─────────────────────────────────────────────── */
+    .pr-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid rgba(31,41,55,0.6);
+    }
+
+    .pr-row:last-child {
+        border-bottom: none;
+    }
+
+    .pr-number {
+        font-family: monospace;
+        font-size: 0.78rem;
+        color: var(--tars-muted);
+        flex-shrink: 0;
+    }
+
+    .pr-title {
+        flex: 1;
+        font-size: 0.875rem;
+        color: var(--tars-text);
+        font-weight: 500;
+        text-decoration: none;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .pr-title:hover {
+        color: var(--tars-accent);
+    }
+
+    .pr-badge {
+        font-size: 0.68rem;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        padding: 0.2rem 0.5rem;
+        border-radius: 999px;
+        flex-shrink: 0;
+        text-transform: uppercase;
+    }
+
+    .pr-badge.open {
+        background: rgba(99,102,241,0.15);
+        color: var(--tars-accent);
+    }
+
+    .pr-badge.merged {
+        background: rgba(139,92,246,0.15);
+        color: #a78bfa;
+    }
+
+    /* ── Branch list ─────────────────────────────────────────── */
+    .branch-row {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid rgba(31,41,55,0.6);
+    }
+
+    .branch-row:last-child {
+        border-bottom: none;
+    }
+
+    /* ── Diff modal ──────────────────────────────────────────── */
+    .diff-modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.7);
+        z-index: 1050;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+
+    .diff-modal-overlay.open {
+        display: flex;
+    }
+
+    .diff-modal {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 12px;
+        width: 100%;
+        max-width: 860px;
+        max-height: 85vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .diff-modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--tars-border);
+        flex-shrink: 0;
+    }
+
+    .diff-modal-body {
+        overflow-y: auto;
+        padding: 1.25rem;
+        flex: 1;
+    }
+
+    .diff-file-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.8rem;
+        font-family: monospace;
+        color: var(--tars-text);
+        padding: 0.5rem 0.75rem;
+        background: rgba(99,102,241,0.07);
+        border: 1px solid rgba(99,102,241,0.15);
+        border-radius: 6px 6px 0 0;
+        margin-top: 1rem;
+        font-weight: 600;
+    }
+
+    .diff-file-header:first-child {
+        margin-top: 0;
+    }
+
+    .diff-file-stats {
+        margin-left: auto;
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .diff-add { color: #34d399; }
+    .diff-del { color: #f87171; }
+
+    .diff-patch {
+        font-family: monospace;
+        font-size: 0.75rem;
+        line-height: 1.6;
+        white-space: pre;
+        overflow-x: auto;
+        background: rgba(0,0,0,0.25);
+        border: 1px solid var(--tars-border);
+        border-top: none;
+        border-radius: 0 0 6px 6px;
+        padding: 0.75rem;
+    }
+
+    .diff-line-add {
+        background: rgba(52,211,153,0.1);
+        display: block;
+    }
+
+    .diff-line-del {
+        background: rgba(248,113,113,0.1);
+        display: block;
+    }
+
+    .diff-line-hunk {
+        color: var(--tars-accent);
+        display: block;
+        opacity: 0.8;
+    }
+
+    /* ── Rollback confirm overlay ────────────────────────────── */
+    .rollback-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.7);
+        z-index: 1060;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+
+    .rollback-overlay.open {
+        display: flex;
+    }
+
+    .rollback-modal {
+        background: var(--tars-surface);
+        border: 1px solid rgba(248,113,113,0.3);
+        border-radius: 12px;
+        padding: 1.5rem;
+        width: 100%;
+        max-width: 460px;
+    }
 </style>
 {% endblock %}
 
@@ -196,48 +488,154 @@
             <div class="row g-3 mb-5">
                 <div class="col-4">
                     <div class="stat-box">
-                        <div class="stat-val">—</div>
+                        <div class="stat-val">{{ open_pr_count }}</div>
                         <div class="stat-lbl">Open PRs</div>
                     </div>
                 </div>
                 <div class="col-4">
                     <div class="stat-box">
-                        <div class="stat-val">—</div>
+                        <div class="stat-val">{{ task_count }}</div>
                         <div class="stat-lbl">Tasks</div>
                     </div>
                 </div>
                 <div class="col-4">
                     <div class="stat-box">
-                        <div class="stat-val">—</div>
-                        <div class="stat-lbl">Fixes</div>
+                        <div class="stat-val">{{ commits|length }}</div>
+                        <div class="stat-lbl">Commits</div>
                     </div>
                 </div>
             </div>
 
             <!-- Recent Tasks -->
             <p class="section-label">Recent Tasks</p>
-            <div class="card-surface p-4">
-                <div class="text-center py-4">
-                    <i class="bi bi-list-task" style="font-size:2rem; color:var(--tars-border)"></i>
-                    <p class="small mt-2 mb-3" style="color:var(--tars-muted)">
-                        No tasks yet for this project.
-                    </p>
-                    <a href="{% url 'inquiries:get_started' %}" class="btn btn-accent btn-sm">
-                        Submit a Task
-                    </a>
-                </div>
+            <div class="card-surface p-4 mb-5">
+                {% if recent_tasks %}
+                    {% for task in recent_tasks %}
+                    <div class="d-flex align-items-center gap-3 py-2 {% if not forloop.last %}border-bottom{% endif %}" style="border-color:var(--tars-border) !important">
+                        <div class="flex-shrink-0" style="width:8px;height:8px;border-radius:50%;background:
+                            {% if task.status == 'completed' %}var(--tars-green)
+                            {% elif task.status == 'failed' %}#f87171
+                            {% elif task.status in 'in_progress,reviewing' %}var(--tars-accent)
+                            {% else %}var(--tars-border){% endif %}"></div>
+                        <a href="{% url 'tasks:detail' pk=task.pk %}"
+                           class="flex-grow-1 small fw-500"
+                           style="color:var(--tars-text); text-decoration:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">
+                            {{ task.title }}
+                        </a>
+                        <span class="small" style="color:var(--tars-muted); flex-shrink:0">{{ task.created_at|date:"M j" }}</span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-list-task" style="font-size:2rem; color:var(--tars-border)"></i>
+                        <p class="small mt-2 mb-3" style="color:var(--tars-muted)">No tasks yet for this project.</p>
+                        <a href="{% url 'tasks:add' %}?project={{ project.pk }}" class="btn btn-accent btn-sm">
+                            Submit a Task
+                        </a>
+                    </div>
+                {% endif %}
             </div>
 
-            <!-- Open PRs -->
-            <p class="section-label mt-5">Open Pull Requests</p>
+            <!-- TARS Pull Requests -->
+            <p class="section-label">TARS Pull Requests</p>
+            <div class="card-surface p-4 mb-5">
+                {% if open_prs or merged_prs %}
+                    {% if open_prs %}
+                    <p class="section-label" style="font-size:0.65rem; margin-bottom:0.5rem">Open</p>
+                    {% for pr in open_prs %}
+                    <div class="pr-row">
+                        <span class="pr-number">#{{ pr.number }}</span>
+                        <a href="{{ pr.url }}" target="_blank" rel="noopener noreferrer" class="pr-title">{{ pr.title }}</a>
+                        <span class="pr-badge open">Open</span>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                    {% if merged_prs %}
+                    <p class="section-label mt-3" style="font-size:0.65rem; margin-bottom:0.5rem">Recently Merged</p>
+                    {% for pr in merged_prs %}
+                    <div class="pr-row">
+                        <span class="pr-number">#{{ pr.number }}</span>
+                        <a href="{{ pr.url }}" target="_blank" rel="noopener noreferrer" class="pr-title">{{ pr.title }}</a>
+                        <span class="pr-badge merged">Merged</span>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-git" style="font-size:2rem; color:var(--tars-border)"></i>
+                        <p class="small mt-2 mb-0" style="color:var(--tars-muted)">
+                            {% if github_available %}
+                                No TARS pull requests found.
+                            {% else %}
+                                Pull requests will appear here once TARS is active.
+                            {% endif %}
+                        </p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Git History -->
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <p class="section-label mb-0">Git History</p>
+                {% if commits %}
+                <span class="small" style="color:var(--tars-muted)">
+                    {{ project.default_branch }} branch &bull; last {{ commits|length }} commits
+                </span>
+                {% endif %}
+            </div>
             <div class="card-surface p-4">
+                {% if commits %}
+                <div class="git-timeline">
+                    {% for commit in commits %}
+                    <div class="git-commit"
+                         data-sha="{{ commit.sha }}"
+                         data-message="{{ commit.message|escapejs }}"
+                         onclick="openDiff('{{ commit.sha }}', '{{ commit.message|escapejs }}')"
+                         title="Click to view diff">
+                        <span class="git-commit-sha">{{ commit.sha_short }}</span>
+                        <div class="git-commit-body">
+                            <div class="git-commit-message">{{ commit.message }}</div>
+                            <div class="git-commit-meta">
+                                <i class="bi bi-person me-1" style="font-size:0.7rem"></i>{{ commit.author }}
+                                {% if commit.date %}
+                                &bull;
+                                <time datetime="{{ commit.date|date:'c' }}">{{ commit.date|date:"M j, Y" }}</time>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="git-commit-actions">
+                            <button type="button"
+                                    class="btn btn-sm"
+                                    style="font-size:0.72rem; padding:0.2rem 0.5rem; border:1px solid rgba(99,102,241,0.3); color:var(--tars-accent); background:transparent"
+                                    onclick="event.stopPropagation(); openDiff('{{ commit.sha }}', '{{ commit.message|escapejs }}')"
+                                    title="View diff">
+                                <i class="bi bi-code-square"></i>
+                            </button>
+                            <button type="button"
+                                    class="btn btn-sm"
+                                    style="font-size:0.72rem; padding:0.2rem 0.5rem; border:1px solid rgba(248,113,113,0.3); color:#f87171; background:transparent"
+                                    onclick="event.stopPropagation(); openRollback('{{ commit.sha }}', '{{ commit.message|escapejs }}')"
+                                    title="Rollback to this commit">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
                 <div class="text-center py-4">
-                    <i class="bi bi-git" style="font-size:2rem; color:var(--tars-border)"></i>
+                    <i class="bi bi-clock-history" style="font-size:2rem; color:var(--tars-border)"></i>
                     <p class="small mt-2 mb-0" style="color:var(--tars-muted)">
-                        No open pull requests. TARS will list them here once active.
+                        {% if github_available %}
+                            No commits found on {{ project.default_branch }}.
+                        {% else %}
+                            Git history will appear here. Set a GitHub token to enable this feature.
+                        {% endif %}
                     </p>
                 </div>
+                {% endif %}
             </div>
+
         </div>
 
         <!-- Right column -->
@@ -246,7 +644,7 @@
             <!-- Quick Actions -->
             <p class="section-label">Quick Actions</p>
             <div class="d-flex flex-column gap-2 mb-5">
-                <a href="{% url 'inquiries:get_started' %}" class="quick-action">
+                <a href="{% url 'tasks:add' %}?project={{ project.pk }}" class="quick-action">
                     <i class="bi bi-plus-circle-fill"></i>
                     Submit New Task
                 </a>
@@ -259,6 +657,25 @@
                     Project Settings
                 </a>
             </div>
+
+            <!-- TARS Branches -->
+            {% if tars_branches %}
+            <p class="section-label">TARS Branches</p>
+            <div class="card-surface p-4 mb-5">
+                {% for branch in tars_branches %}
+                <div class="branch-row">
+                    <i class="bi bi-git" style="color:var(--tars-accent); font-size:0.85rem; flex-shrink:0"></i>
+                    <a href="{{ branch.url }}" target="_blank" rel="noopener noreferrer"
+                       class="small flex-grow-1"
+                       style="color:var(--tars-text); text-decoration:none; font-family:monospace; font-size:0.78rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis"
+                       title="{{ branch.name }}">
+                        {{ branch.name }}
+                    </a>
+                    <span style="font-family:monospace; font-size:0.72rem; color:var(--tars-muted); flex-shrink:0">{{ branch.sha_short }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
 
             <!-- Project Info -->
             <p class="section-label">Details</p>
@@ -291,7 +708,195 @@
                 </div>
                 {% endif %}
             </div>
+
         </div>
     </div>
 </div>
+
+<!-- ── Diff viewer modal ─────────────────────────────────────── -->
+<div class="diff-modal-overlay" id="diffOverlay" onclick="closeDiff(event)">
+    <div class="diff-modal" onclick="event.stopPropagation()">
+        <div class="diff-modal-header">
+            <div>
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-code-square" style="color:var(--tars-accent)"></i>
+                    <span class="fw-600" style="color:var(--tars-text); font-size:0.9rem" id="diffModalSha"></span>
+                </div>
+                <div class="small mt-1" style="color:var(--tars-muted)" id="diffModalMessage"></div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="small" id="diffModalStats" style="color:var(--tars-muted)"></span>
+                <button type="button" class="btn btn-sm" style="border:1px solid var(--tars-border); color:var(--tars-muted)" onclick="closeDiff()">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        </div>
+        <div class="diff-modal-body" id="diffModalBody">
+            <div class="text-center py-5">
+                <div class="spinner-border spinner-border-sm" style="color:var(--tars-accent)" role="status"></div>
+                <p class="small mt-2" style="color:var(--tars-muted)">Loading diff…</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Rollback confirmation modal ──────────────────────────── -->
+<div class="rollback-overlay" id="rollbackOverlay" onclick="closeRollback(event)">
+    <div class="rollback-modal" onclick="event.stopPropagation()">
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <i class="bi bi-arrow-counterclockwise" style="color:#f87171; font-size:1.2rem"></i>
+            <span class="fw-600" style="color:var(--tars-text)">Confirm Rollback</span>
+        </div>
+        <p class="small mb-1" style="color:var(--tars-muted)">
+            This will create a TARS task to revert the repository to:
+        </p>
+        <div class="p-3 mb-3" style="background:rgba(0,0,0,0.3); border-radius:8px; border:1px solid var(--tars-border)">
+            <code style="color:var(--tars-accent); font-size:0.8rem" id="rollbackShaDisplay"></code>
+            <div class="small mt-1" style="color:var(--tars-text)" id="rollbackMessageDisplay"></div>
+        </div>
+        <p class="small mb-3" style="color:var(--tars-muted)">
+            TARS will run <code>git revert</code> to create a new commit that undoes changes since this point. This will not force-push or delete history.
+        </p>
+        <form method="post" action="{% url 'projects:rollback' pk=project.pk %}" id="rollbackForm">
+            {% csrf_token %}
+            <input type="hidden" name="sha" id="rollbackShaCsrf">
+            <input type="hidden" name="message" id="rollbackMessageCsrf">
+            <div class="d-flex gap-2 justify-content-end">
+                <button type="button" class="btn btn-sm" style="border:1px solid var(--tars-border); color:var(--tars-muted)" onclick="closeRollback()">
+                    Cancel
+                </button>
+                <button type="submit" class="btn btn-sm" style="background:#f87171; color:#fff; border:none">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i> Create Rollback Task
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const DIFF_URL_TEMPLATE = "{% url 'projects:commit_diff' pk=project.pk sha='SHAPLACEHOLDER' %}";
+
+function getDiffUrl(sha) {
+    return DIFF_URL_TEMPLATE.replace('SHAPLACEHOLDER', sha);
+}
+
+// ── Diff modal ────────────────────────────────────────────────
+
+function openDiff(sha, message) {
+    const overlay = document.getElementById('diffOverlay');
+    document.getElementById('diffModalSha').textContent = sha.slice(0, 7);
+    document.getElementById('diffModalMessage').textContent = message;
+    document.getElementById('diffModalStats').textContent = '';
+    document.getElementById('diffModalBody').innerHTML =
+        '<div class="text-center py-5">' +
+        '<div class="spinner-border spinner-border-sm" style="color:var(--tars-accent)" role="status"></div>' +
+        '<p class="small mt-2" style="color:var(--tars-muted)">Loading diff\u2026</p></div>';
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    fetch(getDiffUrl(sha))
+        .then(r => r.json())
+        .then(data => renderDiff(data))
+        .catch(() => {
+            document.getElementById('diffModalBody').innerHTML =
+                '<p class="small text-center py-4" style="color:#f87171">Failed to load diff.</p>';
+        });
+}
+
+function closeDiff(e) {
+    if (e && e.target !== document.getElementById('diffOverlay')) return;
+    document.getElementById('diffOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+function renderDiff(data) {
+    if (data.error) {
+        document.getElementById('diffModalBody').innerHTML =
+            '<p class="small text-center py-4" style="color:#f87171">' + escHtml(data.error) + '</p>';
+        return;
+    }
+
+    const stats = data.stats || {};
+    const statsEl = document.getElementById('diffModalStats');
+    if (stats.additions !== undefined) {
+        statsEl.innerHTML =
+            '<span class="diff-add">+' + stats.additions + '</span> ' +
+            '<span class="diff-del">-' + stats.deletions + '</span>';
+    }
+
+    if (!data.files || data.files.length === 0) {
+        document.getElementById('diffModalBody').innerHTML =
+            '<p class="small text-center py-4" style="color:var(--tars-muted)">No file changes in this commit.</p>';
+        return;
+    }
+
+    let html = '';
+    for (const f of data.files) {
+        const statusColor = f.status === 'added' ? '#34d399' : f.status === 'removed' ? '#f87171' : 'var(--tars-muted)';
+        html += '<div class="diff-file-header">';
+        html += '<i class="bi bi-file-code" style="color:var(--tars-accent)"></i>';
+        html += '<span>' + escHtml(f.filename) + '</span>';
+        html += '<span class="diff-file-stats">';
+        html += '<span class="diff-add">+' + f.additions + '</span>';
+        html += '<span class="diff-del">-' + f.deletions + '</span>';
+        html += '<span style="color:' + statusColor + '; font-size:0.68rem; text-transform:uppercase; letter-spacing:0.05em">' + escHtml(f.status) + '</span>';
+        html += '</span></div>';
+
+        if (f.patch) {
+            html += '<div class="diff-patch">' + colorPatch(f.patch) + '</div>';
+        } else {
+            html += '<div class="diff-patch" style="color:var(--tars-muted); font-style:italic">No patch available (binary or too large)</div>';
+        }
+    }
+    document.getElementById('diffModalBody').innerHTML = html;
+}
+
+function colorPatch(patch) {
+    return patch.split('\n').map(line => {
+        const escaped = escHtml(line);
+        if (line.startsWith('@@')) return '<span class="diff-line-hunk">' + escaped + '</span>';
+        if (line.startsWith('+')) return '<span class="diff-line-add">' + escaped + '</span>';
+        if (line.startsWith('-')) return '<span class="diff-line-del">' + escaped + '</span>';
+        return escaped + '\n';
+    }).join('');
+}
+
+// ── Rollback modal ────────────────────────────────────────────
+
+function openRollback(sha, message) {
+    document.getElementById('rollbackShaDisplay').textContent = sha.slice(0, 7) + ' — ' + sha;
+    document.getElementById('rollbackMessageDisplay').textContent = message;
+    document.getElementById('rollbackShaCsrf').value = sha;
+    document.getElementById('rollbackMessageCsrf').value = message;
+    document.getElementById('rollbackOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeRollback(e) {
+    if (e && e.target !== document.getElementById('rollbackOverlay')) return;
+    document.getElementById('rollbackOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+// ── Util ──────────────────────────────────────────────────────
+
+function escHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+// Close modals on Escape
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        closeDiff();
+        document.getElementById('rollbackOverlay').classList.remove('open');
+        document.body.style.overflow = '';
+    }
+});
+</script>
 {% endblock %}

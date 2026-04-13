@@ -142,3 +142,6 @@ TARS_ADMIN_EMAIL = os.environ.get("TARS_ADMIN_EMAIL", "admin@tarsai.dev")
 # TARS Controller API — local Mac Mini brain
 TARS_CONTROLLER_URL = os.environ.get("TARS_CONTROLLER_URL", "")
 TARS_API_KEY = os.environ.get("TARS_API_KEY", "")
+
+# GitHub personal access token used for API calls (commits, branches, PRs, diffs)
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
