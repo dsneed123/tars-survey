@@ -1,13 +1,17 @@
+import tempfile
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.test import Client, TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client, TestCase, override_settings
 
 from members.models import MemberProfile
 from projects.models import Project
 from tasks.models import Task, TaskAttachment
 
 User = get_user_model()
+
+_TEMP_MEDIA = tempfile.mkdtemp()
 
 
 # ---------------------------------------------------------------------------
@@ -40,6 +44,107 @@ def make_task(project, owner, **kwargs):
     }
     defaults.update(kwargs)
     return Task.objects.create(project=project, created_by=owner, **defaults)
+
+
+# ---------------------------------------------------------------------------
+# Task model
+# ---------------------------------------------------------------------------
+
+class TaskModelTests(TestCase):
+    def setUp(self):
+        self.user = make_user()
+        self.project = make_project(self.user)
+
+    def test_str_representation(self):
+        task = make_task(self.project, self.user, title="Fix bug", status="pending")
+        s = str(task)
+        self.assertIn("Fix bug", s)
+        self.assertIn("Pending", s)
+
+    def test_default_status_is_pending(self):
+        task = Task.objects.create(
+            project=self.project, created_by=self.user, title="T", description="D"
+        )
+        self.assertEqual(task.status, "pending")
+
+    def test_default_priority_is_50(self):
+        task = Task.objects.create(
+            project=self.project, created_by=self.user, title="T", description="D"
+        )
+        self.assertEqual(task.priority, 50)
+
+    def test_is_active_for_active_statuses(self):
+        for status in ("queued", "assigned", "in_progress", "reviewing"):
+            task = make_task(self.project, self.user, status=status)
+            self.assertTrue(task.is_active, f"Expected is_active for {status}")
+
+    def test_is_not_active_for_non_active_statuses(self):
+        for status in ("pending", "completed", "failed"):
+            task = make_task(self.project, self.user, status=status)
+            self.assertFalse(task.is_active, f"Expected not is_active for {status}")
+
+    def test_is_done_for_terminal_statuses(self):
+        for status in ("completed", "failed"):
+            task = make_task(self.project, self.user, status=status)
+            self.assertTrue(task.is_done, f"Expected is_done for {status}")
+
+    def test_is_not_done_for_non_terminal_statuses(self):
+        for status in ("pending", "queued", "assigned", "in_progress", "reviewing"):
+            task = make_task(self.project, self.user, status=status)
+            self.assertFalse(task.is_done, f"Expected not is_done for {status}")
+
+    def test_ordering_newest_first(self):
+        make_task(self.project, self.user, title="First")
+        make_task(self.project, self.user, title="Second")
+        tasks = list(Task.objects.filter(project=self.project))
+        self.assertEqual(tasks[0].title, "Second")
+
+    def test_cascade_delete_with_project(self):
+        make_task(self.project, self.user)
+        self.project.delete()
+        self.assertEqual(Task.objects.count(), 0)
+
+    def test_optional_fields_nullable(self):
+        task = make_task(self.project, self.user)
+        self.assertIsNone(task.worker_id)
+        self.assertIsNone(task.branch_name)
+        self.assertIsNone(task.pr_url)
+        self.assertIsNone(task.error_message)
+        self.assertIsNone(task.started_at)
+        self.assertIsNone(task.completed_at)
+
+
+# ---------------------------------------------------------------------------
+# TaskAttachment model
+# ---------------------------------------------------------------------------
+
+class TaskAttachmentModelTests(TestCase):
+    def setUp(self):
+        self.user = make_user()
+        self.project = make_project(self.user)
+        self.task = make_task(self.project, self.user)
+
+    def test_str_representation(self):
+        att = TaskAttachment(task=self.task, filename="test.py")
+        self.assertEqual(str(att), "test.py")
+
+    def test_extension_property(self):
+        att = TaskAttachment(filename="script.py")
+        self.assertEqual(att.extension, "py")
+
+    def test_extension_lowercase(self):
+        att = TaskAttachment(filename="Image.PNG")
+        self.assertEqual(att.extension, "png")
+
+    def test_is_image_for_image_types(self):
+        for ext in ("jpg", "jpeg", "png", "gif", "webp", "svg"):
+            att = TaskAttachment(filename=f"image.{ext}")
+            self.assertTrue(att.is_image, f"Expected is_image for .{ext}")
+
+    def test_is_not_image_for_code_files(self):
+        for ext in ("py", "js", "txt", "pdf", "go", "rs"):
+            att = TaskAttachment(filename=f"file.{ext}")
+            self.assertFalse(att.is_image, f"Expected not is_image for .{ext}")
 
 
 # ---------------------------------------------------------------------------
@@ -220,6 +325,22 @@ class TaskAddViewTests(TestCase):
         self.client.force_login(self.user)
         resp = self.client.get(self.url, {"project": self.project.pk})
         self.assertEqual(resp.status_code, 200)
+
+    @override_settings(MEDIA_ROOT=_TEMP_MEDIA)
+    @patch("tasks.views._forward_to_controller")
+    def test_file_attachment_uploaded(self, _mock):
+        self.client.force_login(self.user)
+        f = SimpleUploadedFile("notes.txt", b"task notes", content_type="text/plain")
+        self.client.post(self.url, {
+            "project": self.project.pk,
+            "title": "Task with file",
+            "description": "Details",
+            "priority": 50,
+            "attachments": [f],
+        })
+        self.assertEqual(TaskAttachment.objects.count(), 1)
+        att = TaskAttachment.objects.get()
+        self.assertEqual(att.filename, "notes.txt")
 
 
 # ---------------------------------------------------------------------------

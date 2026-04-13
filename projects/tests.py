@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 
 from members.models import MemberProfile
+from projects.forms import ProjectForm
 from projects.models import Project
 from tasks.models import Task
 
@@ -29,6 +30,113 @@ def make_project(owner, **kwargs):
     }
     defaults.update(kwargs)
     return Project.objects.create(owner=owner, **defaults)
+
+
+# ---------------------------------------------------------------------------
+# Project model
+# ---------------------------------------------------------------------------
+
+class ProjectModelTests(TestCase):
+    def setUp(self):
+        self.user = make_user()
+
+    def test_str_representation(self):
+        p = make_project(self.user, name="My App", github_repo="user/myapp")
+        self.assertIn("My App", str(p))
+        self.assertIn("user/myapp", str(p))
+
+    def test_github_url_property(self):
+        p = make_project(self.user, github_repo="acme/widget")
+        self.assertEqual(p.github_url, "https://github.com/acme/widget")
+
+    def test_default_is_active(self):
+        p = make_project(self.user)
+        self.assertTrue(p.is_active)
+
+    def test_default_language_is_other(self):
+        p = make_project(self.user)
+        self.assertEqual(p.language, "other")
+
+    def test_ordering_newest_first(self):
+        p1 = make_project(self.user, name="First", github_repo="u/first")
+        p2 = make_project(self.user, name="Second", github_repo="u/second")
+        projects = list(Project.objects.filter(owner=self.user))
+        self.assertEqual(projects[0].name, "Second")
+        self.assertEqual(projects[1].name, "First")
+
+    def test_cascade_delete_with_user(self):
+        make_project(self.user)
+        self.user.delete()
+        self.assertEqual(Project.objects.count(), 0)
+
+    def test_cascade_delete_tasks_with_project(self):
+        p = make_project(self.user)
+        Task.objects.create(project=p, created_by=self.user, title="T", description="D")
+        p.delete()
+        self.assertEqual(Task.objects.count(), 0)
+
+
+# ---------------------------------------------------------------------------
+# ProjectForm
+# ---------------------------------------------------------------------------
+
+class ProjectFormTests(TestCase):
+    def _valid_data(self, **overrides):
+        data = {
+            "name": "My Project",
+            "description": "A test",
+            "language": "python",
+            "default_branch": "main",
+            "github_repo_url": "owner/repo",
+        }
+        data.update(overrides)
+        return data
+
+    @patch("projects.forms._repo_exists_on_github", return_value=True)
+    def test_valid_form(self, _mock):
+        form = ProjectForm(data=self._valid_data())
+        self.assertTrue(form.is_valid())
+
+    @patch("projects.forms._repo_exists_on_github", return_value=False)
+    def test_nonexistent_repo_rejected(self, _mock):
+        form = ProjectForm(data=self._valid_data())
+        self.assertFalse(form.is_valid())
+        self.assertIn("github_repo_url", form.errors)
+
+    @patch("projects.forms._repo_exists_on_github", return_value=True)
+    def test_full_github_url_parsed_to_slug(self, _mock):
+        form = ProjectForm(data=self._valid_data(github_repo_url="https://github.com/owner/repo"))
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["github_repo_url"], "owner/repo")
+
+    @patch("projects.forms._repo_exists_on_github", return_value=True)
+    def test_github_url_with_git_suffix_parsed(self, _mock):
+        form = ProjectForm(data=self._valid_data(github_repo_url="https://github.com/owner/repo.git"))
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["github_repo_url"], "owner/repo")
+
+    def test_invalid_repo_format_rejected(self):
+        form = ProjectForm(data=self._valid_data(github_repo_url="not-valid-at-all"))
+        self.assertFalse(form.is_valid())
+
+    @patch("projects.forms._repo_exists_on_github", return_value=None)
+    def test_network_error_allows_through(self, _mock):
+        # None return means network error — form should still be valid
+        form = ProjectForm(data=self._valid_data())
+        self.assertTrue(form.is_valid())
+
+    @patch("projects.forms._repo_exists_on_github", return_value=True)
+    def test_missing_name_rejected(self, _mock):
+        form = ProjectForm(data=self._valid_data(name=""))
+        self.assertFalse(form.is_valid())
+        self.assertIn("name", form.errors)
+
+    @patch("projects.forms._repo_exists_on_github", return_value=True)
+    def test_save_sets_github_repo(self, _mock):
+        form = ProjectForm(data=self._valid_data())
+        self.assertTrue(form.is_valid())
+        project = form.save(commit=False)
+        self.assertEqual(project.github_repo, "owner/repo")
 
 
 # ---------------------------------------------------------------------------

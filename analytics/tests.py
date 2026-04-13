@@ -3,6 +3,7 @@ from django.test import Client, TestCase
 from django.utils import timezone
 
 from analytics.models import Event, PageView
+from analytics.utils import fire_event
 from members.models import MemberProfile
 from projects.models import Project
 from tasks.models import Task
@@ -192,6 +193,40 @@ class EventModelTests(TestCase):
     def test_str_representation(self):
         event = Event.objects.create(name="test_event")
         self.assertIn("test_event", str(event))
+
+
+# ---------------------------------------------------------------------------
+# fire_event utility
+# ---------------------------------------------------------------------------
+
+class FireEventUtilTests(TestCase):
+    def test_creates_event_record(self):
+        fire_event("test_event")
+        self.assertEqual(Event.objects.filter(name="test_event").count(), 1)
+
+    def test_creates_event_with_user(self):
+        user = make_user(email="ev@example.com", username="evfn")
+        fire_event("user_event", user=user)
+        event = Event.objects.get(name="user_event")
+        self.assertEqual(event.user, user)
+
+    def test_creates_event_with_metadata(self):
+        fire_event("meta_event", metadata={"plan": "pro", "source": "signup"})
+        event = Event.objects.get(name="meta_event")
+        self.assertEqual(event.metadata["plan"], "pro")
+        self.assertEqual(event.metadata["source"], "signup")
+
+    def test_metadata_defaults_to_empty_dict_when_none(self):
+        fire_event("no_meta_event")
+        event = Event.objects.get(name="no_meta_event")
+        self.assertEqual(event.metadata, {})
+
+    def test_does_not_raise_on_exception(self):
+        # Passing None name should not propagate an exception
+        try:
+            fire_event(None)
+        except Exception:
+            self.fail("fire_event raised an exception unexpectedly")
 
 
 # ---------------------------------------------------------------------------
