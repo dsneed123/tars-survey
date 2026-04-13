@@ -8,6 +8,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
+from analytics.utils import fire_event
 from projects.models import Project
 
 from .forms import TaskForm
@@ -65,6 +66,11 @@ def task_add(request):
             # Forward task to TARS controller on the Mac Mini
             _forward_to_controller(task)
 
+            fire_event(
+                "task_submitted",
+                user=request.user,
+                metadata={"task_id": task.pk, "project": task.project.github_repo},
+            )
             messages.success(request, f'Task "{task.title}" submitted successfully.')
             return redirect("tasks:detail", pk=task.pk)
     else:

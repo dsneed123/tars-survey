@@ -1,6 +1,7 @@
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import redirect, render
 
+from analytics.utils import fire_event
 from members.models import MemberProfile
 
 from .forms import LoginForm, RegisterForm
@@ -39,6 +40,7 @@ def accounts_register(request):
             user = form.save()
             MemberProfile.objects.create(user=user)
             login(request, user)
+            fire_event("signup_completed", user=user, metadata={"plan": user.plan})
             return redirect("members:dashboard")
     else:
         form = RegisterForm()

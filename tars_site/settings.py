@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "projects",
     "tasks",
     "workers",
+    "analytics",
 ]
 
 AUTH_USER_MODEL = "accounts.CustomUser"
@@ -46,6 +47,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "analytics.middleware.PageViewMiddleware",
 ]
 
 ROOT_URLCONF = "tars_site.urls"

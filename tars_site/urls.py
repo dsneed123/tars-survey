@@ -30,6 +30,7 @@ urlpatterns = [
     path("", include("projects.urls")),
     path("", include("tasks.urls")),
     path("", include("workers.urls")),
+    path("", include("analytics.urls")),
 ]
 
 if settings.DEBUG:

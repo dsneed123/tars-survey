@@ -11,6 +11,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
+from analytics.utils import fire_event
 from tasks.models import Task
 
 from .models import TaskAssignment, Worker
@@ -281,6 +282,15 @@ def task_update(request, task_id):
         TaskAssignment.objects.filter(
             task=task, worker=worker, result__isnull=True
         ).update(result=result, completed_at=timezone.now())
+        fire_event(
+            "task_complete",
+            user=task.created_by,
+            metadata={
+                "task_id": task.pk,
+                "result": result,
+                "worker_id": worker.pk,
+            },
+        )
 
     return JsonResponse({"ok": True, "task_id": task.pk, "status": task.status})
 

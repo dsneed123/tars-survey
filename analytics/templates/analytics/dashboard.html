@@ -1,0 +1,617 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Analytics — TARS{% endblock %}
+
+{% block meta_description %}<meta name="description" content="TARS admin analytics dashboard — engagement metrics, conversion funnel, and fleet status.">{% endblock %}
+
+{% block extra_head %}
+<style>
+    .admin-hero {
+        background: linear-gradient(135deg, var(--tars-surface) 0%, rgba(99,102,241,0.08) 100%);
+        border-bottom: 1px solid var(--tars-border);
+        padding: 2.5rem 0 2rem;
+    }
+
+    .section-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--tars-muted);
+        margin-bottom: 1rem;
+    }
+
+    /* KPI Cards */
+    .kpi-card {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 16px;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1.1rem;
+    }
+
+    .kpi-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        flex-shrink: 0;
+    }
+
+    .kpi-icon.accent { background: rgba(99,102,241,0.15); color: var(--tars-accent); }
+    .kpi-icon.green  { background: rgba(16,185,129,0.15); color: var(--tars-green); }
+    .kpi-icon.amber  { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    .kpi-icon.rose   { background: rgba(239,68,68,0.15);  color: #ef4444; }
+
+    .kpi-val {
+        font-size: 2rem;
+        font-weight: 800;
+        line-height: 1;
+        color: var(--tars-text);
+    }
+
+    .kpi-lbl {
+        font-size: 0.72rem;
+        color: var(--tars-muted);
+        margin-top: 0.25rem;
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+    }
+
+    /* Chart */
+    .chart-wrap {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 16px;
+        padding: 1.5rem;
+    }
+
+    .chart-bars {
+        display: flex;
+        align-items: flex-end;
+        gap: 3px;
+        height: 120px;
+        overflow: hidden;
+    }
+
+    .chart-bar-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        height: 100%;
+        position: relative;
+    }
+
+    .chart-bar {
+        width: 100%;
+        background: rgba(99,102,241,0.55);
+        border-radius: 3px 3px 0 0;
+        min-height: 2px;
+        transition: background 0.15s;
+    }
+
+    .chart-bar-col:hover .chart-bar {
+        background: rgba(99,102,241,0.85);
+    }
+
+    .chart-bar-col:hover .chart-tooltip {
+        display: block;
+    }
+
+    .chart-tooltip {
+        display: none;
+        position: absolute;
+        bottom: calc(100% + 6px);
+        left: 50%;
+        transform: translateX(-50%);
+        background: #1f2937;
+        border: 1px solid var(--tars-border);
+        border-radius: 6px;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.7rem;
+        white-space: nowrap;
+        color: var(--tars-text);
+        z-index: 10;
+        pointer-events: none;
+    }
+
+    .chart-axis {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 0.5rem;
+        font-size: 0.62rem;
+        color: var(--tars-muted);
+    }
+
+    /* Funnel */
+    .funnel-wrap {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 16px;
+        padding: 1.5rem;
+    }
+
+    .funnel-step {
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+        margin-bottom: 1rem;
+    }
+
+    .funnel-step:last-child { margin-bottom: 0; }
+
+    .funnel-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        background: rgba(99,102,241,0.12);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.95rem;
+        color: var(--tars-accent);
+        flex-shrink: 0;
+    }
+
+    .funnel-bar-track {
+        flex: 1;
+        height: 8px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .funnel-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--tars-accent), rgba(99,102,241,0.6));
+        border-radius: 4px;
+    }
+
+    .funnel-count {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--tars-text);
+        min-width: 48px;
+        text-align: right;
+    }
+
+    .funnel-lbl {
+        font-size: 0.72rem;
+        color: var(--tars-muted);
+        min-width: 88px;
+    }
+
+    /* Top pages */
+    .page-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.55rem 0;
+        border-bottom: 1px solid var(--tars-border);
+        font-size: 0.82rem;
+    }
+
+    .page-row:last-child { border-bottom: none; }
+
+    .page-bar-track {
+        flex: 1;
+        height: 6px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .page-bar-fill {
+        height: 100%;
+        background: rgba(16,185,129,0.6);
+        border-radius: 3px;
+    }
+
+    .page-path {
+        color: var(--tars-text);
+        font-weight: 500;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 180px;
+    }
+
+    .page-count {
+        font-size: 0.75rem;
+        color: var(--tars-muted);
+        min-width: 36px;
+        text-align: right;
+        font-weight: 600;
+    }
+
+    /* Worker fleet */
+    .fleet-card {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 16px;
+        padding: 1.5rem;
+    }
+
+    .fleet-stat {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid var(--tars-border);
+    }
+
+    .fleet-stat:last-child { border-bottom: none; }
+
+    .fleet-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+    .fleet-dot.online { background: var(--tars-green); }
+    .fleet-dot.busy   { background: var(--tars-accent); animation: tars-pulse 1.4s ease-in-out infinite; }
+    .fleet-dot.offline { background: var(--tars-muted); }
+
+    @keyframes tars-pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50%       { opacity: 0.5; transform: scale(1.6); }
+    }
+
+    /* Signup list */
+    .signup-row {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid var(--tars-border);
+        font-size: 0.82rem;
+    }
+
+    .signup-row:last-child { border-bottom: none; }
+
+    .signup-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: rgba(99,102,241,0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--tars-accent);
+        flex-shrink: 0;
+        text-transform: uppercase;
+    }
+
+    .plan-pill {
+        display: inline-block;
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        padding: 0.15rem 0.45rem;
+        border-radius: 999px;
+    }
+
+    .plan-pill.free       { background: rgba(156,163,175,0.12); color: var(--tars-muted); }
+    .plan-pill.starter    { background: rgba(99,102,241,0.15);  color: var(--tars-accent); }
+    .plan-pill.pro        { background: rgba(16,185,129,0.15);  color: var(--tars-green); }
+    .plan-pill.enterprise { background: rgba(245,158,11,0.15);  color: #f59e0b; }
+
+    /* Date filter */
+    .filter-bar {
+        background: rgba(99,102,241,0.06);
+        border: 1px solid rgba(99,102,241,0.15);
+        border-radius: 12px;
+        padding: 0.75rem 1.25rem;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .filter-bar label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--tars-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+    }
+
+    .filter-bar input[type="date"] {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        color: var(--tars-text);
+        border-radius: 8px;
+        padding: 0.35rem 0.65rem;
+        font-size: 0.82rem;
+    }
+
+    .filter-bar input[type="date"]:focus {
+        outline: none;
+        border-color: var(--tars-accent);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ── Hero / Date Filter ─────────────────────────────────────────────────── -->
+<div class="admin-hero">
+    <div class="container">
+        <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span style="font-size:0.7rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--tars-accent)">
+                        <i class="bi bi-shield-lock-fill me-1"></i>Staff Only
+                    </span>
+                </div>
+                <h1 class="h3 fw-bold mb-0" style="color:var(--tars-text)">Analytics Dashboard</h1>
+                <p class="small mb-0 mt-1" style="color:var(--tars-muted)">Engagement metrics, funnel analysis, and fleet status</p>
+            </div>
+        </div>
+
+        <!-- Date range filter -->
+        <form method="get" class="filter-bar">
+            <label for="date_from">From</label>
+            <input type="date" id="date_from" name="date_from" value="{{ date_from }}">
+            <label for="date_to">To</label>
+            <input type="date" id="date_to" name="date_to" value="{{ date_to }}">
+            <button type="submit" class="btn btn-accent btn-sm px-3">Apply</button>
+            <a href="{% url 'analytics:dashboard' %}" class="btn btn-sm" style="border:1px solid var(--tars-border); color:var(--tars-muted)">Reset</a>
+        </form>
+    </div>
+</div>
+
+<div class="container py-5">
+
+    <!-- ── KPI Cards ─────────────────────────────────────────────────────── -->
+    <p class="section-label">Key Metrics</p>
+    <div class="row g-3 mb-5">
+        <div class="col-6 col-lg-3">
+            <div class="kpi-card">
+                <div class="kpi-icon accent"><i class="bi bi-people-fill"></i></div>
+                <div>
+                    <div class="kpi-val">{{ total_users }}</div>
+                    <div class="kpi-lbl">Total Users</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="kpi-card">
+                <div class="kpi-icon green"><i class="bi bi-folder2-open"></i></div>
+                <div>
+                    <div class="kpi-val">{{ active_projects }}</div>
+                    <div class="kpi-lbl">Active Projects</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="kpi-card">
+                <div class="kpi-icon amber"><i class="bi bi-list-task"></i></div>
+                <div>
+                    <div class="kpi-val">{{ tasks_this_week }}</div>
+                    <div class="kpi-lbl">Tasks This Week</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="kpi-card">
+                <div class="kpi-icon {% if completion_rate and completion_rate >= 70 %}green{% elif completion_rate %}amber{% else %}rose{% endif %}">
+                    <i class="bi bi-check2-circle"></i>
+                </div>
+                <div>
+                    <div class="kpi-val">{% if completion_rate %}{{ completion_rate }}%{% else %}—{% endif %}</div>
+                    <div class="kpi-lbl">Completion Rate</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Page Views Chart + Conversion Funnel ──────────────────────────── -->
+    <div class="row g-4 mb-5">
+
+        <!-- Page Views Chart (last 30 days) -->
+        <div class="col-lg-7">
+            <p class="section-label">Page Views — Last 30 Days</p>
+            <div class="chart-wrap">
+                <div class="chart-bars">
+                    {% for day in chart_days %}
+                    <div class="chart-bar-col">
+                        <div class="chart-tooltip">{{ day.label }}: {{ day.count }}</div>
+                        <div class="chart-bar" style="height:{{ day.pct }}%"></div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <!-- Axis labels: show roughly every 5 days -->
+                <div class="chart-axis">
+                    {% for day in chart_days %}
+                        {% if forloop.counter0|divisibleby:5 or forloop.last %}
+                            <span>{{ day.label }}</span>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <div class="mt-2 text-end" style="font-size:0.7rem; color:var(--tars-muted)">
+                    Peak: {{ max_views }} views/day
+                </div>
+            </div>
+        </div>
+
+        <!-- Conversion Funnel -->
+        <div class="col-lg-5">
+            <p class="section-label">Conversion Funnel</p>
+            <div class="funnel-wrap">
+                {% for step in funnel %}
+                <div class="funnel-step">
+                    <div class="funnel-icon"><i class="bi {{ step.icon }}"></i></div>
+                    <span class="funnel-lbl">{{ step.label }}</span>
+                    <div class="funnel-bar-track">
+                        <div class="funnel-bar-fill" style="width:{{ step.pct }}%"></div>
+                    </div>
+                    <span class="funnel-count">{{ step.count }}</span>
+                </div>
+                {% endfor %}
+
+                <!-- Drop-off rates -->
+                {% if funnel|length >= 2 %}
+                <div class="mt-3 pt-3" style="border-top:1px solid var(--tars-border)">
+                    <div class="small" style="color:var(--tars-muted)">
+                        {% with v=funnel.0.count s=funnel.1.count %}
+                        {% if v > 0 %}
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Visitor → Signup</span>
+                            <span style="color:var(--tars-text); font-weight:600">
+                                {{ s|floatformat:0 }} / {{ v }} ({% widthratio s v 100 %}%)
+                            </span>
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+                        {% with s=funnel.1.count p=funnel.2.count %}
+                        {% if s > 0 %}
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>Signup → Project</span>
+                            <span style="color:var(--tars-text); font-weight:600">
+                                {{ p|floatformat:0 }} / {{ s }} ({% widthratio p s 100 %}%)
+                            </span>
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+                        {% with p=funnel.2.count t=funnel.3.count %}
+                        {% if p > 0 %}
+                        <div class="d-flex justify-content-between">
+                            <span>Project → First Task</span>
+                            <span style="color:var(--tars-text); font-weight:600">
+                                {{ t|floatformat:0 }} / {{ p }} ({% widthratio t p 100 %}%)
+                            </span>
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ── Bottom Row: Top Pages · Worker Fleet · Recent Signups ─────────── -->
+    <div class="row g-4">
+
+        <!-- Top Pages -->
+        <div class="col-lg-4">
+            <p class="section-label">Top Pages</p>
+            <div class="chart-wrap">
+                {% if top_pages %}
+                    {% for page in top_pages %}
+                    <div class="page-row">
+                        <span class="page-path" title="{{ page.path }}">{{ page.path }}</span>
+                        <div class="page-bar-track">
+                            <div class="page-bar-fill" style="width:{{ page.pct }}%"></div>
+                        </div>
+                        <span class="page-count">{{ page.count }}</span>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4" style="color:var(--tars-muted); font-size:0.82rem">
+                        <i class="bi bi-bar-chart-line me-1"></i> No page view data in range.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Worker Fleet -->
+        <div class="col-lg-3">
+            <p class="section-label">Worker Fleet</p>
+            <div class="fleet-card">
+                <div class="d-flex align-items-center justify-content-between mb-3 pb-3" style="border-bottom:1px solid var(--tars-border)">
+                    <span class="fw-bold" style="color:var(--tars-text)">{{ worker_total }} Worker{{ worker_total|pluralize }}</span>
+                    <span style="font-size:0.72rem; color:var(--tars-muted)">5-min heartbeat</span>
+                </div>
+
+                <div class="fleet-stat">
+                    <div class="fleet-dot online"></div>
+                    <span class="flex-grow-1 small" style="color:var(--tars-muted)">Online / Idle</span>
+                    <span class="fw-bold small" style="color:var(--tars-green)">{{ worker_online }}</span>
+                </div>
+                <div class="fleet-stat">
+                    <div class="fleet-dot busy"></div>
+                    <span class="flex-grow-1 small" style="color:var(--tars-muted)">Busy / Working</span>
+                    <span class="fw-bold small" style="color:var(--tars-accent)">{{ worker_busy }}</span>
+                </div>
+                <div class="fleet-stat">
+                    <div class="fleet-dot offline"></div>
+                    <span class="flex-grow-1 small" style="color:var(--tars-muted)">Offline</span>
+                    <span class="fw-bold small" style="color:var(--tars-muted)">{{ worker_offline }}</span>
+                </div>
+
+                {% if worker_total > 0 %}
+                <div class="mt-3 pt-3" style="border-top:1px solid var(--tars-border)">
+                    <div style="height:6px; background:rgba(255,255,255,0.05); border-radius:3px; overflow:hidden; display:flex; gap:2px">
+                        {% if worker_online > 0 %}
+                        <div style="flex:{{ worker_online }}; background:var(--tars-green); border-radius:3px"></div>
+                        {% endif %}
+                        {% if worker_busy > 0 %}
+                        <div style="flex:{{ worker_busy }}; background:var(--tars-accent); border-radius:3px"></div>
+                        {% endif %}
+                        {% if worker_offline > 0 %}
+                        <div style="flex:{{ worker_offline }}; background:var(--tars-muted); border-radius:3px; opacity:0.4"></div>
+                        {% endif %}
+                    </div>
+                    <div class="mt-2" style="font-size:0.68rem; color:var(--tars-muted)">
+                        {% if worker_total > 0 %}
+                            {% widthratio worker_online|add:worker_busy worker_total 100 %}% utilization
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-3 mt-2" style="color:var(--tars-muted); font-size:0.8rem">
+                    <i class="bi bi-cpu me-1"></i> No workers registered.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Signups -->
+        <div class="col-lg-5">
+            <p class="section-label">Recent Signups</p>
+            <div class="fleet-card" style="padding:1.25rem 1.5rem">
+                {% if recent_signups %}
+                    {% for u in recent_signups %}
+                    <div class="signup-row">
+                        <div class="signup-avatar">{{ u.username|slice:":1" }}</div>
+                        <div class="flex-grow-1 min-width-0">
+                            <div class="fw-semibold text-truncate" style="color:var(--tars-text); font-size:0.82rem">
+                                {{ u.email }}
+                            </div>
+                            {% if u.company_name %}
+                            <div class="text-truncate" style="color:var(--tars-muted); font-size:0.72rem">{{ u.company_name }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex flex-column align-items-end gap-1">
+                            <span class="plan-pill {{ u.plan }}">{{ u.plan }}</span>
+                            <span style="font-size:0.65rem; color:var(--tars-muted)">{{ u.created_at|date:"M j" }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4" style="color:var(--tars-muted); font-size:0.82rem">
+                        <i class="bi bi-person-plus me-1"></i> No recent signups.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}
