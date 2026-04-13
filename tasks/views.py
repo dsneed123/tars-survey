@@ -158,6 +158,7 @@ def _forward_to_controller(task):
         "description": task.description,
         "priority": task.priority,
         "user_id": str(task.created_by_id),
+        "survey_task_id": task.pk,
     }
     try:
         resp = http_requests.post(

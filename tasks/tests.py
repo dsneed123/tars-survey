@@ -321,6 +321,22 @@ class TaskAddViewTests(TestCase):
         })
         mock_forward.assert_called_once()
 
+    @patch("tasks.views.http_requests.post")
+    @override_settings(TARS_CONTROLLER_URL="http://tars.local", TARS_API_KEY="testkey")
+    def test_forward_payload_includes_survey_task_id(self, mock_post):
+        mock_post.return_value.ok = True
+        mock_post.return_value.json.return_value = {"task": {"id": "ctrl-1"}}
+        self.client.force_login(self.user)
+        self.client.post(self.url, {
+            "project": self.project.pk,
+            "title": "Payload check",
+            "description": "Verifying survey_task_id is forwarded.",
+            "priority": 50,
+        })
+        task = Task.objects.get()
+        _, kwargs = mock_post.call_args
+        self.assertEqual(kwargs["json"]["survey_task_id"], task.pk)
+
     def test_get_prefills_project_from_query_param(self):
         self.client.force_login(self.user)
         resp = self.client.get(self.url, {"project": self.project.pk})
