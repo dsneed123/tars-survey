@@ -11,6 +11,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from analytics.utils import fire_event
 from tasks.models import Task
 
 from .forms import ProjectForm, ProjectSettingsForm
@@ -90,6 +91,11 @@ def project_add(request):
             project = form.save(commit=False)
             project.owner = request.user
             project.save()
+            fire_event(
+                "project_added",
+                user=request.user,
+                metadata={"project_id": project.pk, "repo": project.github_repo},
+            )
             messages.success(request, f'Project "{project.name}" added successfully.')
             return redirect("projects:detail", pk=project.pk)
     else:
