@@ -3,6 +3,9 @@
 {% block title %}Get Started — TARS{% endblock %}
 
 {% block extra_head %}
+{% if recaptcha_site_key %}
+<script src="https://www.google.com/recaptcha/api.js?render={{ recaptcha_site_key }}"></script>
+{% endif %}
 <style>
     .form-page {
         min-height: 80vh;
@@ -14,12 +17,87 @@
         content: "";
         position: fixed;
         inset: 0;
-        background:
-            radial-gradient(ellipse 70% 50% at 50% -5%, rgba(99,102,241,0.18) 0%, transparent 55%);
+        background: radial-gradient(ellipse 70% 50% at 50% -5%, rgba(99,102,241,0.18) 0%, transparent 55%);
         pointer-events: none;
         z-index: 0;
     }
 
+    /* ── Step progress indicator ── */
+    .step-progress {
+        display: flex;
+        align-items: flex-start;
+        position: relative;
+        z-index: 1;
+        margin-bottom: 2rem;
+    }
+
+    .step-dot {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .step-dot-circle {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.82rem;
+        font-weight: 700;
+        border: 2px solid var(--tars-border);
+        color: var(--tars-muted);
+        background: var(--tars-surface);
+        transition: all 0.3s ease;
+    }
+
+    .step-dot.active .step-dot-circle {
+        border-color: var(--tars-accent);
+        background: var(--tars-accent);
+        color: #fff;
+        box-shadow: 0 0 0 4px rgba(99,102,241,0.2);
+    }
+
+    .step-dot.completed .step-dot-circle {
+        border-color: var(--tars-green);
+        background: var(--tars-green);
+        color: #fff;
+    }
+
+    .step-label {
+        font-size: 0.68rem;
+        font-weight: 600;
+        color: var(--tars-muted);
+        white-space: nowrap;
+        letter-spacing: 0.02em;
+        text-align: center;
+        transition: color 0.3s;
+    }
+
+    .step-dot.active .step-label {
+        color: var(--tars-accent);
+    }
+
+    .step-dot.completed .step-label {
+        color: var(--tars-green);
+    }
+
+    .step-connector {
+        flex: 1;
+        height: 2px;
+        background: var(--tars-border);
+        margin-top: 17px; /* vertically aligns with circle center */
+        transition: background-color 0.4s ease;
+    }
+
+    .step-connector.completed {
+        background: var(--tars-green);
+    }
+
+    /* ── Form card ── */
     .form-card {
         background: var(--tars-surface);
         border: 1px solid var(--tars-border);
@@ -29,17 +107,21 @@
         z-index: 1;
     }
 
+    @media (max-width: 575px) {
+        .form-card { padding: 1.5rem; }
+    }
+
     .form-section-label {
         font-size: 0.7rem;
         font-weight: 700;
         letter-spacing: 0.14em;
         text-transform: uppercase;
         color: var(--tars-accent);
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.4rem;
     }
 
     .form-section-title {
-        font-size: 1.1rem;
+        font-size: 1.15rem;
         font-weight: 700;
         color: var(--tars-text);
         margin-bottom: 1.5rem;
@@ -57,6 +139,13 @@
     .form-label .required {
         color: #f87171;
         margin-left: 3px;
+    }
+
+    .optional-tag {
+        font-size: 0.75rem;
+        color: var(--tars-muted);
+        font-weight: 400;
+        margin-left: 4px;
     }
 
     .form-control,
@@ -78,48 +167,222 @@
         box-shadow: 0 0 0 3px rgba(99,102,241,0.18);
     }
 
-    .form-control::placeholder {
-        color: #4b5563;
-    }
+    .form-control::placeholder { color: #4b5563; }
 
     .form-select option {
         background-color: #111827;
         color: var(--tars-text);
     }
 
-    .is-invalid ~ .invalid-feedback,
-    .is-invalid + .invalid-feedback {
+    /* ── Field-level validation (orange, not red) ── */
+    .field-error {
+        color: #fb923c;
+        font-size: 0.82rem;
+        margin-top: 0.3rem;
+        display: none;
+    }
+
+    .field-error.visible { display: block; }
+
+    .form-control.field-invalid,
+    .form-select.field-invalid {
+        border-color: #fb923c !important;
+        box-shadow: 0 0 0 3px rgba(251,146,60,0.15) !important;
+    }
+
+    /* Server-side errors (keep consistent orange style) */
+    .server-error {
+        color: #fb923c;
+        font-size: 0.82rem;
+        margin-top: 0.3rem;
         display: block;
     }
 
-    .invalid-feedback {
-        color: #f87171;
-        font-size: 0.82rem;
+    /* ── Step navigation buttons ── */
+    .step-nav {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1rem;
+        position: relative;
+        z-index: 1;
     }
 
-    .form-control.is-invalid,
-    .form-select.is-invalid {
-        border-color: #f87171;
-    }
+    .step-nav.justify-end { justify-content: flex-end; }
 
+    .next-btn,
     .submit-btn {
         background: var(--tars-accent);
         color: #fff;
         border: none;
         font-weight: 700;
-        font-size: 1rem;
-        padding: 0.8rem 2.5rem;
+        font-size: 0.95rem;
+        padding: 0.75rem 2rem;
         border-radius: 10px;
         transition: background-color 0.2s, transform 0.1s;
-        width: 100%;
+        cursor: pointer;
     }
 
+    .next-btn:hover,
     .submit-btn:hover {
         background: var(--tars-accent-hover);
         color: #fff;
         transform: translateY(-1px);
     }
 
+    .submit-btn { padding: 0.8rem 2.5rem; font-size: 1rem; }
+
+    .back-btn {
+        background: transparent;
+        color: var(--tars-muted);
+        border: 1px solid var(--tars-border);
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 0.7rem 1.5rem;
+        border-radius: 10px;
+        transition: border-color 0.2s, color 0.2s;
+        cursor: pointer;
+    }
+
+    .back-btn:hover {
+        border-color: var(--tars-accent);
+        color: var(--tars-text);
+    }
+
+    /* ── Sidebar ── */
+    .sidebar-card {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 16px;
+        padding: 1.5rem;
+        position: sticky;
+        top: 100px;
+    }
+
+    .sidebar-eyebrow {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--tars-accent);
+        margin-bottom: 1rem;
+    }
+
+    .sidebar-heading {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--tars-text);
+        margin-bottom: 1.5rem;
+    }
+
+    .timeline-item {
+        display: flex;
+        gap: 14px;
+        position: relative;
+    }
+
+    .timeline-left {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex-shrink: 0;
+        width: 32px;
+    }
+
+    .timeline-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        flex-shrink: 0;
+    }
+
+    .timeline-line {
+        width: 2px;
+        flex: 1;
+        background: var(--tars-border);
+        margin: 4px 0;
+        min-height: 20px;
+    }
+
+    .timeline-content {
+        padding-bottom: 1.5rem;
+        flex: 1;
+    }
+
+    .timeline-item:last-child .timeline-content { padding-bottom: 0; }
+
+    .timeline-step-num {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 2px;
+    }
+
+    .timeline-title {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--tars-text);
+        margin-bottom: 2px;
+    }
+
+    .timeline-desc {
+        font-size: 0.8rem;
+        color: var(--tars-muted);
+        line-height: 1.4;
+    }
+
+    /* ── Mobile sidebar accordion ── */
+    .mobile-sidebar {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 14px;
+        overflow: hidden;
+        position: relative;
+        z-index: 1;
+    }
+
+    .mobile-sidebar-toggle {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.9rem 1.25rem;
+        background: transparent;
+        border: none;
+        color: var(--tars-text);
+        font-weight: 600;
+        font-size: 0.88rem;
+        cursor: pointer;
+    }
+
+    .mobile-sidebar-toggle .toggle-icon {
+        transition: transform 0.25s;
+        color: var(--tars-muted);
+    }
+
+    .mobile-sidebar-toggle.open .toggle-icon {
+        transform: rotate(180deg);
+    }
+
+    .mobile-sidebar-body {
+        display: none;
+        padding: 0 1.25rem 1.25rem;
+    }
+
+    .mobile-sidebar-body.open { display: block; }
+
+    /* ── Form step transition ── */
+    .form-step { display: none; }
+    .form-step.active { display: block; }
+    /* Without JS, show all steps */
+    .no-js .form-step { display: block; }
+
+    /* ── Page eyebrow ── */
     .page-eyebrow {
         display: inline-flex;
         align-items: center;
@@ -136,11 +399,24 @@
         margin-bottom: 1rem;
     }
 
-    .optional-tag {
-        font-size: 0.75rem;
+    /* ── Form helper text ── */
+    .field-hint {
         color: var(--tars-muted);
-        font-weight: 400;
-        margin-left: 4px;
+        font-size: 0.8rem;
+        margin-top: 0.3rem;
+    }
+
+    /* ── Non-field errors ── */
+    .non-field-errors {
+        background: rgba(251,146,60,0.08);
+        border: 1px solid rgba(251,146,60,0.3);
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        color: #fb923c;
+        font-size: 0.88rem;
+        margin-bottom: 1rem;
+        position: relative;
+        z-index: 1;
     }
 </style>
 {% endblock %}
@@ -148,161 +424,509 @@
 {% block content %}
 <div class="form-page">
     <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-lg-8 col-xl-7">
 
-                <!-- Page header -->
-                <div class="text-center mb-4" style="position:relative; z-index:1;">
-                    <div class="page-eyebrow">
-                        <span style="width:7px;height:7px;border-radius:50%;background:var(--tars-green);display:inline-block;"></span>
-                        Early Access
+        <!-- Page header -->
+        <div class="text-center mb-4" style="position:relative; z-index:1;">
+            <div class="page-eyebrow">
+                <span style="width:7px;height:7px;border-radius:50%;background:var(--tars-green);display:inline-block;"></span>
+                Early Access
+            </div>
+            <h1 style="font-size: clamp(1.9rem, 4vw, 2.7rem); font-weight: 800; letter-spacing: -0.03em; margin-bottom: 0.75rem;">
+                Let's build something together.
+            </h1>
+            <p style="color: var(--tars-muted); font-size: 1.05rem; max-width: 480px; margin: 0 auto;">
+                Tell us about your project and we'll reach out within 24 hours with a tailored plan.
+            </p>
+        </div>
+
+        <!-- Mobile "What happens next?" -->
+        <div class="d-lg-none mb-4" style="position:relative;z-index:1;">
+            <div class="mobile-sidebar">
+                <button class="mobile-sidebar-toggle" id="mobile-sidebar-toggle" type="button" aria-expanded="false">
+                    <span style="display:flex;align-items:center;gap:8px;">
+                        <i class="bi bi-arrow-right-circle" style="color:var(--tars-accent);"></i>
+                        What happens next?
+                    </span>
+                    <i class="bi bi-chevron-down toggle-icon"></i>
+                </button>
+                <div class="mobile-sidebar-body" id="mobile-sidebar-body">
+                    {% include "inquiries/_what_happens_next.html" %}
+                </div>
+            </div>
+        </div>
+
+        {% if form.non_field_errors %}
+        <div class="non-field-errors" style="max-width:700px; margin:0 auto 1rem;">
+            <i class="bi bi-exclamation-triangle me-2"></i>{{ form.non_field_errors.0 }}
+        </div>
+        {% endif %}
+
+        <div class="row justify-content-center g-4">
+
+            <!-- Main form column -->
+            <div class="col-lg-8">
+
+                <!-- Step progress indicator -->
+                <div class="step-progress" id="step-progress" style="display:none;">
+                    <div class="step-dot active" id="dot-1">
+                        <div class="step-dot-circle" id="dot-circle-1">1</div>
+                        <span class="step-label">Company</span>
                     </div>
-                    <h1 style="font-size: clamp(2rem, 4vw, 2.8rem); font-weight: 800; letter-spacing: -0.03em; margin-bottom: 0.75rem;">
-                        Let's build something together.
-                    </h1>
-                    <p style="color: var(--tars-muted); font-size: 1.05rem; max-width: 480px; margin: 0 auto;">
-                        Tell us about your project and we'll reach out within 24 hours with a tailored plan.
-                    </p>
+                    <div class="step-connector" id="connector-1-2"></div>
+                    <div class="step-dot" id="dot-2">
+                        <div class="step-dot-circle" id="dot-circle-2">2</div>
+                        <span class="step-label">Project</span>
+                    </div>
+                    <div class="step-connector" id="connector-2-3"></div>
+                    <div class="step-dot" id="dot-3">
+                        <div class="step-dot-circle" id="dot-circle-3">3</div>
+                        <span class="step-label">Budget</span>
+                    </div>
                 </div>
 
-                <form method="post" novalidate>
+                <form method="post" id="inquiry-form" novalidate>
                     {% csrf_token %}
+                    <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response" value="">
 
-                    <!-- Section 1: Contact Info -->
-                    <div class="form-card mb-4">
-                        <div class="form-section-label">Step 1 of 3</div>
-                        <div class="form-section-title">Your Contact Information</div>
-                        <div class="row g-3">
-                            <div class="col-sm-6">
-                                <label class="form-label" for="{{ form.contact_name.id_for_label }}">
-                                    Full Name <span class="required">*</span>
-                                </label>
-                                {{ form.contact_name }}
-                                {% if form.contact_name.errors %}
-                                    <div class="invalid-feedback">{{ form.contact_name.errors.0 }}</div>
-                                    <script>document.getElementById("{{ form.contact_name.id_for_label }}").classList.add("is-invalid");</script>
-                                {% endif %}
-                            </div>
-                            <div class="col-sm-6">
-                                <label class="form-label" for="{{ form.email.id_for_label }}">
-                                    Work Email <span class="required">*</span>
-                                </label>
-                                {{ form.email }}
-                                {% if form.email.errors %}
-                                    <div class="invalid-feedback">{{ form.email.errors.0 }}</div>
-                                    <script>document.getElementById("{{ form.email.id_for_label }}").classList.add("is-invalid");</script>
-                                {% endif %}
-                            </div>
-                            <div class="col-sm-6">
-                                <label class="form-label" for="{{ form.phone.id_for_label }}">
-                                    Phone <span class="optional-tag">(optional)</span>
-                                </label>
-                                {{ form.phone }}
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Section 2: Company Info -->
-                    <div class="form-card mb-4">
-                        <div class="form-section-label">Step 2 of 3</div>
-                        <div class="form-section-title">About Your Company</div>
-                        <div class="row g-3">
-                            <div class="col-sm-6">
-                                <label class="form-label" for="{{ form.company_name.id_for_label }}">
-                                    Company Name <span class="required">*</span>
-                                </label>
-                                {{ form.company_name }}
-                                {% if form.company_name.errors %}
-                                    <div class="invalid-feedback">{{ form.company_name.errors.0 }}</div>
-                                    <script>document.getElementById("{{ form.company_name.id_for_label }}").classList.add("is-invalid");</script>
-                                {% endif %}
-                            </div>
-                            <div class="col-sm-6">
-                                <label class="form-label" for="{{ form.industry.id_for_label }}">
-                                    Industry <span class="required">*</span>
-                                </label>
-                                {{ form.industry }}
-                                {% if form.industry.errors %}
-                                    <div class="invalid-feedback">{{ form.industry.errors.0 }}</div>
-                                    <script>document.getElementById("{{ form.industry.id_for_label }}").classList.add("is-invalid");</script>
-                                {% endif %}
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label" for="{{ form.company_size.id_for_label }}">
-                                    Company Size <span class="required">*</span>
-                                </label>
-                                {{ form.company_size }}
-                                {% if form.company_size.errors %}
-                                    <div class="invalid-feedback">{{ form.company_size.errors.0 }}</div>
-                                    <script>document.getElementById("{{ form.company_size.id_for_label }}").classList.add("is-invalid");</script>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Section 3: Project Details -->
-                    <div class="form-card mb-4">
-                        <div class="form-section-label">Step 3 of 3</div>
-                        <div class="form-section-title">Your Project</div>
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label class="form-label" for="{{ form.project_description.id_for_label }}">
-                                    Project Description <span class="required">*</span>
-                                </label>
-                                {{ form.project_description }}
-                                {% if form.project_description.errors %}
-                                    <div class="invalid-feedback">{{ form.project_description.errors.0 }}</div>
-                                    <script>document.getElementById("{{ form.project_description.id_for_label }}").classList.add("is-invalid");</script>
-                                {% endif %}
-                                <div class="form-text" style="color: var(--tars-muted); font-size: 0.8rem; margin-top: 0.3rem;">
-                                    What do you want to build or automate? Include any relevant stack or constraints.
+                    <!-- ─────────────────────────────── Step 1: Company Info -->
+                    <div class="form-step" id="step-1">
+                        <div class="form-card mb-3">
+                            <div class="form-section-label">Step 1 of 3</div>
+                            <div class="form-section-title">Company Information</div>
+                            <div class="row g-3">
+                                <div class="col-sm-6">
+                                    <label class="form-label" for="{{ form.contact_name.id_for_label }}">
+                                        Full Name <span class="required">*</span>
+                                    </label>
+                                    {{ form.contact_name }}
+                                    {% if form.contact_name.errors %}
+                                        <div class="server-error">{{ form.contact_name.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="field-error" id="err-contact_name"></div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label" for="{{ form.email.id_for_label }}">
+                                        Work Email <span class="required">*</span>
+                                    </label>
+                                    {{ form.email }}
+                                    {% if form.email.errors %}
+                                        <div class="server-error">{{ form.email.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="field-error" id="err-email"></div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label" for="{{ form.company_name.id_for_label }}">
+                                        Company Name <span class="required">*</span>
+                                    </label>
+                                    {{ form.company_name }}
+                                    {% if form.company_name.errors %}
+                                        <div class="server-error">{{ form.company_name.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="field-error" id="err-company_name"></div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label" for="{{ form.company_size.id_for_label }}">
+                                        Team Size <span class="required">*</span>
+                                    </label>
+                                    {{ form.company_size }}
+                                    {% if form.company_size.errors %}
+                                        <div class="server-error">{{ form.company_size.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="field-error" id="err-company_size"></div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label" for="{{ form.industry.id_for_label }}">
+                                        Industry <span class="required">*</span>
+                                    </label>
+                                    {{ form.industry }}
+                                    {% if form.industry.errors %}
+                                        <div class="server-error">{{ form.industry.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="field-error" id="err-industry"></div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label" for="{{ form.phone.id_for_label }}">
+                                        Phone <span class="optional-tag">(optional)</span>
+                                    </label>
+                                    {{ form.phone }}
                                 </div>
                             </div>
-                            <div class="col-sm-6">
-                                <label class="form-label" for="{{ form.budget_range.id_for_label }}">
-                                    Estimated Budget <span class="required">*</span>
-                                </label>
-                                {{ form.budget_range }}
-                                {% if form.budget_range.errors %}
-                                    <div class="invalid-feedback">{{ form.budget_range.errors.0 }}</div>
-                                    <script>document.getElementById("{{ form.budget_range.id_for_label }}").classList.add("is-invalid");</script>
-                                {% endif %}
-                            </div>
-                            <div class="col-sm-6">
-                                <label class="form-label" for="{{ form.timeline.id_for_label }}">
-                                    Desired Timeline <span class="required">*</span>
-                                </label>
-                                {{ form.timeline }}
-                                {% if form.timeline.errors %}
-                                    <div class="invalid-feedback">{{ form.timeline.errors.0 }}</div>
-                                    <script>document.getElementById("{{ form.timeline.id_for_label }}").classList.add("is-invalid");</script>
-                                {% endif %}
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label" for="{{ form.how_heard_about_us.id_for_label }}">
-                                    How did you hear about TARS? <span class="required">*</span>
-                                </label>
-                                {{ form.how_heard_about_us }}
-                                {% if form.how_heard_about_us.errors %}
-                                    <div class="invalid-feedback">{{ form.how_heard_about_us.errors.0 }}</div>
-                                    <script>document.getElementById("{{ form.how_heard_about_us.id_for_label }}").classList.add("is-invalid");</script>
-                                {% endif %}
-                            </div>
+                        </div>
+                        <div class="step-nav justify-end">
+                            <button type="button" class="next-btn" data-next="2">
+                                Next: Project Details <i class="bi bi-arrow-right ms-1"></i>
+                            </button>
                         </div>
                     </div>
 
-                    <div class="text-center" style="position: relative; z-index: 1;">
-                        <button type="submit" class="btn submit-btn">
-                            Submit Inquiry &rarr;
-                        </button>
-                        <p class="mt-3" style="color: var(--tars-muted); font-size: 0.82rem;">
+                    <!-- ─────────────────────────────── Step 2: Project Details -->
+                    <div class="form-step" id="step-2">
+                        <div class="form-card mb-3">
+                            <div class="form-section-label">Step 2 of 3</div>
+                            <div class="form-section-title">Project Details</div>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label class="form-label" for="{{ form.project_description.id_for_label }}">
+                                        What are you building? <span class="required">*</span>
+                                    </label>
+                                    {{ form.project_description }}
+                                    {% if form.project_description.errors %}
+                                        <div class="server-error">{{ form.project_description.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="field-error" id="err-project_description"></div>
+                                    <div class="field-hint">Describe what you want to build or automate. Include goals, constraints, and any relevant context.</div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label" for="{{ form.primary_language.id_for_label }}">
+                                        Primary Language / Stack <span class="optional-tag">(optional)</span>
+                                    </label>
+                                    {{ form.primary_language }}
+                                    <div class="field-hint">e.g. Python + React, Go, TypeScript</div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label" for="{{ form.repo_url.id_for_label }}">
+                                        Repository URL <span class="optional-tag">(optional)</span>
+                                    </label>
+                                    {{ form.repo_url }}
+                                    {% if form.repo_url.errors %}
+                                        <div class="server-error">{{ form.repo_url.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="field-error" id="err-repo_url"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="step-nav">
+                            <button type="button" class="back-btn" data-prev="1">
+                                <i class="bi bi-arrow-left me-1"></i> Back
+                            </button>
+                            <button type="button" class="next-btn" data-next="3">
+                                Next: Budget &amp; Timeline <i class="bi bi-arrow-right ms-1"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ─────────────────────────────── Step 3: Budget & Timeline -->
+                    <div class="form-step" id="step-3">
+                        <div class="form-card mb-3">
+                            <div class="form-section-label">Step 3 of 3</div>
+                            <div class="form-section-title">Budget &amp; Timeline</div>
+                            <div class="row g-3">
+                                <div class="col-sm-6">
+                                    <label class="form-label" for="{{ form.budget_range.id_for_label }}">
+                                        Estimated Budget <span class="required">*</span>
+                                    </label>
+                                    {{ form.budget_range }}
+                                    {% if form.budget_range.errors %}
+                                        <div class="server-error">{{ form.budget_range.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="field-error" id="err-budget_range"></div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <label class="form-label" for="{{ form.timeline.id_for_label }}">
+                                        Desired Timeline <span class="required">*</span>
+                                    </label>
+                                    {{ form.timeline }}
+                                    {% if form.timeline.errors %}
+                                        <div class="server-error">{{ form.timeline.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="field-error" id="err-timeline"></div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label" for="{{ form.how_heard_about_us.id_for_label }}">
+                                        How did you hear about TARS? <span class="required">*</span>
+                                    </label>
+                                    {{ form.how_heard_about_us }}
+                                    {% if form.how_heard_about_us.errors %}
+                                        <div class="server-error">{{ form.how_heard_about_us.errors.0 }}</div>
+                                    {% endif %}
+                                    <div class="field-error" id="err-how_heard_about_us"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="step-nav">
+                            <button type="button" class="back-btn" data-prev="2">
+                                <i class="bi bi-arrow-left me-1"></i> Back
+                            </button>
+                            <button type="submit" class="submit-btn" id="submit-btn">
+                                Submit Inquiry <i class="bi bi-arrow-right ms-1"></i>
+                            </button>
+                        </div>
+                        <p class="text-center mt-3" style="color: var(--tars-muted); font-size: 0.82rem; position:relative;z-index:1;">
                             No spam. We'll only reach out about your inquiry.
                         </p>
                     </div>
-                </form>
 
+                </form>
             </div>
+
+            <!-- Desktop sidebar -->
+            <div class="col-lg-4 d-none d-lg-block">
+                <div class="sidebar-card">
+                    <div class="sidebar-eyebrow">What happens next?</div>
+                    <div class="sidebar-heading">Your path from inquiry to launch</div>
+                    {% include "inquiries/_what_happens_next.html" %}
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
+
+<script>
+(function () {
+    'use strict';
+
+    const STORAGE_KEY = 'tars_inquiry_form_v1';
+    const recaptchaSiteKey = '{{ recaptcha_site_key|escapejs }}';
+
+    // Field definitions per step
+    const STEPS = {
+        1: {
+            required: ['id_contact_name', 'id_email', 'id_company_name', 'id_company_size', 'id_industry'],
+            optional: ['id_phone'],
+        },
+        2: {
+            required: ['id_project_description'],
+            optional: ['id_primary_language', 'id_repo_url'],
+        },
+        3: {
+            required: ['id_budget_range', 'id_timeline', 'id_how_heard_about_us'],
+            optional: [],
+        },
+    };
+
+    // Friendly validation messages
+    const MESSAGES = {
+        id_contact_name:       'Please enter your full name.',
+        id_email:              'Please enter a valid work email address.',
+        id_company_name:       'Please enter your company name.',
+        id_company_size:       'Please select your team size.',
+        id_industry:           'Please enter your industry.',
+        id_project_description:'Please describe your project (at least 20 characters).',
+        id_repo_url:           'Please enter a valid URL (e.g. https://github.com/...).',
+        id_budget_range:       'Please select a budget range.',
+        id_timeline:           'Please select a timeline.',
+        id_how_heard_about_us: 'Please tell us how you found TARS.',
+    };
+
+    let currentStep = 1;
+
+    // ── Init: show progress, activate JS ──────────────────────────────────
+    document.getElementById('step-progress').style.display = 'flex';
+
+    // Detect which step has server-side errors and start there
+    let startStep = 1;
+    for (let s = 3; s >= 1; s--) {
+        if (document.querySelector('#step-' + s + ' .server-error')) {
+            startStep = s;
+        }
+    }
+    showStep(startStep);
+    restoreFromStorage();
+
+    // ── Mobile sidebar toggle ──────────────────────────────────────────────
+    const mobileToggle = document.getElementById('mobile-sidebar-toggle');
+    const mobileBody   = document.getElementById('mobile-sidebar-body');
+    if (mobileToggle) {
+        mobileToggle.addEventListener('click', function () {
+            const open = mobileBody.classList.toggle('open');
+            mobileToggle.classList.toggle('open', open);
+            mobileToggle.setAttribute('aria-expanded', String(open));
+        });
+    }
+
+    // ── Step navigation ───────────────────────────────────────────────────
+    document.querySelectorAll('.next-btn[data-next]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const targetStep = parseInt(this.dataset.next, 10);
+            if (validateStep(currentStep)) {
+                showStep(targetStep);
+            }
+        });
+    });
+
+    document.querySelectorAll('.back-btn[data-prev]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            showStep(parseInt(this.dataset.prev, 10));
+        });
+    });
+
+    // ── Form submit ───────────────────────────────────────────────────────
+    document.getElementById('inquiry-form').addEventListener('submit', function (e) {
+        if (!validateStep(3)) {
+            e.preventDefault();
+            return;
+        }
+
+        if (recaptchaSiteKey) {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            btn.disabled = true;
+            btn.textContent = 'Submitting…';
+
+            grecaptcha.ready(function () {
+                grecaptcha.execute(recaptchaSiteKey, { action: 'inquiry' }).then(function (token) {
+                    document.getElementById('g-recaptcha-response').value = token;
+                    localStorage.removeItem(STORAGE_KEY);
+                    document.getElementById('inquiry-form').submit();
+                }).catch(function () {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Submit Inquiry <i class="bi bi-arrow-right ms-1"></i>';
+                });
+            });
+        } else {
+            localStorage.removeItem(STORAGE_KEY);
+        }
+    });
+
+    // ── Real-time validation ──────────────────────────────────────────────
+    document.querySelectorAll('.form-control, .form-select').forEach(function (el) {
+        let touched = false;
+
+        el.addEventListener('blur', function () {
+            touched = true;
+            validateField(el);
+        });
+
+        el.addEventListener('input', function () {
+            if (touched) validateField(el);
+            saveToStorage();
+        });
+
+        el.addEventListener('change', function () {
+            if (touched) validateField(el);
+            saveToStorage();
+        });
+    });
+
+    // ── localStorage ─────────────────────────────────────────────────────
+    function saveToStorage() {
+        const data = {};
+        document.querySelectorAll('.form-control, .form-select').forEach(function (el) {
+            if (el.id) data[el.id] = el.value;
+        });
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        } catch (_) {}
+    }
+
+    function restoreFromStorage() {
+        let data;
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return;
+            data = JSON.parse(raw);
+        } catch (_) { return; }
+
+        document.querySelectorAll('.form-control, .form-select').forEach(function (el) {
+            if (el.id && data[el.id] !== undefined && el.value === '') {
+                el.value = data[el.id];
+            }
+        });
+    }
+
+    // ── Step display ──────────────────────────────────────────────────────
+    function showStep(n) {
+        currentStep = n;
+        for (let s = 1; s <= 3; s++) {
+            const panel = document.getElementById('step-' + s);
+            if (panel) panel.classList.toggle('active', s === n);
+        }
+        updateProgress(n);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function updateProgress(n) {
+        for (let s = 1; s <= 3; s++) {
+            const dot    = document.getElementById('dot-' + s);
+            const circle = document.getElementById('dot-circle-' + s);
+            if (!dot) continue;
+
+            dot.classList.remove('active', 'completed');
+            if (s < n) {
+                dot.classList.add('completed');
+                circle.innerHTML = '<i class="bi bi-check-lg"></i>';
+            } else if (s === n) {
+                dot.classList.add('active');
+                circle.textContent = s;
+            } else {
+                circle.textContent = s;
+            }
+        }
+
+        const c12 = document.getElementById('connector-1-2');
+        const c23 = document.getElementById('connector-2-3');
+        if (c12) c12.classList.toggle('completed', n > 1);
+        if (c23) c23.classList.toggle('completed', n > 2);
+    }
+
+    // ── Validation helpers ────────────────────────────────────────────────
+    function validateStep(n) {
+        const step = STEPS[n];
+        let valid = true;
+
+        step.required.forEach(function (id) {
+            const el = document.getElementById(id);
+            if (el && !validateField(el, true)) valid = false;
+        });
+
+        return valid;
+    }
+
+    function validateField(el, force) {
+        const id = el.id;
+        const errEl = document.getElementById('err-' + id.replace('id_', ''));
+        if (!errEl) return true;
+
+        const msg = getFieldError(el);
+
+        if (msg) {
+            el.classList.add('field-invalid');
+            errEl.textContent = msg;
+            errEl.classList.add('visible');
+            return false;
+        } else {
+            el.classList.remove('field-invalid');
+            errEl.textContent = '';
+            errEl.classList.remove('visible');
+            return true;
+        }
+    }
+
+    function getFieldError(el) {
+        const id  = el.id;
+        const val = el.value.trim();
+
+        // Optional fields: only validate if filled
+        const allOptional = Object.values(STEPS).flatMap(function (s) { return s.optional; });
+        if (allOptional.includes(id) && val === '') return null;
+
+        // Skip truly optional fields with no value
+        if (id === 'id_phone' || id === 'id_primary_language') return null;
+
+        if (id === 'id_email') {
+            if (!val) return MESSAGES[id];
+            return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(val) ? null : MESSAGES[id];
+        }
+
+        if (id === 'id_repo_url') {
+            if (!val) return null; // optional
+            return /^https?:\/\/.+\..+/.test(val) ? null : MESSAGES[id];
+        }
+
+        if (id === 'id_company_size' || id === 'id_budget_range' || id === 'id_timeline') {
+            return val ? null : MESSAGES[id];
+        }
+
+        if (id === 'id_project_description') {
+            if (!val) return MESSAGES[id];
+            return val.length >= 20 ? null : MESSAGES[id];
+        }
+
+        // Generic required text field
+        if (!val) return MESSAGES[id] || 'This field is required.';
+        return null;
+    }
+})();
+</script>
 {% endblock %}
