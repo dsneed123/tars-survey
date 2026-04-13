@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}{{ team.name }} — TARS{% endblock %}
+
+{% block extra_head %}
+<style>
+    .section-card {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 12px;
+        padding: 1.5rem;
+    }
+    .member-row, .project-row, .invite-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--tars-border);
+    }
+    .member-row:last-child, .project-row:last-child, .invite-row:last-child {
+        border-bottom: 0;
+    }
+    .role-badge {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        padding: 0.15rem 0.5rem;
+        border-radius: 999px;
+        background: rgba(99,102,241,0.12);
+        color: var(--tars-accent);
+    }
+    .role-badge.owner {
+        background: rgba(16,185,129,0.15);
+        color: #10b981;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="py-4">
+    <div class="container">
+        <nav class="mb-3" style="font-size:0.85rem;">
+            <a href="{% url 'teams:list' %}" style="color:var(--tars-muted); text-decoration:none;">
+                <i class="bi bi-arrow-left me-1"></i>Teams
+            </a>
+        </nav>
+
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+            <div>
+                <h1 class="mb-1">{{ team.name }}</h1>
+                {% if team.description %}<p class="mb-0" style="color:var(--tars-muted)">{{ team.description }}</p>{% endif %}
+            </div>
+            {% if is_admin %}
+            <a href="{% url 'teams:invite' team.slug %}" class="btn btn-accent">
+                <i class="bi bi-person-plus me-1"></i>Invite
+            </a>
+            {% endif %}
+        </div>
+
+        <div class="row g-3">
+            <div class="col-lg-7">
+                <div class="section-card">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="mb-0">Projects</h5>
+                        <span style="color:var(--tars-muted); font-size:0.85rem;">{{ projects.count }}</span>
+                    </div>
+                    {% if projects %}
+                        {% for p in projects %}
+                        <div class="project-row">
+                            <div>
+                                <a href="{% url 'projects:detail' p.pk %}" style="color:var(--tars-text); text-decoration:none; font-weight:500;">
+                                    {{ p.name }}
+                                </a>
+                                <div style="color:var(--tars-muted); font-size:0.85rem;">{{ p.github_repo }}</div>
+                            </div>
+                            <a href="{% url 'tasks:add' %}?project={{ p.pk }}&service=tars-code" class="btn btn-sm btn-outline-light">
+                                Request TARS Code
+                            </a>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <p class="mb-0 mt-2" style="color:var(--tars-muted); font-size:0.9rem;">
+                        No projects yet. When you add a project, set the team to "{{ team.name }}" to share it here.
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="section-card mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="mb-0">Members</h5>
+                        <span style="color:var(--tars-muted); font-size:0.85rem;">{{ team.member_count }}</span>
+                    </div>
+                    <div class="member-row">
+                        <div>
+                            <div style="font-weight:500;">{{ team.owner.company_name|default:team.owner.email }}</div>
+                            <div style="color:var(--tars-muted); font-size:0.85rem;">{{ team.owner.email }}</div>
+                        </div>
+                        <span class="role-badge owner">Owner</span>
+                    </div>
+                    {% for m in memberships %}
+                    <div class="member-row">
+                        <div>
+                            <div style="font-weight:500;">{{ m.user.company_name|default:m.user.email }}</div>
+                            <div style="color:var(--tars-muted); font-size:0.85rem;">{{ m.user.email }}</div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="role-badge">{{ m.get_role_display }}</span>
+                            {% if is_admin %}
+                            <form method="post" action="{% url 'teams:member_remove' team.slug m.user_id %}" onsubmit="return confirm('Remove this member?');" class="m-0">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-link text-danger p-0" title="Remove">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if pending_invites and is_admin %}
+                <div class="section-card">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="mb-0">Pending invites</h5>
+                        <span style="color:var(--tars-muted); font-size:0.85rem;">{{ pending_invites.count }}</span>
+                    </div>
+                    {% for inv in pending_invites %}
+                    <div class="invite-row">
+                        <div>
+                            <div style="font-weight:500;">{{ inv.email|default:"(link-only)" }}</div>
+                            <div style="color:var(--tars-muted); font-size:0.85rem;">{{ inv.get_role_display }} · invited {{ inv.created_at|timesince }} ago</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if team.owner_id != user.id %}
+                <form method="post" action="{% url 'teams:leave' team.slug %}" onsubmit="return confirm('Leave {{ team.name }}?');" class="mt-3">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-danger btn-sm w-100">Leave team</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

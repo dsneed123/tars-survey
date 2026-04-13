@@ -44,8 +44,12 @@ class TaskForm(forms.ModelForm):
         }
 
     def __init__(self, user, *args, **kwargs):
+        from django.db.models import Q
         super().__init__(*args, **kwargs)
-        self.fields["project"].queryset = Project.objects.filter(owner=user, is_active=True)
+        self.fields["project"].queryset = Project.objects.filter(
+            Q(owner=user) | Q(team__owner=user) | Q(team__memberships__user=user),
+            is_active=True,
+        ).distinct()
         self.fields["project"].empty_label = "Select a project…"
         self.fields["priority"].initial = 50
         self.fields["priority"].help_text = "1 (low) – 100 (urgent). Default is 50."

@@ -11,6 +11,8 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
+from django.db.models import Q
+
 from analytics.utils import fire_event
 from tasks.models import Task
 
@@ -18,6 +20,13 @@ from .forms import ProjectForm, ProjectSettingsForm
 from .models import Project
 
 logger = logging.getLogger(__name__)
+
+
+def _visible_projects(user):
+    """Projects the user owns OR belongs to via a team."""
+    return Project.objects.filter(
+        Q(owner=user) | Q(team__memberships__user=user) | Q(team__owner=user)
+    ).distinct()
 
 
 def _github_request(path, token=None):
@@ -79,14 +88,14 @@ def _format_pr(pr):
 
 @login_required
 def project_list(request):
-    projects = Project.objects.filter(owner=request.user)
+    projects = _visible_projects(request.user).order_by("-created_at")
     return render(request, "projects/project_list.html", {"projects": projects})
 
 
 @login_required
 def project_add(request):
     if request.method == "POST":
-        form = ProjectForm(request.POST)
+        form = ProjectForm(request.POST, user=request.user)
         if form.is_valid():
             project = form.save(commit=False)
             project.owner = request.user
@@ -99,13 +108,13 @@ def project_add(request):
             messages.success(request, f'Project "{project.name}" added successfully.')
             return redirect("projects:detail", pk=project.pk)
     else:
-        form = ProjectForm()
+        form = ProjectForm(user=request.user)
     return render(request, "projects/project_add.html", {"form": form})
 
 
 @login_required
 def project_detail(request, pk):
-    project = get_object_or_404(Project, pk=pk, owner=request.user)
+    project = get_object_or_404(_visible_projects(request.user), pk=pk)
     token = getattr(settings, "GITHUB_TOKEN", "")
 
     commits = []
@@ -265,13 +274,13 @@ def project_settings(request, pk):
             project.delete()
             messages.success(request, f'Project "{name}" has been deleted.')
             return redirect("projects:list")
-        form = ProjectSettingsForm(request.POST, instance=project)
+        form = ProjectSettingsForm(request.POST, instance=project, user=request.user)
         if form.is_valid():
             form.save()
             messages.success(request, "Project settings saved.")
             return redirect("projects:settings", pk=project.pk)
     else:
-        form = ProjectSettingsForm(instance=project)
+        form = ProjectSettingsForm(instance=project, user=request.user)
     return render(
         request,
         "projects/project_settings.html",

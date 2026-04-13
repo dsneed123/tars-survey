@@ -62,7 +62,7 @@ class ProjectForm(forms.ModelForm):
 
     class Meta:
         model = Project
-        fields = ["name", "description", "language", "default_branch"]
+        fields = ["name", "description", "language", "default_branch", "team"]
         widgets = {
             "name": forms.TextInput(
                 attrs={"class": "form-control", "placeholder": "My Project"}
@@ -78,12 +78,27 @@ class ProjectForm(forms.ModelForm):
             "default_branch": forms.TextInput(
                 attrs={"class": "form-control", "placeholder": "main"}
             ),
+            "team": forms.Select(attrs={"class": "form-select"}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance.pk:
             self.fields["github_repo_url"].initial = self.instance.github_repo
+        # Limit team choices to teams the user owns or belongs to.
+        if user is not None and user.is_authenticated:
+            from teams.models import Team
+            from django.db.models import Q
+            self.fields["team"].queryset = (
+                Team.objects.filter(Q(owner=user) | Q(memberships__user=user))
+                .distinct()
+                .order_by("name")
+            )
+        else:
+            from teams.models import Team
+            self.fields["team"].queryset = Team.objects.none()
+        self.fields["team"].empty_label = "Personal (no team)"
+        self.fields["team"].required = False
 
     def clean_github_repo_url(self):
         raw = self.cleaned_data.get("github_repo_url", "")

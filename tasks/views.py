@@ -30,7 +30,11 @@ def task_list(request):
     if status_filter:
         tasks = tasks.filter(status=status_filter)
 
-    projects = Project.objects.filter(owner=request.user, is_active=True)
+    from django.db.models import Q
+    projects = Project.objects.filter(
+        Q(owner=request.user) | Q(team__owner=request.user) | Q(team__memberships__user=request.user),
+        is_active=True,
+    ).distinct()
 
     return render(
         request,

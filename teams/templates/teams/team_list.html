@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Teams — TARS{% endblock %}
+
+{% block meta_description %}<meta name="description" content="Work on projects together with your teammates on TARS.">{% endblock %}
+
+{% block extra_head %}
+<style>
+    .page-hero {
+        background: linear-gradient(135deg, var(--tars-surface) 0%, rgba(99,102,241,0.08) 100%);
+        border-bottom: 1px solid var(--tars-border);
+        padding: 2.5rem 0 2rem;
+    }
+    .team-card {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem;
+        text-decoration: none;
+        color: inherit;
+        transition: border-color 0.2s, transform 0.15s;
+        display: block;
+    }
+    .team-card:hover {
+        border-color: rgba(99,102,241,0.4);
+        transform: translateY(-1px);
+        color: inherit;
+    }
+    .team-name {
+        font-weight: 600;
+        color: var(--tars-text);
+        margin-bottom: 0.25rem;
+    }
+    .team-meta {
+        color: var(--tars-muted);
+        font-size: 0.85rem;
+    }
+    .empty-state {
+        background: var(--tars-surface);
+        border: 1px dashed var(--tars-border);
+        border-radius: 12px;
+        padding: 3rem 2rem;
+        text-align: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div class="container d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div>
+            <h1 class="mb-1">Teams</h1>
+            <p class="mb-0" style="color:var(--tars-muted)">Work on projects together. Invite teammates and share task history.</p>
+        </div>
+        <a class="btn btn-accent" href="{% url 'teams:create' %}">
+            <i class="bi bi-plus-lg me-1"></i>New team
+        </a>
+    </div>
+</section>
+
+<section class="py-4">
+    <div class="container">
+        {% if teams %}
+        <div class="d-grid gap-3" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
+            {% for team in teams %}
+            <a href="{{ team.get_absolute_url }}" class="team-card">
+                <div class="team-name">{{ team.name }}</div>
+                <div class="team-meta">
+                    {{ team.member_count }} member{{ team.member_count|pluralize }} ·
+                    {{ team.projects.count }} project{{ team.projects.count|pluralize }}
+                    {% if team.owner_id == user.id %} · <span style="color:var(--tars-accent)">Owner</span>{% endif %}
+                </div>
+                {% if team.description %}
+                <div class="mt-2" style="color:var(--tars-muted); font-size:0.9rem;">{{ team.description|truncatechars:120 }}</div>
+                {% endif %}
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <h5 class="mb-2">You're not in any teams yet</h5>
+            <p class="mb-3" style="color:var(--tars-muted)">Create one to collaborate on projects with teammates.</p>
+            <a class="btn btn-accent" href="{% url 'teams:create' %}">Create your first team</a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Join {{ team.name }} — TARS{% endblock %}
+
+{% block content %}
+<section class="py-5">
+    <div class="container" style="max-width: 560px;">
+        <div class="p-4" style="background: var(--tars-surface); border:1px solid var(--tars-border); border-radius: 12px;">
+            <h1 class="mb-2">Join {{ team.name }}</h1>
+            <p style="color:var(--tars-muted)">
+                {{ invite.invited_by.company_name|default:invite.invited_by.email }} invited you to join
+                <strong>{{ team.name }}</strong> as <strong>{{ invite.get_role_display }}</strong>.
+            </p>
+            {% if team.description %}
+            <p class="mb-4">{{ team.description }}</p>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-accent">Accept invite</button>
+                    <a href="{% url 'members:dashboard' %}" class="btn btn-outline-secondary">Decline</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

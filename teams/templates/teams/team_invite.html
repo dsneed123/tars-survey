@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Invite to {{ team.name }} — TARS{% endblock %}
+
+{% block content %}
+<section class="py-4">
+    <div class="container" style="max-width: 720px;">
+        <nav class="mb-3" style="font-size:0.85rem;">
+            <a href="{% url 'teams:detail' team.slug %}" style="color:var(--tars-muted); text-decoration:none;">
+                <i class="bi bi-arrow-left me-1"></i>{{ team.name }}
+            </a>
+        </nav>
+
+        <h1 class="mb-1">Invite to {{ team.name }}</h1>
+        <p style="color:var(--tars-muted)">Generate a one-time link. Anyone with the link can join as the chosen role.</p>
+
+        {% if invite %}
+        <div class="p-3 mb-4" style="background: rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); border-radius: 10px;">
+            <div style="color:#10b981; font-weight:600;" class="mb-2">
+                <i class="bi bi-check-circle me-1"></i>Invite link ready
+            </div>
+            <div class="input-group">
+                <input id="inviteLink" type="text" class="form-control" readonly value="{{ absolute_invite_url }}">
+                <button class="btn btn-accent" type="button" onclick="
+                    var input = document.getElementById('inviteLink');
+                    input.select();
+                    document.execCommand('copy');
+                    this.innerText = 'Copied';
+                ">Copy</button>
+            </div>
+            <div class="mt-2" style="color:var(--tars-muted); font-size:0.85rem;">
+                Role: <strong>{{ invite.get_role_display }}</strong>{% if invite.email %} · intended for <strong>{{ invite.email }}</strong>{% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <form method="post" class="mt-4">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label" for="id_email">{{ form.email.label }}</label>
+                {{ form.email }}
+            </div>
+            <div class="mb-4">
+                <label class="form-label" for="id_role">{{ form.role.label }}</label>
+                {{ form.role }}
+            </div>
+            <button type="submit" class="btn btn-accent">Generate invite link</button>
+        </form>
+    </div>
+</section>
+{% endblock %}

@@ -19,6 +19,14 @@ class Project(models.Model):
         on_delete=models.CASCADE,
         related_name="projects",
     )
+    team = models.ForeignKey(
+        "teams.Team",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="projects",
+        help_text="Optional. Link this project to a team so members can collaborate on it.",
+    )
     name = models.CharField(max_length=200)
     github_repo = models.CharField(
         max_length=200,

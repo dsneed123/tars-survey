@@ -33,6 +33,7 @@ urlpatterns = [
     path("", include("analytics.urls")),
     path("", include("billing.urls")),
     path("", include("notifications.urls")),
+    path("", include("teams.urls")),
 ]
 
 if settings.DEBUG:
