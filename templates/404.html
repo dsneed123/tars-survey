@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}404 — Page Not Found · TARS{% endblock %}
+
+{% block meta_description %}<meta name="description" content="Page not found.">{% endblock %}
+
+{% block extra_head %}
+<style>
+    .error-page {
+        min-height: calc(100vh - 220px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4rem 1rem;
+    }
+
+    .error-code {
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        font-size: clamp(6rem, 20vw, 12rem);
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -0.04em;
+        background: linear-gradient(135deg, var(--tars-accent) 0%, rgba(99,102,241,0.3) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        user-select: none;
+    }
+
+    .error-glow {
+        position: absolute;
+        width: 400px;
+        height: 400px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%);
+        pointer-events: none;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .error-divider {
+        width: 40px;
+        height: 3px;
+        background: var(--tars-accent);
+        border-radius: 2px;
+        margin: 1.5rem auto;
+        opacity: 0.5;
+    }
+
+    .error-actions a, .error-actions button {
+        min-width: 160px;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-8px); }
+    }
+
+    .error-icon-wrap {
+        animation: float 3s ease-in-out infinite;
+        display: inline-block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="error-page">
+    <div style="position:relative;">
+        <div class="error-glow"></div>
+        <div class="text-center" style="position:relative; z-index:1;">
+            <div class="error-icon-wrap mb-3">
+                <i class="bi bi-compass" style="font-size:3.5rem; color:var(--tars-accent); opacity:0.7;"></i>
+            </div>
+            <div class="error-code">404</div>
+            <div class="error-divider"></div>
+            <h1 class="h3 fw-bold mb-2" style="color:var(--tars-text);">
+                This page got lost in the codebase
+            </h1>
+            <p class="mb-4" style="color:var(--tars-muted); max-width:400px; margin:0 auto 2rem;">
+                TARS searched every branch, checked every commit, and even looked in <code style="color:var(--tars-accent); font-size:0.85em;">node_modules</code> — but this page doesn't exist.
+            </p>
+            <div class="error-actions d-flex flex-wrap gap-3 justify-content-center">
+                <a href="/" class="btn btn-accent">
+                    <i class="bi bi-house me-2"></i>Back to Home
+                </a>
+                {% if user.is_authenticated %}
+                <a href="{% url 'members:dashboard' %}" class="btn btn-outline-accent">
+                    <i class="bi bi-grid-1x2 me-2"></i>Go to Dashboard
+                </a>
+                {% else %}
+                <a href="{% url 'accounts:login' %}" class="btn btn-outline-accent">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Sign In
+                </a>
+                {% endif %}
+            </div>
+            <p class="mt-5" style="font-size:0.78rem; color:rgba(156,163,175,0.4);">
+                Error code: 404 · Not Found
+            </p>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -37,3 +37,7 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+handler404 = "tars_site.views.handler404"
+handler500 = "tars_site.views.handler500"
+handler403 = "tars_site.views.handler403"
