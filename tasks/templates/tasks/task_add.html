@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+
+{% block title %}New Task — TARS{% endblock %}
+
+{% block meta_description %}<meta name="description" content="Submit a new task for TARS to work on.">{% endblock %}
+
+{% block extra_head %}
+<style>
+    .page-hero {
+        background: linear-gradient(135deg, var(--tars-surface) 0%, rgba(99,102,241,0.08) 100%);
+        border-bottom: 1px solid var(--tars-border);
+        padding: 2.5rem 0 2rem;
+    }
+
+    .form-label {
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: var(--tars-text);
+        margin-bottom: 0.4rem;
+    }
+
+    .form-text {
+        color: var(--tars-muted);
+        font-size: 0.8rem;
+    }
+
+    .invalid-feedback {
+        font-size: 0.8rem;
+    }
+
+    /* Markdown preview split */
+    .editor-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        min-height: 220px;
+    }
+
+    @media (max-width: 767px) {
+        .editor-container {
+            grid-template-columns: 1fr;
+        }
+        #markdown-preview-panel { display: none !important; }
+        #preview-toggle-btn { display: none !important; }
+    }
+
+    #markdown-preview-panel {
+        background: var(--tars-bg);
+        border: 1px solid var(--tars-border);
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+        line-height: 1.7;
+        overflow-y: auto;
+        color: var(--tars-text);
+        min-height: 220px;
+    }
+
+    #markdown-preview-panel h1, #markdown-preview-panel h2, #markdown-preview-panel h3 {
+        color: var(--tars-text);
+        margin-top: 1rem;
+    }
+
+    #markdown-preview-panel code {
+        background: rgba(99,102,241,0.12);
+        color: var(--tars-accent);
+        padding: 0.1em 0.35em;
+        border-radius: 4px;
+        font-size: 0.85em;
+    }
+
+    #markdown-preview-panel pre code {
+        background: transparent;
+        color: inherit;
+        padding: 0;
+    }
+
+    #markdown-preview-panel pre {
+        background: rgba(0,0,0,0.3);
+        border: 1px solid var(--tars-border);
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        overflow-x: auto;
+    }
+
+    #markdown-preview-panel blockquote {
+        border-left: 3px solid var(--tars-accent);
+        margin-left: 0;
+        padding-left: 1rem;
+        color: var(--tars-muted);
+    }
+
+    #markdown-preview-panel a { color: var(--tars-accent); }
+
+    .preview-label {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--tars-muted);
+        margin-bottom: 0.4rem;
+    }
+
+    /* Dropzone */
+    .dropzone-area {
+        border: 2px dashed var(--tars-border);
+        border-radius: 12px;
+        padding: 2rem 1.5rem;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 0.2s, background 0.2s;
+        position: relative;
+    }
+
+    .dropzone-area:hover,
+    .dropzone-area.dragover {
+        border-color: var(--tars-accent);
+        background: rgba(99,102,241,0.04);
+    }
+
+    .dropzone-area input[type="file"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+        width: 100%;
+        height: 100%;
+    }
+
+    .file-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: rgba(99,102,241,0.1);
+        border: 1px solid rgba(99,102,241,0.2);
+        border-radius: 8px;
+        padding: 0.3rem 0.7rem;
+        font-size: 0.8rem;
+        color: var(--tars-text);
+        margin: 0.25rem;
+    }
+
+    .file-chip button {
+        background: none;
+        border: none;
+        color: var(--tars-muted);
+        cursor: pointer;
+        padding: 0;
+        font-size: 0.8rem;
+        line-height: 1;
+    }
+
+    .file-chip button:hover { color: #f87171; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+    <div class="container">
+        <nav aria-label="breadcrumb" class="mb-1">
+            <ol class="breadcrumb mb-0" style="font-size:0.8rem; color:var(--tars-muted)">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'members:dashboard' %}" style="color:var(--tars-muted); text-decoration:none">Dashboard</a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{% url 'tasks:list' %}" style="color:var(--tars-muted); text-decoration:none">Tasks</a>
+                </li>
+                <li class="breadcrumb-item active" style="color:var(--tars-text)">New Task</li>
+            </ol>
+        </nav>
+        <h1 class="h3 fw-bold mb-1 mt-2" style="color:var(--tars-text)">Submit a Task</h1>
+        <p class="mb-0 small" style="color:var(--tars-muted)">Describe what you want TARS to build or fix.</p>
+    </div>
+</div>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card-surface p-4 p-lg-5">
+                <form method="post" enctype="multipart/form-data" novalidate>
+                    {% csrf_token %}
+
+                    <!-- Project -->
+                    <div class="mb-4">
+                        <label class="form-label" for="{{ form.project.id_for_label }}">Project</label>
+                        {{ form.project }}
+                        {% if form.project.errors %}
+                        <div class="invalid-feedback d-block">{{ form.project.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Title -->
+                    <div class="mb-4">
+                        <label class="form-label" for="{{ form.title.id_for_label }}">Task Title</label>
+                        {{ form.title }}
+                        {% if form.title.errors %}
+                        <div class="invalid-feedback d-block">{{ form.title.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Description with markdown preview -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center justify-content-between mb-1">
+                            <label class="form-label mb-0" for="{{ form.description.id_for_label }}">Description</label>
+                            <span class="preview-label" id="preview-toggle-btn" style="cursor:pointer; color:var(--tars-accent)">
+                                <i class="bi bi-eye me-1"></i>Preview
+                            </span>
+                        </div>
+                        <div class="editor-container">
+                            <div>
+                                <div class="preview-label d-none d-md-block">Write</div>
+                                {{ form.description }}
+                            </div>
+                            <div>
+                                <div class="preview-label d-none d-md-block">Preview</div>
+                                <div id="markdown-preview-panel">
+                                    <span style="color:var(--tars-muted); font-style:italic; font-size:0.85rem">Markdown preview will appear here…</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-text mt-1">
+                            <i class="bi bi-markdown me-1"></i>Markdown is supported. Include context, file paths, and acceptance criteria.
+                        </div>
+                        {% if form.description.errors %}
+                        <div class="invalid-feedback d-block">{{ form.description.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Priority -->
+                    <div class="mb-4">
+                        <label class="form-label" for="{{ form.priority.id_for_label }}">Priority</label>
+                        {{ form.priority }}
+                        <div class="form-text mt-1">
+                            <i class="bi bi-info-circle me-1"></i>{{ form.priority.help_text }}
+                        </div>
+                        {% if form.priority.errors %}
+                        <div class="invalid-feedback d-block">{{ form.priority.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- File attachments -->
+                    <div class="mb-5">
+                        <label class="form-label">Attachments <span class="fw-normal" style="color:var(--tars-muted)">(optional)</span></label>
+                        <div class="dropzone-area" id="dropzone">
+                            <input type="file" name="attachments" id="id_attachments" multiple
+                                   accept=".png,.jpg,.jpeg,.gif,.webp,.svg,.pdf,.txt,.md,.csv,.json,.yaml,.yml,.zip">
+                            <i class="bi bi-cloud-upload" style="font-size:2rem; color:var(--tars-muted)"></i>
+                            <p class="mb-1 mt-2 small fw-semibold" style="color:var(--tars-text)">Drag & drop files here</p>
+                            <p class="mb-0" style="font-size:0.78rem; color:var(--tars-muted)">
+                                or click to browse — images, PDFs, docs, screenshots
+                            </p>
+                        </div>
+                        <div id="file-chips" class="mt-2"></div>
+                    </div>
+
+                    <!-- Non-field errors -->
+                    {% if form.non_field_errors %}
+                    <div class="alert mb-4" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#f87171; border-radius:10px;">
+                        {% for error in form.non_field_errors %}
+                        <div>{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex gap-3">
+                        <button type="submit" class="btn btn-accent">
+                            <i class="bi bi-send me-1"></i> Submit Task
+                        </button>
+                        <a href="{% url 'tasks:list' %}" class="btn btn-outline-accent">Cancel</a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Info box -->
+            <div class="mt-3 p-3 rounded-3 d-flex gap-2" style="background:rgba(99,102,241,0.07); border:1px solid rgba(99,102,241,0.15);">
+                <i class="bi bi-lightning-charge-fill" style="color:var(--tars-accent); flex-shrink:0; margin-top:0.1rem"></i>
+                <p class="small mb-0" style="color:var(--tars-muted)">
+                    <strong style="color:var(--tars-text)">What happens next?</strong>
+                    TARS will pick up your task, create a branch, implement the changes, run tests, and open a pull request — all automatically.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<!-- Marked.js for markdown preview -->
+<script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
+<script>
+(function () {
+    const textarea = document.getElementById('id_description');
+    const preview  = document.getElementById('markdown-preview-panel');
+
+    if (!textarea || !preview) return;
+
+    function renderPreview() {
+        const raw = textarea.value.trim();
+        if (!raw) {
+            preview.innerHTML = '<span style="color:var(--tars-muted); font-style:italic; font-size:0.85rem">Markdown preview will appear here…</span>';
+        } else {
+            preview.innerHTML = marked.parse(raw);
+        }
+    }
+
+    textarea.addEventListener('input', renderPreview);
+    renderPreview();
+
+    // Dropzone visual feedback
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('id_attachments');
+    const chipsContainer = document.getElementById('file-chips');
+
+    if (dropzone) {
+        ['dragenter', 'dragover'].forEach(evt => {
+            dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+        });
+        ['dragleave', 'drop'].forEach(evt => {
+            dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.remove('dragover'); });
+        });
+    }
+
+    if (fileInput) {
+        fileInput.addEventListener('change', updateChips);
+    }
+
+    function updateChips() {
+        chipsContainer.innerHTML = '';
+        if (!fileInput.files.length) return;
+        Array.from(fileInput.files).forEach((file, i) => {
+            const chip = document.createElement('span');
+            chip.className = 'file-chip';
+            const ext = file.name.split('.').pop().toLowerCase();
+            const icon = ['png','jpg','jpeg','gif','webp','svg'].includes(ext) ? 'bi-image' : 'bi-file-earmark';
+            chip.innerHTML = `<i class="bi ${icon}"></i>${file.name} <span style="color:var(--tars-muted)">${formatSize(file.size)}</span>`;
+            chipsContainer.appendChild(chip);
+        });
+    }
+
+    function formatSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+})();
+</script>
+{% endblock %}
