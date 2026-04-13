@@ -32,6 +32,7 @@ class Task(models.Model):
     worker_id = models.CharField(max_length=200, blank=True, null=True)
     branch_name = models.CharField(max_length=200, blank=True, null=True)
     pr_url = models.URLField(blank=True, null=True)
+    error_message = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     started_at = models.DateTimeField(blank=True, null=True)
     completed_at = models.DateTimeField(blank=True, null=True)

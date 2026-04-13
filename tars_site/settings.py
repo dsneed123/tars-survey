@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     "members",
     "projects",
     "tasks",
+    "workers",
 ]
 
 AUTH_USER_MODEL = "accounts.CustomUser"
