@@ -1,5 +1,7 @@
 import json
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.contrib.admin.views.decorators import staff_member_required
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -194,6 +196,33 @@ def next_task(request):
 
 
 # ---------------------------------------------------------------------------
+# WebSocket broadcast helper
+# ---------------------------------------------------------------------------
+
+def _broadcast_task_update(task):
+    """Push a task status update to connected WebSocket clients."""
+    channel_layer = get_channel_layer()
+    if channel_layer is None:
+        return
+
+    data = {
+        "task_id": task.pk,
+        "title": task.title,
+        "status": task.status,
+        "status_display": task.get_status_display(),
+        "branch_name": task.branch_name,
+        "pr_url": task.pr_url,
+    }
+    send = async_to_sync(channel_layer.group_send)
+
+    # Task detail page subscribers
+    send(f"task_{task.pk}", {"type": "task_update", "data": data})
+
+    # Dashboard subscribers for the task owner
+    send(f"dashboard_{task.created_by_id}", {"type": "task_update", "data": data})
+
+
+# ---------------------------------------------------------------------------
 # POST /api/workers/task/<id>/update/
 # ---------------------------------------------------------------------------
 
@@ -241,6 +270,10 @@ def task_update(request, task_id):
 
     if update_fields:
         task.save(update_fields=update_fields)
+
+    # Broadcast the status change to connected WebSocket clients
+    if update_fields:
+        _broadcast_task_update(task)
 
     # Update the TaskAssignment record when the task reaches a terminal state
     if status in ("completed", "failed"):
