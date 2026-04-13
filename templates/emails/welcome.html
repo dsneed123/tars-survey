@@ -1,0 +1,41 @@
+{% extends "emails/base_email.html" %}
+{% block subject %}Welcome to TARS — Your autonomous coding agent{% endblock %}
+
+{% block body %}
+<p class="email-greeting">Welcome to TARS, {{ user.first_name|default:user.email }} 👋</p>
+
+<p class="email-text">
+  Your account is ready. TARS is an autonomous coding agent that discovers tasks,
+  writes production-ready code, runs your test suite, and opens pull requests — 24/7.
+</p>
+
+<div class="email-cta">
+  <a href="{{ site_url }}/dashboard/" class="btn-primary">Go to your dashboard</a>
+</div>
+
+<hr class="email-divider">
+
+<p class="email-text" style="font-weight:600; color:#f9fafb; margin-bottom:12px;">Get started in 3 steps:</p>
+<ul class="feature-list">
+  <li>
+    <span class="icon">1</span>
+    <span><strong style="color:#f9fafb;">Connect a GitHub project</strong> — add your repo so TARS knows where to work.</span>
+  </li>
+  <li>
+    <span class="icon">2</span>
+    <span><strong style="color:#f9fafb;">Submit a task</strong> — describe what you need built. Be as specific or as broad as you like.</span>
+  </li>
+  <li>
+    <span class="icon">3</span>
+    <span><strong style="color:#f9fafb;">Review the PR</strong> — TARS opens a pull request. You review, merge, and ship.</span>
+  </li>
+</ul>
+
+<hr class="email-divider">
+
+<p class="email-text" style="font-size:13px;">
+  Questions? Reply to this email or visit your
+  <a href="{{ site_url }}/dashboard/">dashboard</a>.
+  We're here to help.
+</p>
+{% endblock %}

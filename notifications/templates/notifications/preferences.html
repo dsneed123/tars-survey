@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+
+{% block title %}Notification Preferences — TARS{% endblock %}
+
+{% block meta_description %}<meta name="description" content="Manage your TARS email notification preferences.">{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ── Dashboard Layout ────────────────────────────────────── */
+.dash-wrap {
+    display: flex;
+    min-height: calc(100vh - 60px);
+}
+
+.dash-sidebar {
+    width: 240px;
+    flex-shrink: 0;
+    background: var(--tars-surface);
+    border-right: 1px solid var(--tars-border);
+}
+
+.dash-sidebar-inner {
+    position: sticky;
+    top: 60px;
+    height: calc(100vh - 60px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem 0 1rem;
+}
+
+.snav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 1.25rem;
+    color: var(--tars-muted);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-left: 3px solid transparent;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.snav-item:hover {
+    color: var(--tars-text);
+    background: rgba(99,102,241,0.06);
+}
+
+.snav-item.active {
+    color: var(--tars-accent);
+    background: rgba(99,102,241,0.1);
+    border-left-color: var(--tars-accent);
+}
+
+.snav-item i {
+    font-size: 1rem;
+    flex-shrink: 0;
+    width: 20px;
+    text-align: center;
+}
+
+.snav-section {
+    padding: 0.75rem 1.25rem 0.25rem;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(156,163,175,0.45);
+}
+
+.sidebar-user-info {
+    margin-top: auto;
+    padding: 1rem 1.25rem 0;
+    border-top: 1px solid var(--tars-border);
+}
+
+.dash-main {
+    flex: 1;
+    min-width: 0;
+    background: var(--tars-bg);
+}
+
+.dash-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid var(--tars-border);
+    position: sticky;
+    top: 60px;
+    background: var(--tars-bg);
+    z-index: 100;
+}
+
+.breadcrumb {
+    margin: 0;
+    padding: 0;
+    background: none;
+    font-size: 0.82rem;
+}
+
+.breadcrumb-item a {
+    color: var(--tars-muted);
+    text-decoration: none;
+    transition: color 0.15s;
+}
+
+.breadcrumb-item a:hover { color: var(--tars-text); }
+.breadcrumb-item.active  { color: var(--tars-text); }
+
+.breadcrumb-item + .breadcrumb-item::before {
+    color: var(--tars-border);
+    content: "/";
+}
+
+.dash-inner {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 2rem 2rem 5rem;
+}
+
+.section-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(156,163,175,0.5);
+    margin-bottom: 0.75rem;
+}
+
+/* ── Toggle rows ─────────────────────────────────────────── */
+.pref-card {
+    background: var(--tars-surface);
+    border: 1px solid var(--tars-border);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.pref-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.1rem 1.5rem;
+    border-bottom: 1px solid rgba(31,41,55,0.7);
+    gap: 1rem;
+}
+
+.pref-row:last-child {
+    border-bottom: none;
+}
+
+.pref-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.pref-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--tars-text);
+    margin-bottom: 2px;
+}
+
+.pref-desc {
+    font-size: 0.8rem;
+    color: var(--tars-muted);
+    line-height: 1.4;
+}
+
+/* Toggle switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(255,255,255,0.1);
+    border-radius: 24px;
+    transition: background-color 0.2s;
+}
+
+.toggle-slider::before {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: var(--tars-accent);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(20px);
+}
+
+@keyframes fadeUpIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.pref-card { animation: fadeUpIn 0.4s ease backwards; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dash-wrap">
+
+    <!-- ── Sidebar ─────────────────────────────────────────── -->
+    <aside class="dash-sidebar d-none d-lg-block">
+        <div class="dash-sidebar-inner">
+            <p class="snav-section">Workspace</p>
+            <a href="{% url 'members:dashboard' %}" class="snav-item">
+                <i class="bi bi-grid-1x2"></i> Overview
+            </a>
+            <a href="{% url 'projects:list' %}" class="snav-item">
+                <i class="bi bi-folder2-open"></i> Projects
+            </a>
+            <a href="{% url 'tasks:list' %}" class="snav-item">
+                <i class="bi bi-check2-square"></i> Tasks
+            </a>
+
+            <p class="snav-section mt-2">Account</p>
+            <a href="{% url 'billing:billing' %}" class="snav-item">
+                <i class="bi bi-credit-card"></i> Billing
+            </a>
+            <a href="{% url 'notifications:preferences' %}" class="snav-item active">
+                <i class="bi bi-bell"></i> Notifications
+            </a>
+
+            <div class="sidebar-user-info">
+                <p class="small mb-0" style="color:var(--tars-muted);word-break:break-all;">{{ user.email }}</p>
+                <p class="small mb-0 mt-1" style="color:var(--tars-muted);">{{ user.plan|title }} plan</p>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ── Main ───────────────────────────────────────────── -->
+    <main class="dash-main">
+
+        <!-- Topbar -->
+        <div class="dash-topbar">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'members:dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item">Settings</li>
+                    <li class="breadcrumb-item active">Notifications</li>
+                </ol>
+            </nav>
+        </div>
+
+        <div class="dash-inner">
+
+            {% if messages %}
+            <div class="mb-4">
+                {% for msg in messages %}
+                <div class="alert border-0"
+                     style="background:rgba(16,185,129,0.12);
+                            border-left:3px solid var(--tars-green) !important;
+                            color:var(--tars-text);border-radius:10px;">
+                    <i class="bi bi-check-circle-fill me-2" style="color:var(--tars-green);"></i>{{ msg }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="mb-4">
+                <h1 style="font-size:1.4rem;font-weight:800;margin-bottom:0.25rem;">Notification preferences</h1>
+                <p style="color:var(--tars-muted);font-size:0.875rem;margin:0;">
+                    Choose which emails TARS sends you. In-app notifications are always on.
+                </p>
+            </div>
+
+            <form method="post" id="prefsForm">
+                {% csrf_token %}
+
+                <!-- Email notifications -->
+                <p class="section-label">Email notifications</p>
+                <div class="pref-card mb-4">
+
+                    <div class="pref-row">
+                        <div class="pref-info">
+                            <div class="pref-title">Welcome &amp; onboarding</div>
+                            <div class="pref-desc">
+                                Welcome email on signup + a "Getting started with TARS" email 24 hours later.
+                            </div>
+                        </div>
+                        <label class="toggle-switch" aria-label="Toggle welcome emails">
+                            <input type="checkbox" name="email_welcome" {% if prefs.email_welcome %}checked{% endif %} onchange="this.form.requestSubmit()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="pref-row">
+                        <div class="pref-info">
+                            <div class="pref-title">Task started</div>
+                            <div class="pref-desc">
+                                Notified when TARS picks up a task and begins working on it.
+                            </div>
+                        </div>
+                        <label class="toggle-switch" aria-label="Toggle task started emails">
+                            <input type="checkbox" name="email_task_started" {% if prefs.email_task_started %}checked{% endif %} onchange="this.form.requestSubmit()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="pref-row">
+                        <div class="pref-info">
+                            <div class="pref-title">Pull request ready</div>
+                            <div class="pref-desc">
+                                Notified when TARS opens a PR and it's ready for your review.
+                            </div>
+                        </div>
+                        <label class="toggle-switch" aria-label="Toggle PR ready emails">
+                            <input type="checkbox" name="email_pr_ready" {% if prefs.email_pr_ready %}checked{% endif %} onchange="this.form.requestSubmit()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="pref-row">
+                        <div class="pref-info">
+                            <div class="pref-title">Task failed</div>
+                            <div class="pref-desc">
+                                Notified when a task encounters an error and cannot be completed.
+                            </div>
+                        </div>
+                        <label class="toggle-switch" aria-label="Toggle task failed emails">
+                            <input type="checkbox" name="email_task_failed" {% if prefs.email_task_failed %}checked{% endif %} onchange="this.form.requestSubmit()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="pref-row">
+                        <div class="pref-info">
+                            <div class="pref-title">Weekly digest</div>
+                            <div class="pref-desc">
+                                A weekly summary of tasks completed, PRs opened, and project status. Sent every Monday.
+                            </div>
+                        </div>
+                        <label class="toggle-switch" aria-label="Toggle weekly digest emails">
+                            <input type="checkbox" name="email_weekly_digest" {% if prefs.email_weekly_digest %}checked{% endif %} onchange="this.form.requestSubmit()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+
+                </div>
+
+                <!-- Hidden submit for JS-triggered submits; also works without JS -->
+                <button type="submit" class="btn btn-accent">Save preferences</button>
+            </form>
+
+        </div><!-- /.dash-inner -->
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Show a subtle saved indicator when auto-submitting via toggle
+(function () {
+    var form = document.getElementById('prefsForm');
+    if (!form) return;
+    form.addEventListener('submit', function () {
+        // No special handling needed — the page redirects back with a message
+    });
+}());
+</script>
+{% endblock %}

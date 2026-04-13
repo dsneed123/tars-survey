@@ -3,6 +3,7 @@ from django.shortcuts import redirect, render
 
 from analytics.utils import fire_event
 from members.models import MemberProfile
+from notifications.utils import send_welcome_email
 
 from .forms import LoginForm, RegisterForm
 from .models import CustomUser
@@ -41,6 +42,7 @@ def accounts_register(request):
             MemberProfile.objects.create(user=user)
             login(request, user)
             fire_event("signup_completed", user=user, metadata={"plan": user.plan})
+            send_welcome_email(user)
             return redirect("members:onboarding")
     else:
         form = RegisterForm()

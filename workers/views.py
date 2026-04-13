@@ -12,6 +12,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from analytics.utils import fire_event
+from notifications.utils import send_task_failed_email, send_task_pr_ready_email, send_task_started_email
 from tasks.models import Task
 
 from .models import TaskAssignment, Worker
@@ -246,6 +247,7 @@ def task_update(request, task_id):
 
     update_fields = []
 
+    prev_status = task.status
     status = data.get("status")
     if status and status in dict(Task.STATUS_CHOICES):
         task.status = status
@@ -275,6 +277,15 @@ def task_update(request, task_id):
     # Broadcast the status change to connected WebSocket clients
     if update_fields:
         _broadcast_task_update(task)
+
+    # Send notification emails on meaningful status transitions
+    if status and status != prev_status:
+        if status == "in_progress":
+            send_task_started_email(task)
+        elif status == "reviewing" and task.pr_url:
+            send_task_pr_ready_email(task)
+        elif status == "failed":
+            send_task_failed_email(task)
 
     # Update the TaskAssignment record when the task reaches a terminal state
     if status in ("completed", "failed"):

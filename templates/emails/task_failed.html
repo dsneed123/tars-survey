@@ -1,0 +1,57 @@
+{% extends "emails/base_email.html" %}
+{% block subject %}Task failed: {{ task.title }}{% endblock %}
+
+{% block body %}
+<p class="email-greeting">A task encountered an error</p>
+
+<p class="email-text">
+  Unfortunately TARS was unable to complete the following task.
+  Review the error details and consider resubmitting with additional context.
+</p>
+
+<div class="info-box">
+  <div class="info-box-label">Task</div>
+  <div class="info-box-value">{{ task.title }}</div>
+</div>
+
+<div class="info-box">
+  <div class="info-box-label">Project</div>
+  <div class="info-box-value">{{ task.project.name }}</div>
+</div>
+
+<div class="info-box">
+  <div class="info-box-label">Status</div>
+  <div class="info-box-value">
+    <span class="status-badge status-failed">Failed</span>
+  </div>
+</div>
+
+{% if task.error_message %}
+<div class="info-box">
+  <div class="info-box-label">Error details</div>
+  <div class="info-box-value" style="font-family:monospace; font-size:13px; color:#f87171; white-space:pre-wrap;">{{ task.error_message|truncatechars:400 }}</div>
+</div>
+{% endif %}
+
+<div class="email-cta">
+  <a href="{{ task_url }}" class="btn-primary">View task and retry</a>
+</div>
+
+<hr class="email-divider">
+
+<p class="email-text" style="font-weight:600; color:#f9fafb; margin-bottom:8px;">Tips for a successful retry:</p>
+<ul class="feature-list">
+  <li>
+    <span class="icon">→</span>
+    <span>Add more context or clarification to the task description</span>
+  </li>
+  <li>
+    <span class="icon">→</span>
+    <span>Attach relevant files or screenshots if applicable</span>
+  </li>
+  <li>
+    <span class="icon">→</span>
+    <span>Break complex tasks into smaller, more focused steps</span>
+  </li>
+</ul>
+{% endblock %}
