@@ -1,6 +1,9 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db.models import Count, Q
 from django.shortcuts import redirect, render
+from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from analytics.utils import fire_event
 from inquiries.models import Inquiry
@@ -16,10 +19,37 @@ from .models import MemberProfile
 def dashboard(request):
     profile, _ = MemberProfile.objects.get_or_create(user=request.user)
     recent_inquiries = Inquiry.objects.filter(email=request.user.email)[:5]
-    projects = Project.objects.filter(owner=request.user)
+
+    # Annotate projects with task health counts
+    projects = Project.objects.filter(owner=request.user).annotate(
+        task_count=Count("tasks"),
+        failed_count=Count("tasks", filter=Q(tasks__status="failed")),
+        active_count=Count(
+            "tasks",
+            filter=Q(tasks__status__in=["pending", "queued", "assigned", "in_progress", "reviewing"]),
+        ),
+    )
+
     recent_tasks = Task.objects.filter(created_by=request.user).select_related("project")[:10]
-    active_tasks = Task.objects.filter(created_by=request.user, status__in=["pending", "queued", "assigned", "in_progress", "reviewing"])
+    active_tasks = Task.objects.filter(
+        created_by=request.user,
+        status__in=["pending", "queued", "assigned", "in_progress", "reviewing"],
+    )
     completed_count = Task.objects.filter(created_by=request.user, status="completed").count()
+
+    # Tasks this month
+    now = timezone.now()
+    this_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    tasks_this_month = Task.objects.filter(
+        created_by=request.user, created_at__gte=this_month_start
+    ).count()
+
+    # Success rate
+    total_done = Task.objects.filter(
+        created_by=request.user, status__in=["completed", "failed"]
+    ).count()
+    success_rate = round((completed_count / total_done * 100) if total_done > 0 else 0)
+    success_rate_display = "{}%".format(success_rate) if total_done > 0 else "—"
 
     # Onboarding checklist state
     has_project = projects.exists()
@@ -48,11 +78,43 @@ def dashboard(request):
         "recent_tasks": recent_tasks,
         "active_tasks": active_tasks,
         "completed_count": completed_count,
+        "tasks_this_month": tasks_this_month,
+        "success_rate": success_rate,
+        "success_rate_display": success_rate_display,
+        "total_done": total_done,
         "onboarding_checklist": onboarding_checklist,
         "has_project": has_project,
         "has_task": has_task,
     }
     return render(request, "members/dashboard.html", ctx)
+
+
+@login_required
+@require_POST
+def quick_add_task(request):
+    title = request.POST.get("title", "").strip()
+    description = request.POST.get("description", "").strip()
+    project_id = request.POST.get("project_id")
+
+    if not title or not project_id:
+        messages.error(request, "Please provide a task title and select a project.")
+        return redirect("members:dashboard")
+
+    try:
+        project = Project.objects.get(pk=project_id, owner=request.user)
+        task = Task.objects.create(
+            title=title,
+            description=description or title,
+            project=project,
+            created_by=request.user,
+            status="pending",
+        )
+        _forward_to_controller(task)
+        messages.success(request, f'Task "{title}" submitted — TARS is on it.')
+    except Project.DoesNotExist:
+        messages.error(request, "Project not found.")
+
+    return redirect("members:dashboard")
 
 
 @login_required
