@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}TARS — Ship Code While You Sleep{% endblock %}
+{% block title %}TARS — Ship Code While You Sleep | Autonomous Coding{% endblock %}
 
 {% block meta_description %}<meta name="description" content="TARS is an autonomous coding agent that ships production-ready code 24/7. Discover tasks, write code, run tests, and open pull requests — all without a human in the loop.">{% endblock %}
 
@@ -11,13 +11,15 @@
 <meta property="og:title" content="TARS — Ship Code While You Sleep">
 <meta property="og:description" content="TARS is an autonomous coding agent that ships production-ready code 24/7. Discover tasks, write code, run tests, and open pull requests — all without a human in the loop.">
 <meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
-<meta property="og:image" content="{{ SITE_URL }}/static/img/og-image.svg">
+<meta property="og:image" content="{{ SITE_URL }}/static/img/og-image.png">
+<meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@usetarsdev">
 <meta name="twitter:title" content="TARS — Ship Code While You Sleep">
 <meta name="twitter:description" content="TARS is an autonomous coding agent that ships production-ready code 24/7. Discover tasks, write code, run tests, and open pull requests — all without a human in the loop.">
-<meta name="twitter:image" content="{{ SITE_URL }}/static/img/og-image.svg">
+<meta name="twitter:image" content="{{ SITE_URL }}/static/img/og-image.png">
 {% endblock %}
 
 {% block json_ld %}
@@ -40,6 +42,31 @@
     "description": "Autonomous coding agent that builds, tests, and ships your software around the clock.",
     "url": "{{ request.scheme }}://{{ request.get_host }}{% url 'pages:inquiry' %}"
   }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "TARS — Autonomous Coding",
+  "url": "{{ request.scheme }}://{{ request.get_host }}",
+  "description": "Autonomous coding agent that discovers tasks, writes production-ready code, runs your test suite, and opens pull requests — 24/7.",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Any",
+  "offers": {
+    "@type": "Offer",
+    "name": "Early Access",
+    "price": "0",
+    "priceCurrency": "USD",
+    "url": "{{ request.scheme }}://{{ request.get_host }}{% url 'pages:inquiry' %}"
+  },
+  "featureList": [
+    "Autonomous task discovery from GitHub Issues",
+    "AI-powered code generation",
+    "Automated test execution",
+    "Pull request creation",
+    "24/7 continuous operation"
+  ]
 }
 </script>
 {% endblock %}
