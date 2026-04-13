@@ -30,9 +30,11 @@
   <!-- Subtext -->
   <text x="80" y="470" font-family="system-ui, -apple-system, sans-serif" font-size="28" fill="#9ca3af">Autonomous coding agent — 24/7 development, zero idle hours.</text>
   <!-- Badge -->
-  <rect x="80" y="520" width="220" height="44" rx="22" fill="rgba(99,102,241,0.15)" stroke="rgba(99,102,241,0.4)" stroke-width="1.5"/>
-  <circle cx="108" cy="542" r="5" fill="#10b981"/>
-  <text x="122" y="548" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="700" fill="#a5b4fc" letter-spacing="1">NOW IN EARLY ACCESS</text>
+  <rect x="80" y="510" width="220" height="44" rx="22" fill="rgba(99,102,241,0.15)" stroke="rgba(99,102,241,0.4)" stroke-width="1.5"/>
+  <circle cx="108" cy="532" r="5" fill="#10b981"/>
+  <text x="122" y="538" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="700" fill="#a5b4fc" letter-spacing="1">NOW IN EARLY ACCESS</text>
+  <!-- URL -->
+  <text x="80" y="590" font-family="system-ui, -apple-system, sans-serif" font-size="20" fill="#6366f1" font-weight="600">usetars.dev</text>
   <!-- Decorative terminal lines -->
   <rect x="720" y="160" width="400" height="300" rx="14" fill="#111827" stroke="#1f2937" stroke-width="1.5"/>
   <rect x="720" y="160" width="400" height="42" rx="14" fill="#1f2937"/>
@@ -48,5 +50,5 @@
   <text x="740" y="338" font-family="Menlo, Consolas, monospace" font-size="14" fill="#10b981">  ✓ 42 tests passed</text>
   <text x="740" y="366" font-family="Menlo, Consolas, monospace" font-size="14" fill="#10b981">  ✓ PR #47 opened</text>
   <text x="740" y="394" font-family="Menlo, Consolas, monospace" font-size="14" fill="#6b7280">  Next task in 12s...</text>
-  <text x="740" y="430" font-family="Menlo, Consolas, monospace" font-size="14" fill="#374151">tars.build</text>
+  <text x="740" y="430" font-family="Menlo, Consolas, monospace" font-size="14" fill="#374151">usetars.dev</text>
 </svg>

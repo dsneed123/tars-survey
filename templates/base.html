@@ -3,10 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}TARS — Autonomous Coding Agent{% endblock %}</title>
+    <title>{% block title %}TARS — Autonomous Coding{% endblock %}</title>
 
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%236366f1'/%3E%3Ctext y='.9em' font-size='80' text-anchor='middle' x='50' fill='white' font-family='system-ui' font-weight='bold'%3ET%3C/text%3E%3C/svg%3E">
+    {% load static %}
+    <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/favicon-32x32.png' %}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{% static 'img/favicon-16x16.png' %}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
+    <link rel="manifest" href="{% static 'img/site.webmanifest' %}">
+    <meta name="theme-color" content="#6366f1">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -30,13 +36,15 @@
     <meta property="og:title" content="TARS — Autonomous Coding Agent">
     <meta property="og:description" content="TARS is an autonomous coding agent that discovers tasks, writes production-ready code, runs your test suite, and opens pull requests — 24/7, without human intervention.">
     <meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
-    <meta property="og:image" content="{{ SITE_URL }}/static/img/og-image.svg">
+    <meta property="og:image" content="{{ SITE_URL }}/static/img/og-image.png">
+    <meta property="og:image:type" content="image/png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@usetarsdev">
     <meta name="twitter:title" content="TARS — Autonomous Coding Agent">
     <meta name="twitter:description" content="TARS is an autonomous coding agent that discovers tasks, writes production-ready code, runs your test suite, and opens pull requests — 24/7, without human intervention.">
-    <meta name="twitter:image" content="{{ SITE_URL }}/static/img/og-image.svg">
+    <meta name="twitter:image" content="{{ SITE_URL }}/static/img/og-image.png">
     {% endblock %}
 
     <!-- SEO: Structured data -->

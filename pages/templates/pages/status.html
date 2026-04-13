@@ -1,7 +1,25 @@
 {% extends "base.html" %}
 
-{% block title %}Platform Status — TARS{% endblock %}
+{% block title %}Platform Status | TARS — Autonomous Coding{% endblock %}
 {% block meta_description %}<meta name="description" content="Current operational status of the TARS platform — API, database, and worker availability.">{% endblock %}
+
+{% block meta_og %}
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_US">
+<meta property="og:site_name" content="TARS">
+<meta property="og:title" content="Platform Status | TARS — Autonomous Coding">
+<meta property="og:description" content="Current operational status of the TARS platform — API, database, and worker availability.">
+<meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
+<meta property="og:image" content="{{ SITE_URL }}/static/img/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@usetarsdev">
+<meta name="twitter:title" content="Platform Status | TARS — Autonomous Coding">
+<meta name="twitter:description" content="Current operational status of the TARS platform — API, database, and worker availability.">
+<meta name="twitter:image" content="{{ SITE_URL }}/static/img/og-image.png">
+{% endblock %}
 
 {% block extra_head %}
 <style>
