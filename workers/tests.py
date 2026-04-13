@@ -1,4 +1,5 @@
 import json
+import uuid
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
@@ -6,6 +7,7 @@ from django.core.management import call_command
 from django.test import Client, TestCase
 from django.utils import timezone
 
+from members.models import MemberProfile
 from projects.models import Project
 from tasks.models import Task
 from workers.models import TaskAssignment, Worker
@@ -18,9 +20,12 @@ User = get_user_model()
 # ---------------------------------------------------------------------------
 
 def make_user(**kwargs):
-    defaults = {"username": "testuser", "password": "pass"}
-    defaults.update(kwargs)
-    return User.objects.create_user(**defaults)
+    email = kwargs.pop("email", "testuser@example.com")
+    kwargs.setdefault("username", email)
+    kwargs.setdefault("password", "TestPass123!")
+    user = User.objects.create_user(email=email, **kwargs)
+    MemberProfile.objects.get_or_create(user=user)
+    return user
 
 
 def make_project(owner, **kwargs):
@@ -53,6 +58,72 @@ def make_worker(**kwargs):
     }
     defaults.update(kwargs)
     return Worker.objects.create(**defaults)
+
+
+# ---------------------------------------------------------------------------
+# Worker model
+# ---------------------------------------------------------------------------
+
+class WorkerModelTests(TestCase):
+    def test_str_representation(self):
+        w = make_worker(hostname="my-host", status="online")
+        s = str(w)
+        self.assertIn("my-host", s)
+        self.assertIn("Online", s)
+
+    def test_default_status_is_offline(self):
+        w = Worker.objects.create(hostname="fresh")
+        self.assertEqual(w.status, "offline")
+
+    def test_api_key_auto_generated_as_uuid(self):
+        w = make_worker()
+        self.assertIsNotNone(w.api_key)
+        self.assertIsInstance(w.api_key, uuid.UUID)
+
+    def test_api_key_is_unique_per_worker(self):
+        w1 = make_worker(hostname="a")
+        w2 = make_worker(hostname="b")
+        self.assertNotEqual(w1.api_key, w2.api_key)
+
+    def test_ordering_newest_first(self):
+        w1 = make_worker(hostname="first")
+        w2 = make_worker(hostname="second")
+        workers = list(Worker.objects.all())
+        self.assertEqual(workers[0].hostname, "second")
+
+    def test_capacity_default_is_one(self):
+        w = Worker.objects.create(hostname="default-cap")
+        self.assertEqual(w.capacity, 1)
+
+
+# ---------------------------------------------------------------------------
+# TaskAssignment model
+# ---------------------------------------------------------------------------
+
+class TaskAssignmentModelTests(TestCase):
+    def setUp(self):
+        self.user = make_user()
+        self.project = make_project(self.user)
+        self.task = make_task(self.project, self.user)
+        self.worker = make_worker()
+
+    def test_str_representation(self):
+        assignment = TaskAssignment.objects.create(task=self.task, worker=self.worker)
+        s = str(assignment)
+        self.assertIn("worker-1", s)
+
+    def test_default_result_is_null(self):
+        assignment = TaskAssignment.objects.create(task=self.task, worker=self.worker)
+        self.assertIsNone(assignment.result)
+
+    def test_completed_at_nullable(self):
+        assignment = TaskAssignment.objects.create(task=self.task, worker=self.worker)
+        self.assertIsNone(assignment.completed_at)
+
+    def test_cascade_delete_with_task(self):
+        TaskAssignment.objects.create(task=self.task, worker=self.worker)
+        self.task.delete()
+        self.assertEqual(TaskAssignment.objects.count(), 0)
 
 
 # ---------------------------------------------------------------------------

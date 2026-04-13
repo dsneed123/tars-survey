@@ -1,0 +1,34 @@
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "tars_site.settings"
+python_files = ["tests.py", "test_*.py", "*_tests.py"]
+python_classes = ["*Tests", "Test*"]
+python_functions = ["test_*"]
+addopts = "--tb=short -q"
+
+[tool.coverage.run]
+source = [
+    "accounts",
+    "analytics",
+    "billing",
+    "inquiries",
+    "members",
+    "notifications",
+    "pages",
+    "projects",
+    "tasks",
+    "workers",
+]
+omit = [
+    "*/migrations/*",
+    "*/tests/*",
+    "*/tests.py",
+    "tars_site/settings.py",
+    "tars_site/asgi.py",
+    "tars_site/wsgi.py",
+    "manage.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+fail_under = 85
