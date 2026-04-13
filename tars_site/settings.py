@@ -138,3 +138,7 @@ EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True") == "True"
 
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "TARS <noreply@tarsai.dev>")
 TARS_ADMIN_EMAIL = os.environ.get("TARS_ADMIN_EMAIL", "admin@tarsai.dev")
+
+# TARS Controller API — local Mac Mini brain
+TARS_CONTROLLER_URL = os.environ.get("TARS_CONTROLLER_URL", "")
+TARS_API_KEY = os.environ.get("TARS_API_KEY", "")

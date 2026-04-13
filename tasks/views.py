@@ -1,5 +1,9 @@
+import json
+import logging
 import os
 
+import requests as http_requests
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
@@ -8,6 +12,8 @@ from projects.models import Project
 
 from .forms import TaskForm
 from .models import Task, TaskAttachment
+
+logger = logging.getLogger(__name__)
 
 
 @login_required
@@ -55,6 +61,9 @@ def task_add(request):
                     file=f,
                     filename=f.name,
                 )
+
+            # Forward task to TARS controller on the Mac Mini
+            _forward_to_controller(task)
 
             messages.success(request, f'Task "{task.title}" submitted successfully.')
             return redirect("tasks:detail", pk=task.pk)
@@ -122,3 +131,34 @@ def _build_timeline(task):
         result.append({"status": "failed", "label": "Failed", "icon": "bi-x-circle-fill", "state": "failed"})
 
     return result
+
+
+def _forward_to_controller(task):
+    """Send a newly created task to the TARS controller API on the Mac Mini."""
+    url = getattr(settings, "TARS_CONTROLLER_URL", "")
+    api_key = getattr(settings, "TARS_API_KEY", "")
+    if not url or not api_key:
+        logger.info("TARS_CONTROLLER_URL or TARS_API_KEY not set, skipping forward.")
+        return
+
+    payload = {
+        "project": task.project.github_repo,
+        "task_type": "tars-code",
+        "title": task.title,
+        "description": task.description,
+        "priority": task.priority,
+        "user_id": str(task.created_by_id),
+    }
+    try:
+        resp = http_requests.post(
+            f"{url.rstrip('/')}/api/tasks",
+            json=payload,
+            headers={"X-API-Key": api_key},
+            timeout=10,
+        )
+        if resp.ok:
+            logger.info("Task %s forwarded to controller: %s", task.pk, resp.json().get("task", {}).get("id"))
+        else:
+            logger.warning("Controller rejected task %s: %s", task.pk, resp.text)
+    except Exception as e:
+        logger.warning("Failed to forward task %s to controller: %s", task.pk, e)
