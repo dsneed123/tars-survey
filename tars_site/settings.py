@@ -12,6 +12,7 @@ DEBUG = os.environ.get("DEBUG", "True") == "True"
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
 
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -19,6 +20,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.sitemaps",
+    "channels",
     "accounts",
     "pages",
     "inquiries",
@@ -66,6 +68,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "tars_site.wsgi.application"
+ASGI_APPLICATION = "tars_site.asgi.application"
 
 _default_db = f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
 DATABASES = {
@@ -149,3 +152,23 @@ TARS_API_KEY = os.environ.get("TARS_API_KEY", "")
 
 # GitHub personal access token used for API calls (commits, branches, PRs, diffs)
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+
+# ---------------------------------------------------------------------------
+# Django Channels — WebSocket support
+# ---------------------------------------------------------------------------
+# In production set REDIS_URL to a Redis instance.
+# Falls back to in-memory channel layer for local development (single-process only).
+_REDIS_URL = os.environ.get("REDIS_URL", "")
+if _REDIS_URL:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {"hosts": [_REDIS_URL]},
+        }
+    }
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer",
+        }
+    }

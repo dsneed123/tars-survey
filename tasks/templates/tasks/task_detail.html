@@ -110,6 +110,39 @@
     .dot-pending { background: var(--tars-border);  color: var(--tars-muted); border: 2px solid var(--tars-border); }
     .dot-failed  { background: #ef4444; color: #fff; }
 
+    /* Pulsing live indicator for in-progress tasks */
+    @keyframes tars-pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50%       { opacity: 0.5; transform: scale(1.6); }
+    }
+    .status-live-dot {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #60a5fa;
+        animation: tars-pulse 1.4s ease-in-out infinite;
+        vertical-align: middle;
+        margin-right: 0.3rem;
+    }
+
+    /* Toast notification for live updates */
+    #ws-toast {
+        position: fixed;
+        bottom: 1.5rem;
+        right: 1.5rem;
+        background: var(--tars-surface);
+        border: 1px solid rgba(99,102,241,0.4);
+        border-radius: 10px;
+        padding: 0.75rem 1.1rem;
+        font-size: 0.82rem;
+        color: var(--tars-text);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        z-index: 9999;
+        display: none;
+        max-width: 320px;
+    }
+
     .timeline-label-done    { color: var(--tars-text); font-weight: 500; }
     .timeline-label-current { color: var(--tars-accent); font-weight: 600; }
     .timeline-label-pending { color: var(--tars-muted); }
@@ -175,6 +208,7 @@
 {% endblock %}
 
 {% block content %}
+<div id="ws-toast"></div>
 <div class="page-hero">
     <div class="container">
         <nav aria-label="breadcrumb" class="mb-2">
@@ -191,9 +225,9 @@
         <div class="d-flex flex-wrap align-items-start justify-content-between gap-3">
             <div>
                 <div class="mb-1">
-                    <span class="status-badge status-{{ task.status }}">
-                        <i class="bi bi-circle-fill" style="font-size:0.4rem"></i>
-                        {{ task.get_status_display }}
+                    <span id="task-status-badge" class="status-badge status-{{ task.status }}">
+                        {% if task.status == "in_progress" %}<span class="status-live-dot"></span>{% else %}<i class="bi bi-circle-fill" style="font-size:0.4rem"></i>{% endif %}
+                        <span id="task-status-label">{{ task.get_status_display }}</span>
                     </span>
                 </div>
                 <h1 class="h3 fw-bold mb-1" style="color:var(--tars-text)">{{ task.title }}</h1>
@@ -208,12 +242,14 @@
                     <span class="small" style="color:var(--tars-muted)">Submitted {{ task.created_at|date:"M j, Y" }}</span>
                 </div>
             </div>
+            <div id="hero-pr-btn">
             {% if task.pr_url %}
             <a href="{{ task.pr_url }}" target="_blank" rel="noopener noreferrer"
                class="btn btn-outline-accent btn-sm">
                 <i class="bi bi-git me-1"></i> View Pull Request
             </a>
             {% endif %}
+            </div>
         </div>
     </div>
 </div>
@@ -375,6 +411,62 @@
     if (!el) return;
     const raw = el.textContent;
     el.innerHTML = marked.parse(raw);
+})();
+</script>
+<script>
+(function () {
+    const STATUS_CLASSES = [
+        'status-pending', 'status-queued', 'status-assigned',
+        'status-in_progress', 'status-reviewing', 'status-completed', 'status-failed'
+    ];
+
+    const badge    = document.getElementById('task-status-badge');
+    const toast    = document.getElementById('ws-toast');
+    const heroPrBtn = document.getElementById('hero-pr-btn');
+
+    let toastTimer;
+
+    function showToast(msg) {
+        toast.textContent = msg;
+        toast.style.display = 'block';
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () { toast.style.display = 'none'; }, 4000);
+    }
+
+    function updateBadge(status, statusDisplay) {
+        STATUS_CLASSES.forEach(function (c) { badge.classList.remove(c); });
+        badge.classList.add('status-' + status);
+        var icon = status === 'in_progress'
+            ? '<span class="status-live-dot"></span>'
+            : '<i class="bi bi-circle-fill" style="font-size:0.4rem"></i>';
+        badge.innerHTML = icon + '<span id="task-status-label">' + statusDisplay + '</span>';
+    }
+
+    function showHeroPrBtn(prUrl) {
+        if (!heroPrBtn || heroPrBtn.querySelector('a')) return;
+        heroPrBtn.innerHTML =
+            '<a href="' + prUrl + '" target="_blank" rel="noopener noreferrer" class="btn btn-outline-accent btn-sm">' +
+            '<i class="bi bi-git me-1"></i> View Pull Request</a>';
+    }
+
+    var scheme = location.protocol === 'https:' ? 'wss' : 'ws';
+    var ws = new WebSocket(scheme + '://' + location.host + '/ws/tasks/{{ task.pk }}/');
+
+    ws.onmessage = function (e) {
+        var data;
+        try { data = JSON.parse(e.data); } catch (_) { return; }
+
+        if (data.status) {
+            updateBadge(data.status, data.status_display);
+            showToast('\u2022 Status updated: ' + data.status_display);
+        }
+
+        if (data.pr_url) {
+            showHeroPrBtn(data.pr_url);
+        }
+    };
+
+    ws.onerror = function () { /* silently ignore connection errors */ };
 })();
 </script>
 {% endblock %}

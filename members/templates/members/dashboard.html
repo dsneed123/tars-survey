@@ -183,10 +183,40 @@
     }
 
     .task-status-dot.pending { background: var(--tars-muted); }
-    .task-status-dot.in_progress { background: var(--tars-accent); }
+    .task-status-dot.in_progress { background: var(--tars-accent); animation: tars-pulse 1.4s ease-in-out infinite; }
     .task-status-dot.completed { background: var(--tars-green); }
     .task-status-dot.failed { background: #ef4444; }
     .task-status-dot.queued, .task-status-dot.assigned, .task-status-dot.reviewing { background: #f59e0b; }
+
+    @keyframes tars-pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50%       { opacity: 0.5; transform: scale(1.6); }
+    }
+
+    /* Activity feed */
+    .feed-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.65rem;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid var(--tars-border);
+        font-size: 0.82rem;
+    }
+
+    .feed-item:last-child { border-bottom: none; }
+
+    .feed-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        margin-top: 0.3rem;
+    }
+
+    .feed-dot.completed { background: var(--tars-green); }
+    .feed-dot.failed    { background: #ef4444; }
+    .feed-dot.in_progress { background: var(--tars-accent); }
+    .feed-dot.default   { background: var(--tars-muted); }
 
     .status-pill {
         display: inline-flex;
@@ -378,13 +408,13 @@
             <div class="card-surface p-4">
                 {% if recent_tasks %}
                     {% for task in recent_tasks %}
-                    <a href="{% url 'tasks:detail' pk=task.pk %}" class="task-row">
-                        <div class="task-status-dot {{ task.status }}"></div>
+                    <a href="{% url 'tasks:detail' pk=task.pk %}" class="task-row" data-task-id="{{ task.pk }}">
+                        <div class="task-status-dot {{ task.status }}" data-dot="{{ task.pk }}"></div>
                         <div class="flex-grow-1 min-width-0">
                             <div class="fw-semibold small text-truncate" style="color:var(--tars-text)">{{ task.title }}</div>
                             <div class="small" style="color:var(--tars-muted)">{{ task.project.name }} &middot; {{ task.created_at|date:"M j" }}</div>
                         </div>
-                        <span class="status-pill {% if task.status == 'completed' %}active{% elif task.status == 'failed' %}error{% elif task.status == 'in_progress' %}working{% elif task.status == 'pending' %}coming-soon{% else %}warn{% endif %}">
+                        <span class="status-pill {% if task.status == 'completed' %}active{% elif task.status == 'failed' %}error{% elif task.status == 'in_progress' %}working{% elif task.status == 'pending' %}coming-soon{% else %}warn{% endif %}" data-pill="{{ task.pk }}">
                             {{ task.get_status_display }}
                         </span>
                     </a>
@@ -489,8 +519,93 @@
                     Upgrade Plan
                 </a>
             </div>
+            <!-- Activity Feed -->
+            <p class="section-label mt-4">Live Activity</p>
+            <div class="card-surface p-4" id="activity-feed-card">
+                <div id="activity-feed">
+                    <div class="text-center py-3" id="feed-empty" style="color:var(--tars-muted); font-size:0.82rem">
+                        <i class="bi bi-broadcast me-1"></i> Waiting for task updates&hellip;
+                    </div>
+                </div>
+            </div>
+
         </div>
 
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    var feed      = document.getElementById('activity-feed');
+    var feedEmpty = document.getElementById('feed-empty');
+
+    var STATUS_DOT_CLASSES  = ['pending','queued','assigned','in_progress','reviewing','completed','failed'];
+    var STATUS_PILL_CLASSES = ['active','error','working','coming-soon','warn'];
+
+    function pillClass(status) {
+        if (status === 'completed')   return 'active';
+        if (status === 'failed')      return 'error';
+        if (status === 'in_progress') return 'working';
+        if (status === 'pending')     return 'coming-soon';
+        return 'warn';
+    }
+
+    function feedDotClass(status) {
+        if (status === 'completed')   return 'completed';
+        if (status === 'failed')      return 'failed';
+        if (status === 'in_progress') return 'in_progress';
+        return 'default';
+    }
+
+    function prependFeedItem(data) {
+        if (feedEmpty) {
+            feedEmpty.style.display = 'none';
+        }
+        var item = document.createElement('div');
+        item.className = 'feed-item';
+        var prLink = data.pr_url
+            ? ' &mdash; <a href="' + data.pr_url + '" target="_blank" rel="noopener noreferrer" style="color:var(--tars-accent)">View PR</a>'
+            : '';
+        item.innerHTML =
+            '<div class="feed-dot ' + feedDotClass(data.status) + '"></div>' +
+            '<div>' +
+                '<span style="color:var(--tars-text); font-weight:500">' + data.title + '</span>' +
+                ' &rarr; <span style="color:var(--tars-muted)">' + data.status_display + '</span>' +
+                prLink +
+            '</div>';
+        feed.insertBefore(item, feed.firstChild);
+        // Keep feed trimmed to 20 items
+        var items = feed.querySelectorAll('.feed-item');
+        if (items.length > 20) {
+            feed.removeChild(items[items.length - 1]);
+        }
+    }
+
+    function updateTaskRow(data) {
+        var dot  = document.querySelector('[data-dot="' + data.task_id + '"]');
+        var pill = document.querySelector('[data-pill="' + data.task_id + '"]');
+        if (dot) {
+            STATUS_DOT_CLASSES.forEach(function (c) { dot.classList.remove(c); });
+            dot.classList.add(data.status);
+        }
+        if (pill) {
+            STATUS_PILL_CLASSES.forEach(function (c) { pill.classList.remove(c); });
+            pill.classList.add(pillClass(data.status));
+            pill.textContent = data.status_display;
+        }
+    }
+
+    var scheme = location.protocol === 'https:' ? 'wss' : 'ws';
+    var ws = new WebSocket(scheme + '://' + location.host + '/ws/dashboard/');
+    ws.onmessage = function (e) {
+        var data;
+        try { data = JSON.parse(e.data); } catch (_) { return; }
+        prependFeedItem(data);
+        updateTaskRow(data);
+    };
+    ws.onerror = function () { /* silently ignore */ };
+})();
+</script>
 {% endblock %}
