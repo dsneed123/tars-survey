@@ -146,6 +146,7 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 # Force HTTPS on Railway regardless of DEBUG setting
 _ON_RAILWAY = bool(os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("DATABASE_URL", "").startswith("postgresql"))
 SECURE_SSL_REDIRECT = _ON_RAILWAY or not DEBUG
+SECURE_REDIRECT_EXEMPT = [r"^health/?$"]
 SESSION_COOKIE_SECURE = _ON_RAILWAY or not DEBUG
 CSRF_COOKIE_SECURE = _ON_RAILWAY or not DEBUG
 
