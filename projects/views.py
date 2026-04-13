@@ -108,7 +108,17 @@ def project_add(request):
             messages.success(request, f'Project "{project.name}" added successfully.')
             return redirect("projects:detail", pk=project.pk)
     else:
-        form = ProjectForm(user=request.user)
+        initial = {}
+        team_slug = request.GET.get("team")
+        if team_slug:
+            from teams.models import Team
+            try:
+                team = Team.objects.get(slug=team_slug)
+                if team.is_member(request.user):
+                    initial["team"] = team
+            except Team.DoesNotExist:
+                pass
+        form = ProjectForm(user=request.user, initial=initial)
     return render(request, "projects/project_add.html", {"form": form})
 
 

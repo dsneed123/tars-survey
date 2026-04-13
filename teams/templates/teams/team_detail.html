@@ -61,9 +61,14 @@
         <div class="row g-3">
             <div class="col-lg-7">
                 <div class="section-card">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="mb-0">Projects</h5>
-                        <span style="color:var(--tars-muted); font-size:0.85rem;">{{ projects.count }}</span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span style="color:var(--tars-muted); font-size:0.85rem;">{{ projects.count }}</span>
+                            <a href="{% url 'projects:add' %}?team={{ team.slug }}" class="btn btn-sm btn-accent">
+                                <i class="bi bi-plus-lg me-1"></i>Add project
+                            </a>
+                        </div>
                     </div>
                     {% if projects %}
                         {% for p in projects %}
