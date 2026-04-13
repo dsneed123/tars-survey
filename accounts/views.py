@@ -41,7 +41,7 @@ def accounts_register(request):
             MemberProfile.objects.create(user=user)
             login(request, user)
             fire_event("signup_completed", user=user, metadata={"plan": user.plan})
-            return redirect("members:dashboard")
+            return redirect("members:onboarding")
     else:
         form = RegisterForm()
     return render(request, "accounts/register.html", {"form": form})
