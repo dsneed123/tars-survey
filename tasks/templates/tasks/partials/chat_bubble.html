@@ -1,0 +1,84 @@
+{#
+  Reusable chat bubble partial.
+
+  Required:
+    bubble_type           — "user" or "tars"
+    bubble_content        — message text (auto-escaped; safe for markdown source)
+
+  Optional:
+    bubble_title          — bold heading above content (user bubbles)
+    bubble_content_id     — id attr on the content div (e.g. "task-description-rendered")
+    bubble_content_class  — extra CSS class on the inner content div (e.g. "task-description")
+    bubble_timestamp      — datetime object
+    bubble_status         — task status slug (e.g. "in_progress"), shown as a badge in tars bubbles
+    bubble_status_display — human-readable status label
+    bubble_avatar_initials— single character for user avatar
+    bubble_branch         — branch name to display as a code line (tars bubbles)
+    bubble_pr_url         — PR URL to render as a link (tars bubbles)
+#}
+
+{% if bubble_type == "user" %}
+<div class="chat-bubble user">
+    <div class="chat-bubble-row user">
+        <div class="chat-bubble-body">
+            <div class="chat-bubble-sender">You</div>
+            <div class="chat-bubble-content user-content">
+                {% if bubble_title %}<div class="chat-bubble-title">{{ bubble_title }}</div>{% endif %}
+                <div{% if bubble_content_id %} id="{{ bubble_content_id }}"{% endif %}{% if bubble_content_class %} class="{{ bubble_content_class }}"{% endif %}>{{ bubble_content }}</div>
+            </div>
+            {% if bubble_timestamp %}
+            <div class="chat-bubble-meta">
+                <span class="chat-bubble-time">{{ bubble_timestamp|date:"M j, g:i A" }}</span>
+            </div>
+            {% endif %}
+        </div>
+        <div class="chat-avatar user">
+            {{ bubble_avatar_initials|default:"?" }}
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="chat-bubble tars">
+    <div class="chat-bubble-row tars">
+        <div class="chat-avatar tars">
+            <i class="bi bi-robot"></i>
+        </div>
+        <div class="chat-bubble-body">
+            <div class="chat-bubble-sender">TARS</div>
+            <div class="chat-bubble-content tars-content">
+                {% if bubble_status %}
+                <span class="status-badge status-{{ bubble_status }} chat-status-badge">
+                    {% if bubble_status == "in_progress" %}
+                    <span class="status-live-dot"></span>
+                    {% else %}
+                    <i class="bi bi-circle-fill" style="font-size:0.4rem"></i>
+                    {% endif %}
+                    {{ bubble_status_display|default:bubble_status }}
+                </span>
+                {% endif %}
+                {% if bubble_content %}<p class="chat-bubble-text">{{ bubble_content }}</p>{% endif %}
+                {% if bubble_branch %}
+                <div class="chat-bubble-branch">
+                    <i class="bi bi-git me-1"></i>
+                    <code>{{ bubble_branch }}</code>
+                </div>
+                {% endif %}
+                {% if bubble_pr_url %}
+                <div class="chat-bubble-pr">
+                    <a href="{{ bubble_pr_url }}" target="_blank" rel="noopener noreferrer"
+                       class="chat-pr-link">
+                        <i class="bi bi-box-arrow-up-right me-1"></i>View Pull Request
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            {% if bubble_timestamp %}
+            <div class="chat-bubble-meta">
+                <span class="chat-bubble-time">{{ bubble_timestamp|date:"M j, g:i A" }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}

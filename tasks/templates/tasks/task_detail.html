@@ -204,6 +204,151 @@
         color: var(--tars-muted);
     }
     .task-description a { color: var(--tars-accent); }
+
+    /* ── Chat bubble styles ───────────────────────────────────────── */
+    .chat-thread {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .chat-bubble-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .chat-bubble-row.user { flex-direction: row-reverse; }
+
+    /* Avatars */
+    .chat-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        font-weight: 700;
+        flex-shrink: 0;
+        margin-top: 1.4rem; /* align with sender label */
+    }
+    .chat-avatar.user {
+        background: rgba(99,102,241,0.18);
+        color: var(--tars-accent);
+    }
+    .chat-avatar.tars {
+        background: rgba(16,185,129,0.15);
+        color: var(--tars-green);
+        font-size: 1rem;
+    }
+
+    /* Body wrapper */
+    .chat-bubble-body {
+        max-width: 86%;
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+    }
+    .chat-bubble-row.user .chat-bubble-body { align-items: flex-end; }
+    .chat-bubble-row.tars .chat-bubble-body { align-items: flex-start; }
+
+    /* Sender label */
+    .chat-bubble-sender {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--tars-muted);
+        padding: 0 0.2rem;
+    }
+
+    /* Bubble content box */
+    .chat-bubble-content {
+        padding: 0.9rem 1.1rem;
+        border-radius: 16px;
+        font-size: 0.875rem;
+        line-height: 1.7;
+        word-break: break-word;
+    }
+    .chat-bubble-content.user-content {
+        background: rgba(99,102,241,0.13);
+        border: 1px solid rgba(99,102,241,0.22);
+        border-top-right-radius: 4px;
+        color: var(--tars-text);
+    }
+    .chat-bubble-content.tars-content {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-top-left-radius: 4px;
+        color: var(--tars-text);
+    }
+
+    /* Title inside user bubble */
+    .chat-bubble-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--tars-text);
+        margin-bottom: 0.5rem;
+    }
+
+    /* Status badge inside TARS bubble */
+    .chat-status-badge {
+        margin-bottom: 0.55rem;
+        display: inline-flex;
+    }
+
+    /* Message text paragraph inside TARS bubble */
+    .chat-bubble-text {
+        margin: 0;
+        font-size: 0.875rem;
+        line-height: 1.65;
+        color: var(--tars-text);
+    }
+
+    /* Branch display */
+    .chat-bubble-branch {
+        margin-top: 0.55rem;
+        font-size: 0.8rem;
+        color: var(--tars-muted);
+    }
+    .chat-bubble-branch code {
+        background: rgba(0,0,0,0.25);
+        border: 1px solid var(--tars-border);
+        border-radius: 5px;
+        padding: 0.1em 0.4em;
+        font-size: 0.82rem;
+        color: var(--tars-accent);
+    }
+
+    /* PR link */
+    .chat-bubble-pr { margin-top: 0.6rem; }
+    .chat-pr-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--tars-green);
+        text-decoration: none;
+        border: 1px solid rgba(16,185,129,0.3);
+        background: rgba(16,185,129,0.08);
+        border-radius: 8px;
+        padding: 0.3rem 0.65rem;
+        transition: background 0.18s, border-color 0.18s;
+    }
+    .chat-pr-link:hover {
+        background: rgba(16,185,129,0.15);
+        border-color: rgba(16,185,129,0.5);
+        color: var(--tars-green);
+    }
+
+    /* Timestamp */
+    .chat-bubble-meta { padding: 0 0.2rem; }
+    .chat-bubble-time {
+        font-size: 0.7rem;
+        color: var(--tars-muted);
+    }
 </style>
 {% endblock %}
 
@@ -266,14 +411,73 @@
     {% endif %}
 
     <div class="row g-4">
-        <!-- Left column: description + attachments -->
+        <!-- Left column: conversation + attachments -->
         <div class="col-lg-8">
 
-            <!-- Description -->
-            <p class="section-label">Description</p>
-            <div class="card-surface p-4 mb-5">
-                <div class="task-description" id="task-description-rendered">
-                    {{ task.description }}
+            <!-- Conversation -->
+            <p class="section-label">Conversation</p>
+            <div class="mb-5">
+                <div class="chat-thread">
+
+                    {# ── User message: the original task request ── #}
+                    {% with avatar=task.created_by.first_name|first|upper %}
+                    {% include "tasks/partials/chat_bubble.html" with
+                        bubble_type="user"
+                        bubble_title=task.title
+                        bubble_content=task.description
+                        bubble_content_id="task-description-rendered"
+                        bubble_content_class="task-description"
+                        bubble_timestamp=task.created_at
+                        bubble_avatar_initials=avatar
+                        only %}
+                    {% endwith %}
+
+                    {# ── TARS: task received ── #}
+                    {% include "tasks/partials/chat_bubble.html" with
+                        bubble_type="tars"
+                        bubble_content="Task received and added to the queue."
+                        bubble_timestamp=task.created_at
+                        bubble_status="queued"
+                        bubble_status_display="Queued"
+                        only %}
+
+                    {# ── TARS: work started (when assigned/in-progress/reviewing) ── #}
+                    {% if task.started_at %}
+                    {% include "tasks/partials/chat_bubble.html" with
+                        bubble_type="tars"
+                        bubble_content="I've picked up this task and started working on it."
+                        bubble_timestamp=task.started_at
+                        bubble_status="in_progress"
+                        bubble_status_display="In Progress"
+                        bubble_branch=task.branch_name
+                        only %}
+                    {% endif %}
+
+                    {# ── TARS: completed ── #}
+                    {% if task.status == "completed" and task.completed_at %}
+                    {% include "tasks/partials/chat_bubble.html" with
+                        bubble_type="tars"
+                        bubble_content="Task completed successfully! The pull request is ready for your review."
+                        bubble_timestamp=task.completed_at
+                        bubble_status="completed"
+                        bubble_status_display="Completed"
+                        bubble_pr_url=task.pr_url
+                        only %}
+                    {% endif %}
+
+                    {# ── TARS: failed ── #}
+                    {% if task.status == "failed" and task.completed_at %}
+                    {% with fail_msg=task.error_message|default:"An unexpected error occurred while processing this task." %}
+                    {% include "tasks/partials/chat_bubble.html" with
+                        bubble_type="tars"
+                        bubble_content=fail_msg
+                        bubble_timestamp=task.completed_at
+                        bubble_status="failed"
+                        bubble_status_display="Failed"
+                        only %}
+                    {% endwith %}
+                    {% endif %}
+
                 </div>
             </div>
 
