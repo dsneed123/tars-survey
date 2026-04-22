@@ -136,7 +136,7 @@
 .dash-inner {
     max-width: 1160px;
     margin: 0 auto;
-    padding: 2rem 2rem 5rem;
+    padding: 2rem 2rem 7rem;
 }
 
 /* ── Welcome ───────────────────────────────────────────── */
@@ -511,6 +511,176 @@
 
 .fab:active { transform: scale(0.95); }
 
+/* ── Chat Input Bar ────────────────────────────────────── */
+.chat-bar {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    left: 240px;
+    z-index: 200;
+    background: linear-gradient(to top, var(--tars-bg) 65%, transparent);
+    padding: 0.75rem 2rem 1.1rem;
+}
+
+@media (max-width: 991px) {
+    .chat-bar { left: 0; padding: 0.65rem 1rem 0.9rem; }
+}
+
+.chat-bar-inner {
+    max-width: 860px;
+    margin: 0 auto;
+    background: var(--tars-surface);
+    border: 1px solid var(--tars-border);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.5rem 0.45rem 0.85rem;
+    box-shadow: 0 -4px 32px rgba(0,0,0,0.28);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.chat-bar-inner:focus-within {
+    border-color: rgba(99,102,241,0.45);
+    box-shadow: 0 -4px 32px rgba(0,0,0,0.28), 0 0 0 3px rgba(99,102,241,0.1);
+}
+
+.chat-project-select {
+    background: rgba(99,102,241,0.08) !important;
+    border: 1px solid rgba(99,102,241,0.2) !important;
+    border-radius: 8px !important;
+    color: var(--tars-accent) !important;
+    font-size: 0.78rem !important;
+    padding: 0.3rem 0.6rem !important;
+    cursor: pointer;
+    flex-shrink: 0;
+    max-width: 140px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@media (max-width: 480px) { .chat-project-select { max-width: 100px; font-size: 0.72rem !important; } }
+
+.chat-input {
+    flex: 1;
+    background: transparent !important;
+    border: none !important;
+    color: var(--tars-text) !important;
+    font-size: 0.9rem !important;
+    padding: 0.35rem 0.5rem !important;
+    outline: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    min-width: 0;
+}
+
+.chat-input::placeholder { color: var(--tars-muted) !important; opacity: 1; }
+
+.chat-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.18s;
+}
+
+.chat-btn.attach {
+    background: none;
+    color: var(--tars-muted);
+}
+
+.chat-btn.attach:hover { color: var(--tars-text); background: rgba(255,255,255,0.05); }
+
+.chat-btn.send {
+    background: var(--tars-accent);
+    color: #fff;
+    box-shadow: 0 2px 10px rgba(99,102,241,0.4);
+}
+
+.chat-btn.send:hover { background: var(--tars-accent-hover); }
+.chat-btn.send:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
+.chat-file-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: rgba(99,102,241,0.1);
+    border: 1px solid rgba(99,102,241,0.2);
+    border-radius: 6px;
+    padding: 0.18rem 0.45rem;
+    font-size: 0.7rem;
+    color: var(--tars-accent);
+    flex-shrink: 0;
+    max-width: 120px;
+}
+
+.chat-file-badge .chat-badge-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chat-badge-clear {
+    background: none;
+    border: none;
+    color: inherit;
+    padding: 0;
+    font-size: 0.75rem;
+    cursor: pointer;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+/* ── User chat bubble ──────────────────────────────────── */
+.feed-item.user-bubble {
+    flex-direction: row-reverse;
+}
+
+.user-bubble-msg {
+    background: rgba(99,102,241,0.12);
+    border: 1px solid rgba(99,102,241,0.25);
+    border-radius: 12px 12px 2px 12px;
+    padding: 0.45rem 0.75rem;
+    color: var(--tars-text);
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: inline-block;
+    max-width: 100%;
+    word-break: break-word;
+    text-decoration: none;
+}
+
+.user-bubble-msg:hover { border-color: rgba(99,102,241,0.45); color: var(--tars-text); }
+
+.user-bubble-meta {
+    text-align: right;
+    color: var(--tars-muted);
+    font-size: 0.7rem;
+    margin-top: 0.2rem;
+}
+
+.user-avatar-sm {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(99,102,241,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--tars-accent);
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
 /* ── Toast Portal ──────────────────────────────────────── */
 .toast-portal {
     position: fixed;
@@ -713,81 +883,6 @@
 <!-- Toast Portal -->
 <div class="toast-portal" id="toastPortal"></div>
 
-<!-- FAB -->
-<button class="fab" data-bs-toggle="modal" data-bs-target="#newTaskModal" title="New Task">
-    <i class="bi bi-plus-lg"></i>
-</button>
-
-<!-- New Task Modal -->
-<div class="modal fade" id="newTaskModal" tabindex="-1" aria-labelledby="newTaskModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div>
-                    <h5 class="modal-title fw-bold mb-0" id="newTaskModalLabel" style="color:var(--tars-text)">
-                        <i class="bi bi-lightning-fill me-2" style="color:var(--tars-accent)"></i>New Task
-                    </h5>
-                    <p class="mb-0 mt-1" style="font-size:0.82rem; color:var(--tars-muted)">Tell TARS what to build or fix</p>
-                </div>
-                <button type="button" class="btn-close btn-close-white opacity-50" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-
-            {% if projects %}
-            <form method="post" action="{% url 'members:quick_task' %}">
-                {% csrf_token %}
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Project</label>
-                        <select name="project_id" class="form-select" required>
-                            <option value="">Select a project&hellip;</option>
-                            {% for project in projects %}
-                            <option value="{{ project.pk }}">{{ project.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Task Title</label>
-                        <input type="text" name="title" class="form-control" required maxlength="300"
-                               placeholder="e.g. Fix the login bug, Add dark mode, Write unit tests&hellip;">
-                    </div>
-                    <div>
-                        <label class="form-label">
-                            Details
-                            <span style="text-transform:none; letter-spacing:0; font-weight:400; opacity:0.55">(optional)</span>
-                        </label>
-                        <textarea name="description" class="form-control" rows="3"
-                                  placeholder="Add any requirements, constraints, or context&hellip;"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" data-bs-dismiss="modal"
-                            style="background:none; border:1px solid var(--tars-border); color:var(--tars-muted); border-radius:8px; padding:0.45rem 1rem; font-size:0.875rem; cursor:pointer; transition:all 0.15s;">
-                        Cancel
-                    </button>
-                    <button type="submit" class="btn btn-accent btn-sm">
-                        <i class="bi bi-send-fill me-1"></i> Submit Task
-                    </button>
-                </div>
-            </form>
-
-            {% else %}
-            <div class="modal-body">
-                <div class="empty-state">
-                    <div class="empty-icon"><i class="bi bi-folder-plus"></i></div>
-                    <h6 class="fw-bold mb-2" style="color:var(--tars-text)">No projects yet</h6>
-                    <p class="small mb-4" style="color:var(--tars-muted)">
-                        Connect a GitHub repository first, then you can submit tasks.
-                    </p>
-                    <a href="{% url 'projects:add' %}" class="btn btn-accent btn-sm" data-bs-dismiss="modal">
-                        <i class="bi bi-plus-lg me-1"></i> Add Project
-                    </a>
-                </div>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-</div>
-
 <!-- Django flash messages -->
 {% if messages %}
 <div style="position:relative; z-index:200; padding:0.75rem 0 0;">
@@ -934,7 +1029,7 @@
                     <i class="bi bi-calendar3 me-1"></i>
                     Member since {{ profile.created_at|date:"N Y" }}
                 </span>
-                <button class="btn btn-accent btn-sm" data-bs-toggle="modal" data-bs-target="#newTaskModal">
+                <button class="btn btn-accent btn-sm" data-focus-chat>
                     <i class="bi bi-plus-lg me-1"></i> New Task
                 </button>
             </div>
@@ -1248,7 +1343,7 @@
                                 No tasks yet — select a project above to get started.
                             </p>
                             {% if projects %}
-                            <button class="btn btn-accent btn-sm" data-bs-toggle="modal" data-bs-target="#newTaskModal">
+                            <button class="btn btn-accent btn-sm" data-focus-chat>
                                 <i class="bi bi-plus-lg me-1"></i> Create First Task
                             </button>
                             {% endif %}
@@ -1372,6 +1467,37 @@
             </div>
         </div>
     </main>
+</div>
+
+<!-- ── Chat Input Bar ──────────────────────────────────── -->
+<div class="chat-bar" id="chatBar">
+    <form id="chatForm" novalidate>
+        {% csrf_token %}
+        <input type="file" id="chatFileInput" style="display:none" accept="*/*">
+        <div class="chat-bar-inner">
+            <select class="chat-project-select" id="chatProjectSelect">
+                <option value="">Project…</option>
+                {% for project in projects %}
+                <option value="{{ project.pk }}">{{ project.name }}</option>
+                {% endfor %}
+            </select>
+            <div id="chatFileBadge" class="chat-file-badge" style="display:none;">
+                <span class="chat-badge-name" id="chatFileName"></span>
+                <button type="button" class="chat-badge-clear" id="chatFileClear" aria-label="Remove file">
+                    <i class="bi bi-x"></i>
+                </button>
+            </div>
+            <input type="text" class="chat-input" id="chatInput"
+                   placeholder="Ask TARS to code something…" autocomplete="off" maxlength="500">
+            <button type="button" class="chat-btn attach" id="chatAttachBtn"
+                    title="Attach a file" aria-label="Attach file">
+                <i class="bi bi-paperclip"></i>
+            </button>
+            <button type="submit" class="chat-btn send" id="chatSendBtn" aria-label="Send" disabled>
+                <i class="bi bi-arrow-up"></i>
+            </button>
+        </div>
+    </form>
 </div>
 
 {% endblock %}
@@ -1540,6 +1666,125 @@
         };
         ws.onerror = function () { /* silently ignore */ };
     } catch (_) { /* WebSocket not available */ }
+
+    // ── Chat Input Bar ────────────────────────────────────
+    var chatForm          = document.getElementById('chatForm');
+    var chatInput         = document.getElementById('chatInput');
+    var chatSendBtn       = document.getElementById('chatSendBtn');
+    var chatProjectSelect = document.getElementById('chatProjectSelect');
+    var chatAttachBtn     = document.getElementById('chatAttachBtn');
+    var chatFileInput     = document.getElementById('chatFileInput');
+    var chatFileBadge     = document.getElementById('chatFileBadge');
+    var chatFileName      = document.getElementById('chatFileName');
+    var chatFileClear     = document.getElementById('chatFileClear');
+    var userInitials      = '{{ user.first_name|first|upper|default:user.email|first|upper }}';
+
+    function updateSendState() {
+        var hasText    = chatInput && chatInput.value.trim().length > 0;
+        var hasProject = chatProjectSelect && chatProjectSelect.value !== '';
+        if (chatSendBtn) chatSendBtn.disabled = !(hasText && hasProject);
+    }
+
+    if (chatInput)         chatInput.addEventListener('input', updateSendState);
+    if (chatProjectSelect) chatProjectSelect.addEventListener('change', updateSendState);
+
+    if (chatAttachBtn && chatFileInput) {
+        chatAttachBtn.addEventListener('click', function () { chatFileInput.click(); });
+    }
+
+    if (chatFileInput) {
+        chatFileInput.addEventListener('change', function () {
+            if (chatFileInput.files.length > 0) {
+                chatFileName.textContent = chatFileInput.files[0].name;
+                chatFileBadge.style.display = 'flex';
+            }
+        });
+    }
+
+    if (chatFileClear) {
+        chatFileClear.addEventListener('click', function () {
+            chatFileInput.value = '';
+            chatFileBadge.style.display = 'none';
+        });
+    }
+
+    document.querySelectorAll('[data-focus-chat]').forEach(function (el) {
+        el.addEventListener('click', function () {
+            if (chatInput) {
+                chatInput.focus();
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            }
+        });
+    });
+
+    function addUserBubble(title, projectName, detailUrl) {
+        if (feedEmpty) feedEmpty.style.display = 'none';
+        var sanitize = function (s) {
+            return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        };
+        var el = document.createElement('div');
+        el.className = 'feed-item user-bubble';
+        el.innerHTML =
+            '<div class="user-avatar-sm">' + userInitials + '</div>' +
+            '<div style="flex:1; min-width:0;">' +
+                '<a href="' + (detailUrl || '#') + '" class="user-bubble-msg">' +
+                    sanitize(title) +
+                '</a>' +
+                '<div class="user-bubble-meta">' +
+                    (projectName ? sanitize(projectName) + ' &middot; ' : '') + 'Just now' +
+                '</div>' +
+            '</div>';
+        feed.insertBefore(el, feed.firstChild);
+    }
+
+    if (chatForm) {
+        chatForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            var title     = chatInput.value.trim();
+            var projectId = chatProjectSelect.value;
+            if (!title || !projectId) return;
+
+            chatSendBtn.disabled = true;
+            var prevHtml = chatSendBtn.innerHTML;
+            chatSendBtn.innerHTML = '<span class="spinner-border spinner-border-sm" style="width:0.85rem;height:0.85rem;border-width:2px;"></span>';
+
+            var csrfToken = chatForm.querySelector('[name=csrfmiddlewaretoken]').value;
+            var body = 'title=' + encodeURIComponent(title) +
+                       '&description=' + encodeURIComponent(title) +
+                       '&project_id=' + encodeURIComponent(projectId) +
+                       '&csrfmiddlewaretoken=' + encodeURIComponent(csrfToken);
+
+            fetch('{% url "members:quick_task" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: body,
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                chatSendBtn.innerHTML = prevHtml;
+                if (data.ok) {
+                    addUserBubble(title, data.project_name, data.detail_url);
+                    chatInput.value = '';
+                    chatFileInput.value = '';
+                    chatFileBadge.style.display = 'none';
+                    chatSendBtn.disabled = true;
+                    showToast('Task submitted — TARS is on it.', 'success');
+                } else {
+                    showToast(data.error || 'Something went wrong.', 'error');
+                    updateSendState();
+                }
+            })
+            .catch(function () {
+                chatSendBtn.innerHTML = prevHtml;
+                showToast('Could not reach the server. Please try again.', 'error');
+                updateSendState();
+            });
+        });
+    }
 
     // ── Bootstrap tooltip init ────────────────────────────
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {

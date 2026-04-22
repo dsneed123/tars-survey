@@ -1,7 +1,9 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -95,8 +97,14 @@ def quick_add_task(request):
     title = request.POST.get("title", "").strip()
     description = request.POST.get("description", "").strip()
     project_id = request.POST.get("project_id")
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
 
     if not title or not project_id:
+        if is_ajax:
+            return JsonResponse(
+                {"ok": False, "error": "Please provide a task title and select a project."},
+                status=400,
+            )
         messages.error(request, "Please provide a task title and select a project.")
         return redirect("members:dashboard")
 
@@ -110,8 +118,20 @@ def quick_add_task(request):
             status="pending",
         )
         _forward_to_controller(task)
+        if is_ajax:
+            return JsonResponse({
+                "ok": True,
+                "task_id": task.pk,
+                "title": task.title,
+                "project_name": project.name,
+                "status": task.status,
+                "status_display": task.get_status_display(),
+                "detail_url": reverse("tasks:detail", kwargs={"pk": task.pk}),
+            })
         messages.success(request, f'Task "{title}" submitted — TARS is on it.')
     except Project.DoesNotExist:
+        if is_ajax:
+            return JsonResponse({"ok": False, "error": "Project not found."}, status=400)
         messages.error(request, "Project not found.")
 
     return redirect("members:dashboard")
