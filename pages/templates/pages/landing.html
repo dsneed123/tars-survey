@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}TARS — Ship Code While You Sleep | Autonomous Coding{% endblock %}
+{% block title %}TARS — Autonomous Coding Agent{% endblock %}
 
-{% block meta_description %}<meta name="description" content="TARS is an autonomous coding agent that ships production-ready code 24/7. Discover tasks, write code, run tests, and open pull requests — all without a human in the loop.">{% endblock %}
+{% block meta_description %}<meta name="description" content="TARS is an autonomous coding agent. Describe what to build and TARS writes the code, runs tests, and opens a pull request.">{% endblock %}
 
 {% block meta_og %}
 <meta property="og:type" content="website">
 <meta property="og:locale" content="en_US">
 <meta property="og:site_name" content="TARS">
-<meta property="og:title" content="TARS — Ship Code While You Sleep">
-<meta property="og:description" content="TARS is an autonomous coding agent that ships production-ready code 24/7. Discover tasks, write code, run tests, and open pull requests — all without a human in the loop.">
+<meta property="og:title" content="TARS — Autonomous Coding Agent">
+<meta property="og:description" content="Describe what to build and TARS writes the code, runs tests, and opens a pull request.">
 <meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
 <meta property="og:image" content="{{ SITE_URL }}/static/img/og-image.png">
 <meta property="og:image:type" content="image/png">
@@ -17,90 +17,27 @@
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@usetarsdev">
-<meta name="twitter:title" content="TARS — Ship Code While You Sleep">
-<meta name="twitter:description" content="TARS is an autonomous coding agent that ships production-ready code 24/7. Discover tasks, write code, run tests, and open pull requests — all without a human in the loop.">
+<meta name="twitter:title" content="TARS — Autonomous Coding Agent">
+<meta name="twitter:description" content="Describe what to build and TARS writes the code, runs tests, and opens a pull request.">
 <meta name="twitter:image" content="{{ SITE_URL }}/static/img/og-image.png">
-{% endblock %}
-
-{% block json_ld %}
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  "name": "TARS",
-  "url": "{{ request.scheme }}://{{ request.get_host }}",
-  "description": "TARS is an autonomous coding agent that discovers tasks, writes production-ready code, runs your test suite, and opens pull requests — 24/7, without human intervention.",
-  "foundingDate": "2026",
-  "contactPoint": {
-    "@type": "ContactPoint",
-    "contactType": "sales",
-    "url": "{{ request.scheme }}://{{ request.get_host }}{% url 'pages:inquiry' %}"
-  },
-  "offers": {
-    "@type": "Offer",
-    "name": "Early Access",
-    "description": "Autonomous coding agent that builds, tests, and ships your software around the clock.",
-    "url": "{{ request.scheme }}://{{ request.get_host }}{% url 'pages:inquiry' %}"
-  }
-}
-</script>
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "WebApplication",
-  "name": "TARS — Autonomous Coding",
-  "url": "{{ request.scheme }}://{{ request.get_host }}",
-  "description": "Autonomous coding agent that discovers tasks, writes production-ready code, runs your test suite, and opens pull requests — 24/7.",
-  "applicationCategory": "DeveloperApplication",
-  "operatingSystem": "Any",
-  "offers": {
-    "@type": "Offer",
-    "name": "Early Access",
-    "price": "0",
-    "priceCurrency": "USD",
-    "url": "{{ request.scheme }}://{{ request.get_host }}{% url 'pages:inquiry' %}"
-  },
-  "featureList": [
-    "Autonomous task discovery from GitHub Issues",
-    "AI-powered code generation",
-    "Automated test execution",
-    "Pull request creation",
-    "24/7 continuous operation"
-  ]
-}
-</script>
 {% endblock %}
 
 {% block extra_head %}
 <style>
-    /* ── Scroll-reveal ──────────────────────────────────────── */
-    [data-reveal] {
-        opacity: 0;
-        transform: translateY(28px);
-        transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1),
-                    transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    [data-reveal].is-visible {
-        opacity: 1;
-        transform: none;
-    }
-    [data-reveal-delay="1"] { transition-delay: 0.08s; }
-    [data-reveal-delay="2"] { transition-delay: 0.16s; }
-    [data-reveal-delay="3"] { transition-delay: 0.24s; }
-    [data-reveal-delay="4"] { transition-delay: 0.32s; }
-
     /* ── Hero ───────────────────────────────────────────────── */
     .hero {
-        min-height: 92vh;
+        min-height: 100vh;
         display: flex;
+        flex-direction: column;
         align-items: center;
+        justify-content: center;
         position: relative;
         overflow: hidden;
-        padding-top: 4rem;
+        padding-top: 5rem;
         padding-bottom: 4rem;
+        text-align: center;
     }
 
-    /* Animated gradient background */
     .hero-bg {
         position: absolute;
         inset: 0;
@@ -123,7 +60,6 @@
         100% { opacity: 1;    transform: scale(1.04); }
     }
 
-    /* Dot-grid overlay */
     .hero-grid {
         position: absolute;
         inset: 0;
@@ -133,7 +69,6 @@
         -webkit-mask-image: radial-gradient(ellipse 90% 90% at 50% 40%, rgba(0,0,0,0.9) 0%, transparent 75%);
     }
 
-    /* Floating orb accents */
     .hero-orb {
         position: absolute;
         border-radius: 50%;
@@ -201,11 +136,11 @@
     }
 
     .hero h1 {
-        font-size: clamp(2.8rem, 6vw, 5rem);
+        font-size: clamp(3rem, 7vw, 5.5rem);
         font-weight: 800;
-        line-height: 1.06;
+        line-height: 1.05;
         letter-spacing: -0.04em;
-        margin-bottom: 1.5rem;
+        margin-bottom: 1.25rem;
     }
 
     .hero h1 .gradient-text {
@@ -218,372 +153,170 @@
     .hero-sub {
         font-size: 1.15rem;
         color: var(--tars-muted);
-        max-width: 540px;
-        line-height: 1.7;
-        margin-bottom: 2.5rem;
+        max-width: 480px;
+        line-height: 1.6;
+        margin: 0 auto 2.25rem;
     }
 
-    .hero-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.875rem;
-        align-items: center;
-    }
-
-    .hero-divider {
-        width: 1px;
-        height: 36px;
-        background: var(--tars-border);
-    }
-
-    .hero-stat .stat-value {
-        font-family: "Space Grotesk", system-ui, sans-serif;
-        font-size: 1.75rem;
-        font-weight: 800;
-        color: var(--tars-text);
-        line-height: 1;
-    }
-
-    .hero-stat .stat-label {
-        font-size: 0.72rem;
-        color: var(--tars-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.07em;
-        margin-top: 4px;
-    }
-
-    .hero-terminal {
+    /* ── Chat Demo ──────────────────────────────────────────── */
+    .chat-demo {
         background: var(--tars-surface);
         border: 1px solid var(--tars-border);
-        border-radius: 14px;
+        border-radius: 16px;
         overflow: hidden;
-        font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
-        font-size: 0.82rem;
-        box-shadow: 0 40px 100px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(99, 102, 241, 0.08);
+        width: 100%;
+        max-width: 600px;
+        margin: 3rem auto 0;
+        box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(99, 102, 241, 0.08);
         position: relative;
         z-index: 1;
     }
 
-    .terminal-bar {
-        background: #1f2937;
-        padding: 10px 16px;
+    .chat-demo-bar {
+        background: #1a1a1a;
+        border-bottom: 1px solid var(--tars-border);
+        padding: 12px 16px;
         display: flex;
         align-items: center;
         gap: 8px;
     }
 
-    .terminal-bar .t-dot {
-        width: 12px;
-        height: 12px;
+    .chat-demo-bar .t-dot {
+        width: 11px;
+        height: 11px;
         border-radius: 50%;
     }
 
-    .terminal-body {
-        padding: 20px 22px;
-        line-height: 1.85;
-        color: #d1d5db;
-    }
-
-    .terminal-body .prompt  { color: var(--tars-green); }
-    .terminal-body .cmd     { color: #a5b4fc; }
-    .terminal-body .out     { color: var(--tars-muted); }
-    .terminal-body .success { color: var(--tars-green); }
-
-    /* ── Logo Bar ───────────────────────────────────────────── */
-    .logo-bar {
-        border-top: 1px solid var(--tars-border);
-        border-bottom: 1px solid var(--tars-border);
-        padding: 2.75rem 0;
-        overflow: hidden;
-    }
-
-    .logo-bar-label {
-        font-size: 0.72rem;
-        font-weight: 600;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: var(--tars-muted);
-        text-align: center;
-        margin-bottom: 1.75rem;
-        opacity: 0.7;
-    }
-
-    .logo-bar-logos {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        align-items: center;
-        gap: 2rem 3rem;
-    }
-
-    .logo-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: rgba(156, 163, 175, 0.4);
-        font-family: "Space Grotesk", system-ui, sans-serif;
-        font-weight: 700;
-        font-size: 0.95rem;
-        letter-spacing: -0.01em;
-        transition: color 0.25s;
-        user-select: none;
-    }
-
-    .logo-item:hover {
-        color: rgba(156, 163, 175, 0.65);
-    }
-
-    .logo-item svg {
-        opacity: 0.7;
-    }
-
-    /* ── Benefits ───────────────────────────────────────────── */
-    .benefit-card {
-        background: var(--tars-surface);
-        border: 1px solid var(--tars-border);
-        border-radius: 16px;
-        padding: 2rem;
-        height: 100%;
-        transition: border-color 0.25s, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s;
-    }
-
-    .benefit-card:hover {
-        border-color: rgba(99, 102, 241, 0.5);
-        transform: translateY(-6px) scale(1.01);
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(99, 102, 241, 0.12);
-    }
-
-    .benefit-icon {
-        width: 52px;
-        height: 52px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.35rem;
-        margin-bottom: 1.25rem;
-    }
-
-    /* ── How It Works ───────────────────────────────────────── */
-    .step-number {
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        background: rgba(99, 102, 241, 0.15);
-        border: 1.5px solid rgba(99, 102, 241, 0.4);
-        color: #a5b4fc;
-        font-size: 1rem;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        font-family: "Space Grotesk", system-ui, sans-serif;
-    }
-
-    section {
-        padding-top: 5.5rem;
-        padding-bottom: 5.5rem;
-    }
-
-    .section-label {
-        font-size: 0.72rem;
-        font-weight: 700;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: var(--tars-accent);
-        margin-bottom: 0.75rem;
-    }
-
-    .section-title {
-        font-size: clamp(1.8rem, 3.5vw, 2.75rem);
-        font-weight: 800;
-        letter-spacing: -0.03em;
-        margin-bottom: 1rem;
-        line-height: 1.15;
-    }
-
-    .section-sub {
-        font-size: 1.05rem;
-        color: var(--tars-muted);
-        line-height: 1.65;
-    }
-
-    /* ── Use Cases ──────────────────────────────────────────── */
-    .usecase-card {
-        background: var(--tars-surface);
-        border: 1px solid var(--tars-border);
-        border-radius: 16px;
-        padding: 2rem;
-        height: 100%;
-        transition: border-color 0.25s, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s;
-    }
-
-    .usecase-card:hover {
-        border-color: rgba(99, 102, 241, 0.5);
-        transform: translateY(-6px) scale(1.01);
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(99, 102, 241, 0.12);
-    }
-
-    .usecase-icon {
-        width: 52px;
-        height: 52px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.35rem;
-        margin-bottom: 1.25rem;
-    }
-
-    /* ── Metrics Bar ────────────────────────────────────────── */
-    .metrics-bar {
-        background: var(--tars-surface);
-        border-top: 1px solid var(--tars-border);
-        border-bottom: 1px solid var(--tars-border);
-        padding: 4rem 0;
-    }
-
-    .metric-item {
-        text-align: center;
-        padding: 0 1.5rem;
-    }
-
-    .metric-value {
-        font-family: "Space Grotesk", system-ui, sans-serif;
-        font-size: clamp(2rem, 4vw, 3rem);
-        font-weight: 800;
-        line-height: 1;
-        background: linear-gradient(135deg, #818cf8 0%, #6366f1 45%, #10b981 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .metric-label {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: var(--tars-muted);
-        text-transform: uppercase;
-        letter-spacing: 0.09em;
-        margin-top: 0.6rem;
-    }
-
-    .metric-divider {
-        width: 1px;
-        background: var(--tars-border);
-        align-self: stretch;
-        min-height: 48px;
-    }
-
-    /* ── Testimonials ───────────────────────────────────────── */
-    .testimonial-card {
-        background: var(--tars-surface);
-        border: 1px solid var(--tars-border);
-        border-radius: 16px;
-        padding: 2rem;
-        height: 100%;
-        transition: border-color 0.25s, transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s;
-        position: relative;
-    }
-
-    .testimonial-card:hover {
-        border-color: rgba(99, 102, 241, 0.5);
-        transform: translateY(-6px) scale(1.01);
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(99, 102, 241, 0.1);
-    }
-
-    .testimonial-quote {
-        font-size: 2.8rem;
-        line-height: 1;
-        color: var(--tars-accent);
-        opacity: 0.35;
-        margin-bottom: 0.25rem;
-        font-family: Georgia, serif;
-    }
-
-    .testimonial-text {
-        color: var(--tars-text);
-        font-size: 0.96rem;
-        line-height: 1.75;
-        margin-bottom: 1.5rem;
-    }
-
-    .testimonial-avatar {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.85rem;
-        font-weight: 700;
-        flex-shrink: 0;
-        font-family: "Space Grotesk", system-ui, sans-serif;
-    }
-
-    .testimonial-name {
-        font-family: "Space Grotesk", system-ui, sans-serif;
-        font-weight: 700;
-        font-size: 0.93rem;
-        color: var(--tars-text);
-        line-height: 1.2;
-    }
-
-    .testimonial-role {
+    .chat-demo-bar .chat-title {
         font-size: 0.78rem;
         color: var(--tars-muted);
+        margin-left: 6px;
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        font-weight: 600;
     }
 
-    /* ── CTA Section ────────────────────────────────────────── */
-    .cta-section {
-        position: relative;
-        overflow: hidden;
+    .chat-demo-body {
+        padding: 20px 20px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
     }
 
-    .cta-section::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background:
-            radial-gradient(ellipse 80% 80% at 50% 100%, rgba(99, 102, 241, 0.2) 0%, transparent 60%),
-            radial-gradient(ellipse 40% 40% at 80% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 50%);
-        pointer-events: none;
+    .chat-msg {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    .chat-msg.visible {
+        opacity: 1;
+        transform: none;
+    }
+
+    .chat-msg.user {
+        flex-direction: row-reverse;
+    }
+
+    .chat-avatar {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        font-weight: 700;
+        flex-shrink: 0;
+        font-family: "Space Grotesk", system-ui, sans-serif;
+    }
+
+    .chat-avatar.user-avatar {
+        background: var(--tars-user-bubble);
+        color: #93c5fd;
+    }
+
+    .chat-avatar.tars-avatar {
+        background: rgba(99, 102, 241, 0.2);
+        color: #818cf8;
+    }
+
+    .chat-bubble {
+        border-radius: 12px;
+        padding: 10px 14px;
+        font-size: 0.875rem;
+        line-height: 1.55;
+        max-width: 78%;
+    }
+
+    .chat-msg.user .chat-bubble {
+        background: var(--tars-user-bubble);
+        color: #e0f0ff;
+        border-bottom-right-radius: 4px;
+    }
+
+    .chat-msg.tars .chat-bubble {
+        background: var(--tars-tars-bubble);
+        border: 1px solid var(--tars-border);
+        color: var(--tars-text);
+        border-bottom-left-radius: 4px;
+    }
+
+    .chat-bubble .status-line {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 0.8rem;
+        color: var(--tars-muted);
+        margin-top: 4px;
+    }
+
+    .chat-bubble .status-line.done {
+        color: var(--tars-green);
+    }
+
+    .chat-bubble .status-line i {
+        font-size: 0.75rem;
+    }
+
+    /* typing indicator */
+    .typing-indicator {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+        padding: 4px 2px;
+    }
+
+    .typing-indicator span {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--tars-muted);
+        animation: typing-bounce 1.2s infinite;
+    }
+
+    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typing-bounce {
+        0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+        30% { transform: translateY(-5px); opacity: 1; }
     }
 
     /* ── Responsive ─────────────────────────────────────────── */
     @media (max-width: 767.98px) {
         .hero h1 {
-            font-size: clamp(2.2rem, 8vw, 3.2rem);
+            font-size: clamp(2.4rem, 9vw, 3.4rem);
         }
+
         .hero-sub {
             font-size: 1rem;
         }
-        .hero-terminal {
-            font-size: 0.75rem;
-        }
-        .logo-bar-logos {
-            gap: 1.5rem 2rem;
-        }
-        .metric-item {
-            padding: 0 0.75rem;
-        }
-        section {
-            padding-top: 4rem;
-            padding-bottom: 4rem;
-        }
-    }
 
-    @media (max-width: 375px) {
-        .hero h1 {
-            font-size: 2rem;
-        }
-        .hero-actions {
-            flex-direction: column;
-            align-items: stretch;
-        }
-        .hero-actions .btn {
-            text-align: center;
+        .chat-demo {
+            font-size: 0.82rem;
         }
     }
 </style>
@@ -591,9 +324,7 @@
 
 {% block content %}
 
-<!-- ── Hero ───────────────────────────────────────────────── -->
 <section class="hero">
-    <!-- Animated background layers -->
     <div class="hero-bg" aria-hidden="true">
         <div class="hero-bg-gradient"></div>
         <div class="hero-grid"></div>
@@ -602,326 +333,35 @@
     </div>
 
     <div class="container position-relative">
-        <div class="row align-items-center gy-5">
-            <div class="col-lg-6">
-                <div class="hero-badge">
-                    <span class="pulse-dot"></span>
-                    Now in early access
-                </div>
-                <h1>
-                    Ship Code<br>
-                    <span class="gradient-text">While You Sleep.</span>
-                </h1>
-                <p class="hero-sub">
-                    TARS is an autonomous coding agent that discovers tasks, writes production-ready code, runs your test suite, opens pull requests, and deploys — all without a human in the loop.
-                </p>
-                <div class="hero-actions mb-4">
-                    <a href="{% url 'inquiries:get_started' %}" class="btn btn-accent btn-lg">
-                        Get Started &rarr;
-                    </a>
-                    <a href="#how-it-works" class="btn btn-outline-accent btn-lg">
-                        See How It Works
-                    </a>
-                </div>
-                <div class="d-flex gap-4 mt-3 align-items-center">
-                    <div class="hero-stat">
-                        <span class="stat-value">24/7</span>
-                        <span class="stat-label">Always On</span>
-                    </div>
-                    <div class="hero-divider"></div>
-                    <div class="hero-stat">
-                        <span class="stat-value">100%</span>
-                        <span class="stat-label">Automated</span>
-                    </div>
-                    <div class="hero-divider"></div>
-                    <div class="hero-stat">
-                        <span class="stat-value">0</span>
-                        <span class="stat-label">Idle Hours</span>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-6">
-                <div class="hero-terminal">
-                    <div class="terminal-bar">
-                        <div class="t-dot" style="background:#ef4444;"></div>
-                        <div class="t-dot" style="background:#f59e0b;"></div>
-                        <div class="t-dot" style="background:#10b981;"></div>
-                        <span style="color:#6b7280; font-size:0.78rem; margin-left:8px;">tars — autonomous agent</span>
-                    </div>
-                    <div class="terminal-body">
-                        <div><span class="prompt">tars@agent</span>:<span class="cmd"> Scanning task queue...</span></div>
-                        <div class="out">  &rarr; Found 3 open tasks in dsneed123/my-app</div>
-                        <div class="out">  &rarr; Selecting: "Add user authentication endpoint"</div>
-                        <div><span class="prompt">tars@agent</span>:<span class="cmd"> Implementing changes...</span></div>
-                        <div class="out">  &rarr; Writing src/auth/views.py</div>
-                        <div class="out">  &rarr; Writing tests/test_auth.py</div>
-                        <div><span class="prompt">tars@agent</span>:<span class="cmd"> Running test suite...</span></div>
-                        <div class="success">  ✓ 42 tests passed (0 failed)</div>
-                        <div><span class="prompt">tars@agent</span>:<span class="cmd"> Opening pull request...</span></div>
-                        <div class="success">  ✓ PR #47 opened — ready for review</div>
-                        <div class="out" style="margin-top:8px;">  Next task in 12 seconds...</div>
-                    </div>
-                </div>
-            </div>
+        <div class="hero-badge">
+            <span class="pulse-dot"></span>
+            Now in early access
         </div>
-    </div>
-</section>
 
-<!-- ── Logo Bar ────────────────────────────────────────────── -->
-<div class="logo-bar">
-    <div class="container">
-        <p class="logo-bar-label">Trusted by developers at</p>
-        <div class="logo-bar-logos">
-            <div class="logo-item">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M9 0L16.794 4.5V13.5L9 18L1.206 13.5V4.5L9 0Z"/></svg>
-                <span>Apexio</span>
-            </div>
-            <div class="logo-item">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="8" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="9" r="3.5" fill="currentColor"/></svg>
-                <span>Orbit Labs</span>
-            </div>
-            <div class="logo-item">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="0" width="8" height="8" rx="2"/><rect x="10" y="0" width="8" height="8" rx="2"/><rect x="0" y="10" width="8" height="8" rx="2"/><rect x="10" y="10" width="8" height="8" rx="2"/></svg>
-                <span>Launchpad</span>
-            </div>
-            <div class="logo-item">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 9 C4 3, 8 3, 9 9 C10 15, 14 15, 17 9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
-                <span>Crestline</span>
-            </div>
-            <div class="logo-item">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M9 1L17 16H1L9 1Z"/></svg>
-                <span>Vega Systems</span>
-            </div>
-            <div class="logo-item">
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><rect x="0" y="2" width="18" height="3" rx="1.5"/><rect x="0" y="7.5" width="13" height="3" rx="1.5"/><rect x="0" y="13" width="18" height="3" rx="1.5"/></svg>
-                <span>Pulsefield</span>
-            </div>
-        </div>
-    </div>
-</div>
+        <h1>
+            TARS <span class="gradient-text">codes for you.</span>
+        </h1>
 
-<!-- ── Benefits ───────────────────────────────────────────── -->
-<section id="benefits">
-    <div class="container">
-        <div class="text-center mb-5" data-reveal>
-            <div class="section-label">Why TARS</div>
-            <h2 class="section-title">Everything your dev team needs,<br>running autonomously.</h2>
-            <p class="section-sub mx-auto" style="max-width:520px;">Stop waiting on engineers. TARS keeps your backlog moving day and night so you can focus on strategy, not execution.</p>
-        </div>
-        <div class="row g-4">
-            <div class="col-md-6 col-lg-3" data-reveal data-reveal-delay="1">
-                <div class="benefit-card">
-                    <div class="benefit-icon" style="background:rgba(99,102,241,0.15);">
-                        <i class="bi bi-moon-stars-fill" style="color:#818cf8;"></i>
-                    </div>
-                    <h3 class="h5 mb-2" style="font-weight:700;">24/7 Autonomous Development</h3>
-                    <p class="small text-muted mb-0">TARS works through nights, weekends, and holidays. Your repository never sits idle while features wait for a developer to clock in.</p>
-                </div>
-            </div>
-            <div class="col-md-6 col-lg-3" data-reveal data-reveal-delay="2">
-                <div class="benefit-card">
-                    <div class="benefit-icon" style="background:rgba(16,185,129,0.12);">
-                        <i class="bi bi-shield-check-fill" style="color:#10b981;"></i>
-                    </div>
-                    <h3 class="h5 mb-2" style="font-weight:700;">Auto-Testing &amp; Quality Assurance</h3>
-                    <p class="small text-muted mb-0">Every change is accompanied by tests. TARS runs the full suite before opening a PR, so broken code never reaches your main branch.</p>
-                </div>
-            </div>
-            <div class="col-md-6 col-lg-3" data-reveal data-reveal-delay="3">
-                <div class="benefit-card">
-                    <div class="benefit-icon" style="background:rgba(251,191,36,0.12);">
-                        <i class="bi bi-git" style="color:#fbbf24;"></i>
-                    </div>
-                    <h3 class="h5 mb-2" style="font-weight:700;">GitHub Integration &amp; PR Workflow</h3>
-                    <p class="small text-muted mb-0">TARS clones your repo, commits on a feature branch, and opens pull requests with descriptive summaries — ready for human review.</p>
-                </div>
-            </div>
-            <div class="col-md-6 col-lg-3" data-reveal data-reveal-delay="4">
-                <div class="benefit-card">
-                    <div class="benefit-icon" style="background:rgba(236,72,153,0.12);">
-                        <i class="bi bi-graph-up-arrow" style="color:#ec4899;"></i>
-                    </div>
-                    <h3 class="h5 mb-2" style="font-weight:700;">Cost-Effective Scaling</h3>
-                    <p class="small text-muted mb-0">Scale your output without scaling headcount. Add repositories and task definitions, not salaries. Ship more for a fraction of the cost.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
+        <p class="hero-sub">
+            Describe what to build. TARS writes the code, runs the tests, and opens a pull request.
+        </p>
 
-<!-- ── How It Works ───────────────────────────────────────── -->
-<section id="how-it-works" style="background:var(--tars-surface); border-top:1px solid var(--tars-border); border-bottom:1px solid var(--tars-border);">
-    <div class="container">
-        <div class="text-center mb-5" data-reveal>
-            <div class="section-label">Process</div>
-            <h2 class="section-title">Three steps to autonomous delivery.</h2>
-            <p class="section-sub mx-auto" style="max-width:480px;">Getting started takes minutes. Once configured, TARS handles the rest — indefinitely.</p>
-        </div>
-        <div class="row justify-content-center g-4">
-            <div class="col-md-4" data-reveal data-reveal-delay="1">
-                <div class="text-center px-3">
-                    <div class="step-number mx-auto mb-4">1</div>
-                    <div style="font-size:2.4rem; margin-bottom:1rem;">🗂️</div>
-                    <h3 class="h4 mb-2" style="font-weight:700;">Define Your Project</h3>
-                    <p class="text-muted small">Connect your GitHub repository and describe your tasks in plain English or structured YAML. Set priorities, constraints, and acceptance criteria.</p>
-                </div>
-            </div>
-            <div class="col-md-4" data-reveal data-reveal-delay="2">
-                <div class="text-center px-3">
-                    <div class="step-number mx-auto mb-4">2</div>
-                    <div style="font-size:2.4rem; margin-bottom:1rem;">🤖</div>
-                    <h3 class="h4 mb-2" style="font-weight:700;">TARS Builds It</h3>
-                    <p class="text-muted small">TARS picks up tasks, reads your codebase, writes implementation code, creates tests, and validates the output — all using Claude, Anthropic's frontier AI.</p>
-                </div>
-            </div>
-            <div class="col-md-4" data-reveal data-reveal-delay="3">
-                <div class="text-center px-3">
-                    <div class="step-number mx-auto mb-4">3</div>
-                    <div style="font-size:2.4rem; margin-bottom:1rem;">🚀</div>
-                    <h3 class="h4 mb-2" style="font-weight:700;">Review &amp; Deploy</h3>
-                    <p class="text-muted small">Inspect the pull request, leave comments, and merge when satisfied. TARS logs every action to Discord so your team stays informed automatically.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ── Use Cases ─────────────────────────────────────────── -->
-<section id="use-cases">
-    <div class="container">
-        <div class="text-center mb-5" data-reveal>
-            <div class="section-label">Who It's For</div>
-            <h2 class="section-title">Built for every team that ships.</h2>
-            <p class="section-sub mx-auto" style="max-width:520px;">Whether you're a solo founder or a 50-person engineering org, TARS adapts to the way you work.</p>
-        </div>
-        <div class="row g-4">
-            <div class="col-md-6 col-lg-3" data-reveal data-reveal-delay="1">
-                <div class="usecase-card">
-                    <div class="usecase-icon" style="background:rgba(99,102,241,0.15);">
-                        <i class="bi bi-rocket-takeoff-fill" style="color:#818cf8;"></i>
-                    </div>
-                    <h5 class="mb-2" style="font-weight:700;">Startups</h5>
-                    <p class="small text-muted mb-0">Move fast and ship MVPs overnight. TARS keeps your backlog clearing even when your team is heads-down on product strategy.</p>
-                </div>
-            </div>
-            <div class="col-md-6 col-lg-3" data-reveal data-reveal-delay="2">
-                <div class="usecase-card">
-                    <div class="usecase-icon" style="background:rgba(16,185,129,0.12);">
-                        <i class="bi bi-building-fill" style="color:#10b981;"></i>
-                    </div>
-                    <h5 class="mb-2" style="font-weight:700;">Agencies</h5>
-                    <p class="small text-muted mb-0">Scale dev capacity without hiring. Deliver more client projects simultaneously and hit deadlines without burning out your team.</p>
-                </div>
-            </div>
-            <div class="col-md-6 col-lg-3" data-reveal data-reveal-delay="3">
-                <div class="usecase-card">
-                    <div class="usecase-icon" style="background:rgba(251,191,36,0.12);">
-                        <i class="bi bi-diagram-3-fill" style="color:#fbbf24;"></i>
-                    </div>
-                    <h5 class="mb-2" style="font-weight:700;">Enterprise Teams</h5>
-                    <p class="small text-muted mb-0">Automate maintenance and bug fixes across multiple repos. Free senior engineers for architecture and innovation, not toil.</p>
-                </div>
-            </div>
-            <div class="col-md-6 col-lg-3" data-reveal data-reveal-delay="4">
-                <div class="usecase-card">
-                    <div class="usecase-icon" style="background:rgba(236,72,153,0.12);">
-                        <i class="bi bi-person-fill" style="color:#ec4899;"></i>
-                    </div>
-                    <h5 class="mb-2" style="font-weight:700;">Solo Founders</h5>
-                    <p class="small text-muted mb-0">Your AI engineering team, available 24/7. Stop choosing between building and everything else — TARS handles the code so you don't have to.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ── Metrics Bar ────────────────────────────────────────── -->
-<div class="metrics-bar" id="metrics-bar" data-reveal>
-    <div class="container">
-        <div class="d-flex flex-wrap justify-content-center align-items-center gap-4">
-            <div class="metric-item">
-                <div class="metric-value" data-target="500" data-suffix="+">0+</div>
-                <div class="metric-label">PRs Merged</div>
-            </div>
-            <div class="metric-divider d-none d-md-block"></div>
-            <div class="metric-item">
-                <div class="metric-value" data-target="50" data-suffix="+">0+</div>
-                <div class="metric-label">Projects Built</div>
-            </div>
-            <div class="metric-divider d-none d-md-block"></div>
-            <div class="metric-item">
-                <div class="metric-value" data-target="99.2" data-suffix="%" data-decimal="1">0%</div>
-                <div class="metric-label">Test Pass Rate</div>
-            </div>
-            <div class="metric-divider d-none d-md-block"></div>
-            <div class="metric-item">
-                <div class="metric-value">24/7</div>
-                <div class="metric-label">Uptime</div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ── Testimonials ───────────────────────────────────────── -->
-<section id="testimonials">
-    <div class="container">
-        <div class="text-center mb-5" data-reveal>
-            <div class="section-label">Social Proof</div>
-            <h2 class="section-title">Teams shipping faster with TARS.</h2>
-            <p class="section-sub mx-auto" style="max-width:480px;">Early-access teams are already seeing the difference. Here's what they have to say.</p>
-        </div>
-        <div class="row g-4">
-            <div class="col-md-4" data-reveal data-reveal-delay="1">
-                <div class="testimonial-card">
-                    <div class="testimonial-quote">&ldquo;</div>
-                    <p class="testimonial-text">TARS opened 12 pull requests over a single weekend while the team was at an offsite. We came back Monday to a cleared backlog. It's changed how we think about velocity.</p>
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="testimonial-avatar" style="background:rgba(99,102,241,0.2); color:#818cf8;">AK</div>
-                        <div>
-                            <div class="testimonial-name">Alex Kim</div>
-                            <div class="testimonial-role">CTO, Launchpad AI</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4" data-reveal data-reveal-delay="2">
-                <div class="testimonial-card">
-                    <div class="testimonial-quote">&ldquo;</div>
-                    <p class="testimonial-text">We run three client projects in parallel with a team of two. TARS handles maintenance tasks and small features overnight — our clients think we have a much bigger team.</p>
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="testimonial-avatar" style="background:rgba(16,185,129,0.2); color:#10b981;">SR</div>
-                        <div>
-                            <div class="testimonial-name">Sofia Reyes</div>
-                            <div class="testimonial-role">Founder, Pixel & Code Studio</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4" data-reveal data-reveal-delay="3">
-                <div class="testimonial-card">
-                    <div class="testimonial-quote">&ldquo;</div>
-                    <p class="testimonial-text">Bug tickets that used to sit for two weeks are getting fixed in hours. TARS writes the tests, opens the PR, and posts to Discord so nothing slips through the cracks.</p>
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="testimonial-avatar" style="background:rgba(251,191,36,0.2); color:#fbbf24;">MP</div>
-                        <div>
-                            <div class="testimonial-name">Marcus Patel</div>
-                            <div class="testimonial-role">Engineering Lead, Orbit Systems</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- ── CTA ────────────────────────────────────────────────── -->
-<section class="cta-section" data-reveal>
-    <div class="container text-center position-relative">
-        <h2 class="section-title mb-3">Ready to put your backlog on autopilot?</h2>
-        <p class="section-sub mb-4 mx-auto" style="max-width:480px;">Join early-access teams already shipping faster with TARS. No credit card required to start.</p>
-        <a href="{% url 'inquiries:get_started' %}" class="btn btn-accent btn-lg px-5">
-            Get Early Access &rarr;
+        <a href="{% url 'accounts:register' %}" class="btn btn-accent btn-lg px-5">
+            Get Started &rarr;
         </a>
+
+        <!-- Chat demo -->
+        <div class="chat-demo" id="chat-demo">
+            <div class="chat-demo-bar">
+                <div class="t-dot" style="background:#ef4444;"></div>
+                <div class="t-dot" style="background:#f59e0b;"></div>
+                <div class="t-dot" style="background:#10b981;"></div>
+                <span class="chat-title">TARS Chat</span>
+            </div>
+            <div class="chat-demo-body" id="chat-demo-body">
+                <!-- Messages injected by JS -->
+            </div>
+        </div>
     </div>
 </section>
 
@@ -930,54 +370,99 @@
 {% block extra_scripts %}
 <script>
 (function () {
-    /* ── Metrics counter animation ──────────────────────────── */
-    function animateCounter(el) {
-        var target   = parseFloat(el.dataset.target);
-        var suffix   = el.dataset.suffix || '';
-        var decimals = parseInt(el.dataset.decimal || '0', 10);
-        var duration = 1800;
-        var start    = null;
-
-        function step(timestamp) {
-            if (!start) start = timestamp;
-            var progress = Math.min((timestamp - start) / duration, 1);
-            var eased    = 1 - Math.pow(1 - progress, 3);
-            el.textContent = (target * eased).toFixed(decimals) + suffix;
-            if (progress < 1) requestAnimationFrame(step);
+    var messages = [
+        {
+            role: 'user',
+            html: 'Add a "forgot password" link to the login page.'
+        },
+        {
+            role: 'tars',
+            html: '<div class="typing-indicator"><span></span><span></span><span></span></div>',
+            replaceWith: 'On it. Reading your codebase…<div class="status-line"><i class="bi bi-search"></i> Found <code>accounts/templates/registration/login.html</code></div>'
+        },
+        {
+            role: 'tars',
+            html: 'Writing the change…<div class="status-line"><i class="bi bi-pencil"></i> Updated <code>login.html</code> + added password reset URLs</div>'
+        },
+        {
+            role: 'tars',
+            html: 'Running tests…<div class="status-line done"><i class="bi bi-check-circle-fill"></i> 38 tests passed</div>'
+        },
+        {
+            role: 'tars',
+            html: 'Done. <a href="#" class="text-accent" style="color:var(--tars-accent);">PR #52 is open</a> and ready for your review.'
         }
-        requestAnimationFrame(step);
+    ];
+
+    var body = document.getElementById('chat-demo-body');
+    var index = 0;
+    var timers = [];
+
+    function buildMsg(msg) {
+        var div = document.createElement('div');
+        div.className = 'chat-msg ' + msg.role;
+
+        var avatar = document.createElement('div');
+        avatar.className = 'chat-avatar ' + (msg.role === 'user' ? 'user-avatar' : 'tars-avatar');
+        avatar.textContent = msg.role === 'user' ? 'You' : 'T';
+
+        var bubble = document.createElement('div');
+        bubble.className = 'chat-bubble';
+        bubble.innerHTML = msg.html;
+
+        div.appendChild(avatar);
+        div.appendChild(bubble);
+        return { wrapper: div, bubble: bubble };
     }
 
-    var counters     = document.querySelectorAll('#metrics-bar [data-target]');
-    var counterFired = false;
-    if (counters.length) {
-        new IntersectionObserver(function (entries) {
-            if (counterFired) return;
-            entries.forEach(function (entry) {
-                if (entry.isIntersecting) {
-                    counterFired = true;
-                    counters.forEach(animateCounter);
-                }
+    function showNext() {
+        if (index >= messages.length) return;
+
+        var msg = messages[index];
+        index++;
+
+        var el = buildMsg(msg);
+        body.appendChild(el.wrapper);
+
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                el.wrapper.classList.add('visible');
             });
-        }, { threshold: 0.3 }).observe(document.getElementById('metrics-bar'));
+        });
+
+        if (msg.replaceWith) {
+            var replacement = msg.replaceWith;
+            var t = setTimeout(function () {
+                el.bubble.innerHTML = replacement;
+                var t2 = setTimeout(showNext, 900);
+                timers.push(t2);
+            }, 1100);
+            timers.push(t);
+        } else {
+            var delay = msg.role === 'user' ? 600 : 700;
+            var t3 = setTimeout(showNext, delay);
+            timers.push(t3);
+        }
     }
 
-    /* ── Scroll-reveal ──────────────────────────────────────── */
-    var revealEls = document.querySelectorAll('[data-reveal]');
-    if (!revealEls.length) return;
+    /* restart the demo when it scrolls into view */
+    var demo = document.getElementById('chat-demo');
+    var started = false;
 
-    var revealObserver = new IntersectionObserver(function (entries) {
-        entries.forEach(function (entry) {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('is-visible');
-                revealObserver.unobserve(entry.target);
-            }
-        });
-    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    function startDemo() {
+        if (started) return;
+        started = true;
+        var t = setTimeout(showNext, 500);
+        timers.push(t);
+    }
 
-    revealEls.forEach(function (el) {
-        revealObserver.observe(el);
-    });
+    if ('IntersectionObserver' in window) {
+        new IntersectionObserver(function (entries) {
+            if (entries[0].isIntersecting) startDemo();
+        }, { threshold: 0.3 }).observe(demo);
+    } else {
+        startDemo();
+    }
 }());
 </script>
 {% endblock %}
