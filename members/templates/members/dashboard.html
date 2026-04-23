@@ -849,6 +849,14 @@
                     {% endwith %}
                 </a>
 
+                <a href="{% url 'tasks:queue' %}" class="snav-item">
+                    <i class="bi bi-collection"></i>
+                    <span>Queue</span>
+                    {% with cnt=active_tasks.count %}
+                    {% if cnt > 0 %}<span class="snav-badge">{{ cnt }}</span>{% endif %}
+                    {% endwith %}
+                </a>
+
                 <div class="snav-section" style="margin-top:0.75rem;">Resources</div>
 
                 <a href="{% url 'pages:docs_index' %}" class="snav-item">

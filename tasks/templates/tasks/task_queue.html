@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}Queue — TARS{% endblock %}
+
+{% block meta_description %}<meta name="description" content="View your active task queue managed by TARS.">{% endblock %}
+
+{% block extra_head %}
+<style>
+    .page-hero {
+        background: linear-gradient(135deg, var(--tars-surface) 0%, rgba(99,102,241,0.08) 100%);
+        border-bottom: 1px solid var(--tars-border);
+        padding: 2.5rem 0 2rem;
+    }
+
+    /* Queue card */
+    .queue-card {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 14px;
+        padding: 1.1rem 1.4rem;
+        display: flex;
+        align-items: center;
+        gap: 1.1rem;
+        text-decoration: none;
+        color: inherit;
+        transition: border-color 0.2s, transform 0.15s;
+        position: relative;
+    }
+
+    .queue-card:hover {
+        border-color: rgba(99,102,241,0.4);
+        transform: translateY(-1px);
+        color: inherit;
+    }
+
+    .queue-card.is-active {
+        border-left: 3px solid var(--tars-accent);
+    }
+
+    .queue-card.is-in-progress {
+        border-left-color: #60a5fa;
+    }
+
+    /* Position badge */
+    .queue-pos {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: rgba(99,102,241,0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.78rem;
+        font-weight: 800;
+        color: var(--tars-accent);
+        flex-shrink: 0;
+        font-family: "Space Grotesk", system-ui;
+        letter-spacing: -0.02em;
+    }
+
+    .queue-pos.pos-in-progress {
+        background: rgba(59,130,246,0.12);
+        color: #60a5fa;
+    }
+
+    /* Status badge */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        padding: 0.18rem 0.55rem;
+        border-radius: 999px;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .status-pending    { background: rgba(156,163,175,0.12); color: var(--tars-muted); }
+    .status-queued     { background: rgba(99,102,241,0.12);  color: var(--tars-accent); }
+    .status-assigned   { background: rgba(245,158,11,0.12);  color: #f59e0b; }
+    .status-in_progress { background: rgba(59,130,246,0.12); color: #60a5fa; }
+    .status-reviewing  { background: rgba(168,85,247,0.12);  color: #c084fc; }
+
+    /* Pulse dot for in_progress */
+    .pulse-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #60a5fa;
+        animation: tars-pulse 1.4s ease-in-out infinite;
+        flex-shrink: 0;
+    }
+
+    @keyframes tars-pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50%       { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    /* Project tag */
+    .proj-tag {
+        font-size: 0.68rem;
+        font-weight: 500;
+        padding: 0.12rem 0.45rem;
+        border-radius: 6px;
+        background: rgba(99,102,241,0.08);
+        color: var(--tars-muted);
+        border: 1px solid rgba(99,102,241,0.15);
+        white-space: nowrap;
+        max-width: 140px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Time label */
+    .time-label {
+        font-size: 0.72rem;
+        color: rgba(156,163,175,0.6);
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    /* Content list animation */
+    .content-list {
+        opacity: 0;
+        animation: content-reveal 0.35s 0.2s ease-out forwards;
+    }
+
+    @keyframes content-reveal {
+        from { opacity: 0; transform: translateY(6px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Empty state */
+    .empty-state {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 16px;
+        padding: 4rem 2rem;
+        text-align: center;
+    }
+
+    .section-label {
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--tars-muted);
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-hero">
+    <div class="container">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div>
+                <nav aria-label="breadcrumb" class="mb-1">
+                    <ol class="breadcrumb mb-0" style="font-size:0.8rem; color:var(--tars-muted)">
+                        <li class="breadcrumb-item">
+                            <a href="{% url 'members:dashboard' %}" style="color:var(--tars-muted); text-decoration:none">Dashboard</a>
+                        </li>
+                        <li class="breadcrumb-item active" style="color:var(--tars-text)">Queue</li>
+                    </ol>
+                </nav>
+                <h1 class="h3 fw-bold mb-1" style="color:var(--tars-text)">Task Queue</h1>
+                <p class="mb-0 small" style="color:var(--tars-muted)">
+                    {% if tasks %}
+                        {{ tasks|length }} active task{{ tasks|length|pluralize }}
+                    {% else %}
+                        No active tasks
+                    {% endif %}
+                </p>
+            </div>
+            <a href="{% url 'tasks:add' %}" class="btn btn-accent">
+                <i class="bi bi-plus-lg me-1"></i> New Task
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container py-5" style="max-width: 780px;">
+    {% if tasks %}
+        <p class="section-label">{{ tasks|length }} task{{ tasks|length|pluralize }} in queue</p>
+        <div class="content-list d-flex flex-column gap-3">
+            {% for task in tasks %}
+            <a href="{% url 'tasks:detail' pk=task.pk %}" class="queue-card{% if task.status == 'in_progress' %} is-active is-in-progress{% elif task.status != 'pending' %} is-active{% endif %}">
+
+                <!-- Position number -->
+                <div class="queue-pos{% if task.status == 'in_progress' %} pos-in-progress{% endif %}">
+                    #{{ forloop.counter }}
+                </div>
+
+                <!-- Title + meta -->
+                <div class="flex-grow-1" style="min-width: 0;">
+                    <div class="fw-semibold text-truncate mb-1" style="color:var(--tars-text); font-size:0.92rem;">
+                        {{ task.title }}
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="proj-tag">
+                            <i class="bi bi-folder2-open me-1" style="font-size:0.65rem;"></i>{{ task.project.name }}
+                        </span>
+                        <span class="time-label">{{ task.created_at|timesince }} ago</span>
+                    </div>
+                </div>
+
+                <!-- Status badge -->
+                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                    <span class="status-badge status-{{ task.status }}">
+                        {% if task.status == 'in_progress' %}
+                            <span class="pulse-dot"></span>
+                        {% else %}
+                            <i class="bi bi-circle-fill" style="font-size:0.35rem;"></i>
+                        {% endif %}
+                        {{ task.get_status_display }}
+                    </span>
+                    <i class="bi bi-chevron-right" style="color:var(--tars-border);"></i>
+                </div>
+
+            </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <div class="mb-3" style="display:inline-flex;align-items:center;justify-content:center;width:72px;height:72px;border-radius:18px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.15);">
+                <i class="bi bi-inbox" style="font-size:2rem; color:var(--tars-accent); opacity:0.7;"></i>
+            </div>
+            <h5 class="fw-bold mt-1 mb-2" style="color:var(--tars-text)">Queue is empty</h5>
+            <p class="small mb-4" style="color:var(--tars-muted); max-width:320px; margin:0 auto 1.5rem;">
+                No active tasks right now. Submit a task and TARS will pick it up automatically.
+            </p>
+            <a href="{% url 'tasks:add' %}" class="btn btn-accent">
+                <i class="bi bi-plus-lg me-1"></i> Submit a Task
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
