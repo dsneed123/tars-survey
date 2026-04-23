@@ -12,7 +12,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="{% static 'img/favicon-16x16.png' %}">
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/apple-touch-icon.png' %}">
     <link rel="manifest" href="{% static 'img/site.webmanifest' %}">
-    <meta name="theme-color" content="#6366f1">
+    <meta name="theme-color" content="#3b82f6">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -58,14 +58,19 @@
         }
 
         :root {
-            --tars-bg: #0a0d14;
-            --tars-surface: #111827;
-            --tars-border: #1f2937;
-            --tars-accent: #6366f1;
-            --tars-accent-hover: #4f46e5;
-            --tars-green: #10b981;
-            --tars-text: #f9fafb;
-            --tars-muted: #9ca3af;
+            --tars-bg: #0a0a0a;
+            --tars-surface: #141414;
+            --tars-border: #222222;
+            --tars-accent: #3b82f6;
+            --tars-accent-hover: #2563eb;
+            --tars-green: #22c55e;
+            --tars-text: #e5e5e5;
+            --tars-muted: #737373;
+            --tars-user-bubble: #1a3a5c;
+            --tars-tars-bubble: #1a1a1a;
+            --tars-success: #22c55e;
+            --tars-error: #ef4444;
+            --tars-warning: #f59e0b;
         }
 
         body {
@@ -83,17 +88,17 @@
 
         /* ── Floating Navbar ─────────────────────────────────── */
         #main-nav {
-            background-color: rgba(10, 13, 20, 0) !important;
+            background-color: rgba(10, 10, 10, 0) !important;
             backdrop-filter: blur(0px);
             -webkit-backdrop-filter: blur(0px);
-            border-bottom: 1px solid rgba(31, 41, 55, 0) !important;
+            border-bottom: 1px solid rgba(34, 34, 34, 0) !important;
             transition: background-color 0.35s ease,
                         border-color 0.35s ease,
                         backdrop-filter 0.35s ease;
         }
 
         #main-nav.nav-scrolled {
-            background-color: rgba(10, 13, 20, 0.88) !important;
+            background-color: rgba(10, 10, 10, 0.88) !important;
             backdrop-filter: blur(20px) saturate(1.4) !important;
             -webkit-backdrop-filter: blur(20px) saturate(1.4) !important;
             border-bottom: 1px solid var(--tars-border) !important;
@@ -136,7 +141,7 @@
             background-color: var(--tars-accent-hover);
             color: #fff;
             transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.38);
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.38);
         }
 
         .btn-outline-accent {
@@ -153,7 +158,7 @@
             background-color: var(--tars-accent);
             color: #fff;
             transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.25);
+            box-shadow: 0 8px 24px rgba(59, 130, 246, 0.25);
         }
 
         .card-surface {
@@ -178,7 +183,7 @@
         }
 
         .dropdown-item:hover, .dropdown-item:focus {
-            background-color: rgba(99,102,241,0.1);
+            background-color: rgba(59,130,246,0.1);
             color: var(--tars-text) !important;
         }
 
@@ -245,12 +250,12 @@
         .notif-item {
             display: block;
             padding: 12px 16px;
-            border-bottom: 1px solid rgba(31,41,55,0.6);
+            border-bottom: 1px solid rgba(34,34,34,0.6);
             text-decoration: none;
             transition: background 0.15s;
         }
         .notif-item:last-child { border-bottom: none; }
-        .notif-item:hover { background-color: rgba(99,102,241,0.07); }
+        .notif-item:hover { background-color: rgba(59,130,246,0.07); }
         .notif-item.unread { border-left: 3px solid var(--tars-accent); }
         .notif-item-title {
             font-size: 13px;
@@ -265,7 +270,7 @@
         }
         .notif-item-time {
             font-size: 11px;
-            color: #4b5563;
+            color: #555555;
             margin-top: 4px;
         }
         .notif-empty {
@@ -295,7 +300,7 @@
             background: linear-gradient(
                 90deg,
                 var(--tars-border) 25%,
-                rgba(55,65,81,0.8) 50%,
+                rgba(40,40,40,0.8) 50%,
                 var(--tars-border) 75%
             );
             background-size: 1200px 100%;
@@ -362,16 +367,16 @@
         }
 
         .tars-toast.toast-success {
-            background: rgba(16,185,129,0.12);
-            border-color: rgba(16,185,129,0.3);
+            background: rgba(34,197,94,0.12);
+            border-color: rgba(34,197,94,0.3);
         }
         .tars-toast.toast-error {
             background: rgba(239,68,68,0.12);
             border-color: rgba(239,68,68,0.3);
         }
         .tars-toast.toast-info {
-            background: rgba(99,102,241,0.12);
-            border-color: rgba(99,102,241,0.3);
+            background: rgba(59,130,246,0.12);
+            border-color: rgba(59,130,246,0.3);
         }
 
         .tars-toast-icon {
@@ -413,9 +418,9 @@
             border-radius: 0 0 0 10px;
             animation: toast-progress 5s linear forwards;
         }
-        .tars-toast.toast-success .tars-toast-progress { background: rgba(16,185,129,0.5); }
+        .tars-toast.toast-success .tars-toast-progress { background: rgba(34,197,94,0.5); }
         .tars-toast.toast-error   .tars-toast-progress { background: rgba(239,68,68,0.5); }
-        .tars-toast.toast-info    .tars-toast-progress { background: rgba(99,102,241,0.5); }
+        .tars-toast.toast-info    .tars-toast-progress { background: rgba(59,130,246,0.5); }
 
         @keyframes toast-in {
             from { opacity: 0; transform: translateX(100%) scale(0.95); }
@@ -512,7 +517,7 @@
             align-items: center;
             justify-content: center;
             padding: 10px 0 8px;
-            color: #555;
+            color: var(--tars-muted);
             text-decoration: none;
             gap: 3px;
             transition: color 0.15s;
