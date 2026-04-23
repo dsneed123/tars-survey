@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Case, IntegerField, Value, When
 from django.http import JsonResponse
@@ -7,6 +8,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from notifications.models import NotificationPreference
 from projects.models import Project
 from tasks.models import Task
 from tasks.views import _forward_to_controller, _get_queue_positions, _get_wait_times
@@ -178,4 +180,63 @@ def quick_add_task(request):
         messages.error(request, "Project not found.")
 
     return redirect("members:dashboard")
+
+
+@login_required
+def settings_view(request):
+    user = request.user
+    prefs, _ = NotificationPreference.objects.get_or_create(user=user)
+    projects = Project.objects.filter(owner=user).order_by("name")
+
+    if request.method == "POST":
+        action = request.POST.get("action", "")
+
+        if action == "profile":
+            first_name = request.POST.get("first_name", "").strip()
+            last_name = request.POST.get("last_name", "").strip()
+            email = request.POST.get("email", "").strip().lower()
+            company_name = request.POST.get("company_name", "").strip()
+
+            if email and email != user.email:
+                from accounts.models import CustomUser
+                if CustomUser.objects.filter(email__iexact=email).exclude(pk=user.pk).exists():
+                    messages.error(request, "That email address is already in use.")
+                    return redirect("members:settings")
+                user.email = email
+
+            user.first_name = first_name
+            user.last_name = last_name
+            user.company_name = company_name
+            user.save()
+            messages.success(request, "Profile updated.")
+            return redirect("members:settings")
+
+        elif action == "notifications":
+            prefs.email_welcome = "email_welcome" in request.POST
+            prefs.email_task_started = "email_task_started" in request.POST
+            prefs.email_pr_ready = "email_pr_ready" in request.POST
+            prefs.email_task_failed = "email_task_failed" in request.POST
+            prefs.email_weekly_digest = "email_weekly_digest" in request.POST
+            prefs.save()
+            messages.success(request, "Notification preferences saved.")
+            return redirect("members:settings")
+
+        elif action == "remove_project":
+            project_id = request.POST.get("project_id")
+            Project.objects.filter(pk=project_id, owner=user).delete()
+            messages.success(request, "Project removed from TARS.")
+            return redirect("members:settings")
+
+        elif action == "delete_account":
+            if request.POST.get("confirm_text") == "DELETE":
+                auth_logout(request)
+                user.delete()
+                return redirect("pages:landing")
+            messages.error(request, "Please type DELETE exactly to confirm.")
+            return redirect("members:settings")
+
+    return render(request, "members/settings.html", {
+        "prefs": prefs,
+        "projects": projects,
+    })
 
