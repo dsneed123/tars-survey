@@ -1,12 +1,17 @@
+import asyncio
+import json
 import tempfile
 from unittest.mock import patch
 
+from channels.layers import channel_layers
+from channels.testing import WebsocketCommunicator
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 
 from members.models import MemberProfile
 from projects.models import Project
+from tasks.consumers import DashboardConsumer, QueueConsumer, TaskDetailConsumer
 from tasks.models import Task, TaskAttachment
 
 User = get_user_model()
@@ -428,3 +433,752 @@ class TaskDetailViewTests(TestCase):
         timeline = resp.context["timeline"]
         failed_step = next((s for s in timeline if s["state"] == "failed"), None)
         self.assertIsNotNone(failed_step)
+
+
+# ---------------------------------------------------------------------------
+# GET /api/tasks/  — paginated task history
+# ---------------------------------------------------------------------------
+
+class ApiTaskListTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.url = "/api/tasks/"
+        self.user = make_user()
+        self.project = make_project(self.user)
+
+    def test_requires_authentication(self):
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, 401)
+        self.assertEqual(resp.json()["error"], "Authentication required")
+
+    def test_returns_200_for_authenticated_user(self):
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, 200)
+
+    def test_returns_json_content_type(self):
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        self.assertEqual(resp["Content-Type"], "application/json")
+
+    def test_empty_result_when_no_tasks(self):
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        data = resp.json()
+        self.assertEqual(data["tasks"], [])
+        self.assertFalse(data["has_more"])
+        self.assertIsNone(data["next_page"])
+
+    def test_returns_correct_task_fields(self):
+        task = make_task(self.project, self.user)
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        data = resp.json()
+        self.assertEqual(len(data["tasks"]), 1)
+        t = data["tasks"][0]
+        self.assertEqual(t["id"], task.pk)
+        self.assertEqual(t["title"], task.title)
+        self.assertEqual(t["status"], task.status)
+        self.assertIn("status_display", t)
+        self.assertEqual(t["project"], self.project.name)
+        self.assertIn("created_at", t)
+        self.assertIn("branch_name", t)
+        self.assertIn("pr_url", t)
+        self.assertIn("error_message", t)
+        self.assertIn("completed_at", t)
+
+    def test_only_returns_own_tasks(self):
+        make_task(self.project, self.user)
+        other = make_user(email="other@example.com", username="other")
+        other_project = make_project(other, github_repo="other/repo")
+        make_task(other_project, other)
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        data = resp.json()
+        self.assertEqual(len(data["tasks"]), 1)
+
+    def test_returns_tasks_newest_first(self):
+        make_task(self.project, self.user, title="First")
+        make_task(self.project, self.user, title="Second")
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        titles = [t["title"] for t in resp.json()["tasks"]]
+        self.assertEqual(titles, ["Second", "First"])
+
+    def test_pagination_per_page_limits_results(self):
+        for i in range(5):
+            make_task(self.project, self.user, title=f"Task {i}")
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url, {"per_page": 2})
+        data = resp.json()
+        self.assertEqual(len(data["tasks"]), 2)
+        self.assertTrue(data["has_more"])
+        self.assertEqual(data["next_page"], 2)
+
+    def test_pagination_page_2(self):
+        for i in range(5):
+            make_task(self.project, self.user, title=f"Task {i}")
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url, {"per_page": 2, "page": 2})
+        data = resp.json()
+        self.assertEqual(len(data["tasks"]), 2)
+        self.assertTrue(data["has_more"])
+
+    def test_last_page_has_more_false(self):
+        make_task(self.project, self.user)
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        data = resp.json()
+        self.assertFalse(data["has_more"])
+        self.assertIsNone(data["next_page"])
+
+    def test_out_of_range_page_returns_empty_list(self):
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url, {"page": 999})
+        data = resp.json()
+        self.assertEqual(data["tasks"], [])
+        self.assertFalse(data["has_more"])
+
+    def test_invalid_page_returns_400(self):
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url, {"page": "abc"})
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("error", resp.json())
+
+    def test_invalid_per_page_returns_400(self):
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url, {"per_page": "xyz"})
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("error", resp.json())
+
+    def test_per_page_capped_at_100(self):
+        for i in range(10):
+            make_task(self.project, self.user, title=f"Task {i}")
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url, {"per_page": 9999})
+        data = resp.json()
+        self.assertLessEqual(len(data["tasks"]), 100)
+        self.assertFalse(data["has_more"])
+
+    def test_page_clamped_to_1_for_zero_or_negative(self):
+        make_task(self.project, self.user)
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url, {"page": 0})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(len(resp.json()["tasks"]), 1)
+
+    def test_delete_method_not_allowed(self):
+        self.client.force_login(self.user)
+        resp = self.client.delete(self.url)
+        self.assertEqual(resp.status_code, 405)
+
+
+# ---------------------------------------------------------------------------
+# POST /api/tasks/  — task creation via API
+# ---------------------------------------------------------------------------
+
+class ApiTaskCreateTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.url = "/api/tasks/"
+        self.user = make_user()
+        self.project = make_project(self.user)
+
+    def _post(self, payload):
+        return self.client.post(
+            self.url,
+            data=json.dumps(payload),
+            content_type="application/json",
+        )
+
+    def test_requires_authentication(self):
+        resp = self._post({"project_id": self.project.pk, "title": "Task"})
+        self.assertEqual(resp.status_code, 401)
+        self.assertEqual(resp.json()["error"], "Authentication required")
+
+    def test_returns_400_for_invalid_json(self):
+        self.client.force_login(self.user)
+        resp = self.client.post(self.url, data="not json", content_type="application/json")
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json()["error"], "Invalid JSON")
+
+    def test_returns_400_for_missing_project_id(self):
+        self.client.force_login(self.user)
+        resp = self._post({"title": "Task without project"})
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json()["error"], "project_id is required")
+
+    def test_returns_400_for_missing_title(self):
+        self.client.force_login(self.user)
+        resp = self._post({"project_id": self.project.pk})
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json()["error"], "title is required")
+
+    def test_returns_400_for_blank_title(self):
+        self.client.force_login(self.user)
+        resp = self._post({"project_id": self.project.pk, "title": "   "})
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json()["error"], "title is required")
+
+    def test_returns_400_for_html_only_title(self):
+        self.client.force_login(self.user)
+        # bleach.clean("<b></b>", tags=[], strip=True) → "" (empty after stripping)
+        resp = self._post({"project_id": self.project.pk, "title": "<b></b>"})
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json()["error"], "title is required")
+
+    def test_returns_404_for_project_not_owned_by_user(self):
+        other = make_user(email="other@example.com", username="other")
+        other_project = make_project(other, github_repo="other/repo")
+
+        self.client.force_login(self.user)
+        resp = self._post({"project_id": other_project.pk, "title": "Sneaky task"})
+        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.json()["error"], "Project not found")
+
+    def test_returns_404_for_nonexistent_project(self):
+        self.client.force_login(self.user)
+        resp = self._post({"project_id": 999999, "title": "Task"})
+        self.assertEqual(resp.status_code, 404)
+
+    @patch("tasks.views._broadcast_queue_task_added")
+    @patch("tasks.views._forward_to_controller")
+    def test_creates_task_and_returns_201(self, _mock_fwd, _mock_bcast):
+        self.client.force_login(self.user)
+        resp = self._post({"project_id": self.project.pk, "title": "New API task"})
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(Task.objects.count(), 1)
+
+    @patch("tasks.views._broadcast_queue_task_added")
+    @patch("tasks.views._forward_to_controller")
+    def test_response_contains_task_fields(self, _mock_fwd, _mock_bcast):
+        self.client.force_login(self.user)
+        resp = self._post({
+            "project_id": self.project.pk,
+            "title": "My Task",
+            "description": "Some description",
+        })
+        data = resp.json()
+        self.assertIn("id", data)
+        self.assertEqual(data["title"], "My Task")
+        self.assertEqual(data["description"], "Some description")
+        self.assertEqual(data["status"], "pending")
+        self.assertIn("status_display", data)
+        self.assertEqual(data["project"], self.project.name)
+        self.assertIn("created_at", data)
+
+    @patch("tasks.views._broadcast_queue_task_added")
+    @patch("tasks.views._forward_to_controller")
+    def test_description_defaults_to_title_when_omitted(self, _mock_fwd, _mock_bcast):
+        self.client.force_login(self.user)
+        self._post({"project_id": self.project.pk, "title": "Title only"})
+        task = Task.objects.get()
+        self.assertEqual(task.description, "Title only")
+
+    @patch("tasks.views._broadcast_queue_task_added")
+    @patch("tasks.views._forward_to_controller")
+    def test_priority_defaults_to_50(self, _mock_fwd, _mock_bcast):
+        self.client.force_login(self.user)
+        self._post({"project_id": self.project.pk, "title": "Task"})
+        task = Task.objects.get()
+        self.assertEqual(task.priority, 50)
+
+    @patch("tasks.views._broadcast_queue_task_added")
+    @patch("tasks.views._forward_to_controller")
+    def test_status_defaults_to_pending(self, _mock_fwd, _mock_bcast):
+        self.client.force_login(self.user)
+        self._post({"project_id": self.project.pk, "title": "Task"})
+        task = Task.objects.get()
+        self.assertEqual(task.status, "pending")
+
+    @patch("tasks.views._broadcast_queue_task_added")
+    @patch("tasks.views._forward_to_controller")
+    def test_sanitizes_html_tags_from_title(self, _mock_fwd, _mock_bcast):
+        self.client.force_login(self.user)
+        resp = self._post({
+            "project_id": self.project.pk,
+            "title": "<b>Bold</b> task",
+        })
+        self.assertEqual(resp.status_code, 201)
+        task = Task.objects.get()
+        self.assertEqual(task.title, "Bold task")
+
+    @patch("tasks.views._broadcast_queue_task_added")
+    @patch("tasks.views._forward_to_controller")
+    def test_calls_forward_to_controller(self, mock_fwd, _mock_bcast):
+        self.client.force_login(self.user)
+        self._post({"project_id": self.project.pk, "title": "Task"})
+        mock_fwd.assert_called_once()
+
+    def test_get_returns_task_list(self):
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn("tasks", resp.json())
+
+
+# ---------------------------------------------------------------------------
+# POST /api/tasks/<pk>/status
+# ---------------------------------------------------------------------------
+
+class ApiTaskStatusTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = make_user()
+        self.project = make_project(self.user)
+        self.task = make_task(self.project, self.user)
+        self.url = f"/api/tasks/{self.task.pk}/status"
+
+    def _post(self, payload, api_key="testkey"):
+        return self.client.post(
+            self.url,
+            data=json.dumps(payload),
+            content_type="application/json",
+            HTTP_X_API_KEY=api_key,
+        )
+
+    @override_settings(TARS_API_KEY="testkey")
+    def test_returns_401_without_api_key(self):
+        resp = self.client.post(
+            self.url,
+            data=json.dumps({"status": "in_progress"}),
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 401)
+
+    @override_settings(TARS_API_KEY="testkey")
+    def test_returns_401_with_wrong_api_key(self):
+        resp = self.client.post(
+            self.url,
+            data=json.dumps({"status": "in_progress"}),
+            content_type="application/json",
+            HTTP_X_API_KEY="wrongkey",
+        )
+        self.assertEqual(resp.status_code, 401)
+        self.assertEqual(resp.json()["error"], "Invalid or missing X-API-Key")
+
+    @override_settings(TARS_API_KEY="testkey")
+    def test_returns_400_for_invalid_json(self):
+        resp = self.client.post(
+            self.url,
+            data="not json",
+            content_type="application/json",
+            HTTP_X_API_KEY="testkey",
+        )
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.json()["error"], "Invalid JSON")
+
+    @override_settings(TARS_API_KEY="testkey")
+    def test_returns_400_for_invalid_status(self):
+        resp = self._post({"status": "flying"})
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("Invalid status", resp.json()["error"])
+
+    @override_settings(TARS_API_KEY="testkey")
+    def test_returns_400_for_missing_status(self):
+        resp = self._post({})
+        self.assertEqual(resp.status_code, 400)
+
+    @override_settings(TARS_API_KEY="testkey")
+    def test_returns_404_for_nonexistent_task(self):
+        resp = self.client.post(
+            "/api/tasks/999999/status",
+            data=json.dumps({"status": "in_progress"}),
+            content_type="application/json",
+            HTTP_X_API_KEY="testkey",
+        )
+        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.json()["error"], "Task not found")
+
+    @patch("tasks.views._broadcast_task_update")
+    @override_settings(TARS_API_KEY="testkey")
+    def test_updates_status_and_returns_200(self, _mock_bcast):
+        resp = self._post({"status": "in_progress"})
+        self.assertEqual(resp.status_code, 200)
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.status, "in_progress")
+
+    @patch("tasks.views._broadcast_task_update")
+    @override_settings(TARS_API_KEY="testkey")
+    def test_response_contains_task_fields(self, _mock_bcast):
+        resp = self._post({"status": "completed"})
+        data = resp.json()
+        self.assertTrue(data["ok"])
+        self.assertEqual(data["task_id"], self.task.pk)
+        self.assertEqual(data["status"], "completed")
+        self.assertIn("status_display", data)
+
+    @patch("tasks.views._broadcast_task_update")
+    @override_settings(TARS_API_KEY="testkey")
+    def test_sets_started_at_for_in_progress(self, _mock_bcast):
+        self._post({"status": "in_progress"})
+        self.task.refresh_from_db()
+        self.assertIsNotNone(self.task.started_at)
+
+    @patch("tasks.views._broadcast_task_update")
+    @override_settings(TARS_API_KEY="testkey")
+    def test_sets_started_at_for_assigned(self, _mock_bcast):
+        self._post({"status": "assigned"})
+        self.task.refresh_from_db()
+        self.assertIsNotNone(self.task.started_at)
+
+    @patch("tasks.views._broadcast_task_update")
+    @override_settings(TARS_API_KEY="testkey")
+    def test_sets_completed_at_for_completed(self, _mock_bcast):
+        self._post({"status": "completed"})
+        self.task.refresh_from_db()
+        self.assertIsNotNone(self.task.completed_at)
+
+    @patch("tasks.views._broadcast_task_update")
+    @override_settings(TARS_API_KEY="testkey")
+    def test_sets_completed_at_for_failed(self, _mock_bcast):
+        self._post({"status": "failed"})
+        self.task.refresh_from_db()
+        self.assertIsNotNone(self.task.completed_at)
+
+    @patch("tasks.views._broadcast_task_update")
+    @override_settings(TARS_API_KEY="testkey")
+    def test_does_not_overwrite_started_at(self, _mock_bcast):
+        from django.utils import timezone
+        original_time = timezone.now() - timezone.timedelta(hours=1)
+        self.task.started_at = original_time
+        self.task.save(update_fields=["started_at"])
+
+        self._post({"status": "in_progress"})
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.started_at, original_time)
+
+    @patch("tasks.views._broadcast_task_update")
+    @override_settings(TARS_API_KEY="testkey")
+    def test_does_not_overwrite_completed_at(self, _mock_bcast):
+        from django.utils import timezone
+        original_time = timezone.now() - timezone.timedelta(hours=1)
+        self.task.completed_at = original_time
+        self.task.save(update_fields=["completed_at"])
+
+        self._post({"status": "completed"})
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.completed_at, original_time)
+
+    @patch("tasks.views._broadcast_task_update")
+    @override_settings(TARS_API_KEY="testkey")
+    def test_updates_branch_name(self, _mock_bcast):
+        self._post({"status": "in_progress", "branch_name": "feature/my-branch"})
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.branch_name, "feature/my-branch")
+
+    @patch("tasks.views._broadcast_task_update")
+    @override_settings(TARS_API_KEY="testkey")
+    def test_updates_pr_url(self, _mock_bcast):
+        self._post({"status": "reviewing", "pr_url": "https://github.com/org/repo/pull/42"})
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.pr_url, "https://github.com/org/repo/pull/42")
+
+    @patch("tasks.views._broadcast_task_update")
+    @override_settings(TARS_API_KEY="testkey")
+    def test_updates_error_message(self, _mock_bcast):
+        self._post({"status": "failed", "error_message": "Build failed at step 3"})
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.error_message, "Build failed at step 3")
+
+    @patch("tasks.views._broadcast_task_update")
+    @override_settings(TARS_API_KEY="testkey")
+    def test_updates_worker_id(self, _mock_bcast):
+        self._post({"status": "assigned", "worker_id": "worker-mac-mini-1"})
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.worker_id, "worker-mac-mini-1")
+
+    @patch("tasks.views._broadcast_task_update")
+    @override_settings(TARS_API_KEY="testkey")
+    def test_csrf_exempt(self, _mock_bcast):
+        # Verify the endpoint works without CSRF token even with enforcement on
+        client = Client(enforce_csrf_checks=True)
+        resp = client.post(
+            self.url,
+            data=json.dumps({"status": "in_progress"}),
+            content_type="application/json",
+            HTTP_X_API_KEY="testkey",
+        )
+        self.assertEqual(resp.status_code, 200)
+
+    @patch("tasks.views._broadcast_task_update")
+    @override_settings(TARS_API_KEY="testkey")
+    def test_calls_broadcast_on_success(self, mock_bcast):
+        self._post({"status": "in_progress"})
+        mock_bcast.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# WebSocket consumers
+# ---------------------------------------------------------------------------
+
+_WS_CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    }
+}
+
+
+@override_settings(CHANNEL_LAYERS=_WS_CHANNEL_LAYERS)
+class TaskDetailConsumerTests(TestCase):
+    def setUp(self):
+        channel_layers.backends.clear()
+        self.user = make_user(email="wsuser@example.com", username="wsuser")
+        self.project = make_project(self.user)
+        self.task = make_task(self.project, self.user)
+
+    def _make_comm(self, task_id, user=None):
+        comm = WebsocketCommunicator(
+            TaskDetailConsumer.as_asgi(),
+            f"/ws/tasks/{task_id}/",
+        )
+        comm.scope["url_route"] = {"kwargs": {"task_id": str(task_id)}}
+        if user is not None:
+            comm.scope["user"] = user
+        return comm
+
+    def test_unauthenticated_connection_rejected(self):
+        task_pk = self.task.pk
+
+        async def _run():
+            comm = self._make_comm(task_pk)
+            connected, _ = await comm.connect()
+            self.assertFalse(connected)
+
+        asyncio.run(_run())
+
+    def test_authenticated_connection_accepted(self):
+        user = self.user
+        task_pk = self.task.pk
+
+        async def _run():
+            comm = self._make_comm(task_pk, user=user)
+            connected, _ = await comm.connect()
+            self.assertTrue(connected)
+            await comm.disconnect()
+
+        asyncio.run(_run())
+
+    def test_ping_responds_with_pong(self):
+        user = self.user
+        task_pk = self.task.pk
+
+        async def _run():
+            comm = self._make_comm(task_pk, user=user)
+            connected, _ = await comm.connect()
+            self.assertTrue(connected)
+            await comm.send_json_to({"type": "ping"})
+            response = await comm.receive_json_from()
+            self.assertEqual(response, {"type": "pong"})
+            await comm.disconnect()
+
+        asyncio.run(_run())
+
+    def test_invalid_json_does_not_crash(self):
+        user = self.user
+        task_pk = self.task.pk
+
+        async def _run():
+            comm = self._make_comm(task_pk, user=user)
+            connected, _ = await comm.connect()
+            self.assertTrue(connected)
+            await comm.send_to(text_data="not valid json {{{")
+            # No response expected; check connection still alive with ping
+            await comm.send_json_to({"type": "ping"})
+            response = await comm.receive_json_from()
+            self.assertEqual(response["type"], "pong")
+            await comm.disconnect()
+
+        asyncio.run(_run())
+
+    def test_task_update_message_forwarded_to_client(self):
+        from channels.layers import get_channel_layer
+
+        user = self.user
+        task_pk = self.task.pk
+
+        async def _run():
+            comm = self._make_comm(task_pk, user=user)
+            connected, _ = await comm.connect()
+            self.assertTrue(connected)
+
+            layer = get_channel_layer()
+            update_data = {"task_id": task_pk, "status": "in_progress", "title": "Test"}
+            await layer.group_send(
+                f"task_{task_pk}",
+                {"type": "task_update", "data": update_data},
+            )
+
+            response = await comm.receive_json_from()
+            self.assertEqual(response, update_data)
+            await comm.disconnect()
+
+        asyncio.run(_run())
+
+    def test_non_ping_message_ignored(self):
+        user = self.user
+        task_pk = self.task.pk
+
+        async def _run():
+            comm = self._make_comm(task_pk, user=user)
+            connected, _ = await comm.connect()
+            self.assertTrue(connected)
+            await comm.send_json_to({"type": "subscribe", "channel": "all"})
+            # No response expected; check we can still ping
+            await comm.send_json_to({"type": "ping"})
+            response = await comm.receive_json_from()
+            self.assertEqual(response["type"], "pong")
+            await comm.disconnect()
+
+        asyncio.run(_run())
+
+
+@override_settings(CHANNEL_LAYERS=_WS_CHANNEL_LAYERS)
+class DashboardConsumerTests(TestCase):
+    def setUp(self):
+        channel_layers.backends.clear()
+        self.user = make_user(email="dashuser@example.com", username="dashuser")
+
+    def _make_comm(self, user=None):
+        comm = WebsocketCommunicator(DashboardConsumer.as_asgi(), "/ws/dashboard/")
+        if user is not None:
+            comm.scope["user"] = user
+        return comm
+
+    def test_unauthenticated_connection_rejected(self):
+        async def _run():
+            comm = self._make_comm()
+            connected, _ = await comm.connect()
+            self.assertFalse(connected)
+
+        asyncio.run(_run())
+
+    def test_authenticated_connection_accepted(self):
+        user = self.user
+
+        async def _run():
+            comm = self._make_comm(user=user)
+            connected, _ = await comm.connect()
+            self.assertTrue(connected)
+            await comm.disconnect()
+
+        asyncio.run(_run())
+
+    def test_ping_responds_with_pong(self):
+        user = self.user
+
+        async def _run():
+            comm = self._make_comm(user=user)
+            connected, _ = await comm.connect()
+            self.assertTrue(connected)
+            await comm.send_json_to({"type": "ping"})
+            response = await comm.receive_json_from()
+            self.assertEqual(response, {"type": "pong"})
+            await comm.disconnect()
+
+        asyncio.run(_run())
+
+    def test_task_update_message_forwarded_to_client(self):
+        from channels.layers import get_channel_layer
+
+        user = self.user
+        user_pk = self.user.pk
+
+        async def _run():
+            comm = self._make_comm(user=user)
+            connected, _ = await comm.connect()
+            self.assertTrue(connected)
+
+            layer = get_channel_layer()
+            update_data = {"task_id": 1, "status": "completed", "title": "Done"}
+            await layer.group_send(
+                f"dashboard_{user_pk}",
+                {"type": "task_update", "data": update_data},
+            )
+
+            response = await comm.receive_json_from()
+            self.assertEqual(response, update_data)
+            await comm.disconnect()
+
+        asyncio.run(_run())
+
+
+@override_settings(CHANNEL_LAYERS=_WS_CHANNEL_LAYERS)
+class QueueConsumerTests(TestCase):
+    def setUp(self):
+        channel_layers.backends.clear()
+        self.user = make_user(email="queueuser@example.com", username="queueuser")
+
+    def _make_comm(self, user=None):
+        comm = WebsocketCommunicator(QueueConsumer.as_asgi(), "/ws/queue/")
+        if user is not None:
+            comm.scope["user"] = user
+        return comm
+
+    def test_unauthenticated_connection_rejected(self):
+        async def _run():
+            comm = self._make_comm()
+            connected, _ = await comm.connect()
+            self.assertFalse(connected)
+
+        asyncio.run(_run())
+
+    def test_authenticated_connection_accepted(self):
+        user = self.user
+
+        async def _run():
+            comm = self._make_comm(user=user)
+            connected, _ = await comm.connect()
+            self.assertTrue(connected)
+            await comm.disconnect()
+
+        asyncio.run(_run())
+
+    def test_ping_responds_with_pong(self):
+        user = self.user
+
+        async def _run():
+            comm = self._make_comm(user=user)
+            connected, _ = await comm.connect()
+            self.assertTrue(connected)
+            await comm.send_json_to({"type": "ping"})
+            response = await comm.receive_json_from()
+            self.assertEqual(response, {"type": "pong"})
+            await comm.disconnect()
+
+        asyncio.run(_run())
+
+    def test_queue_update_message_forwarded_to_client(self):
+        from channels.layers import get_channel_layer
+
+        user = self.user
+        user_pk = self.user.pk
+
+        async def _run():
+            comm = self._make_comm(user=user)
+            connected, _ = await comm.connect()
+            self.assertTrue(connected)
+
+            layer = get_channel_layer()
+            update_data = {
+                "kind": "task_added",
+                "task_id": 42,
+                "status": "pending",
+                "queue_position": 1,
+            }
+            await layer.group_send(
+                f"queue_{user_pk}",
+                {"type": "queue_update", "data": update_data},
+            )
+
+            response = await comm.receive_json_from()
+            self.assertEqual(response, update_data)
+            await comm.disconnect()
+
+        asyncio.run(_run())
