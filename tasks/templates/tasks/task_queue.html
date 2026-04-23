@@ -328,19 +328,90 @@
     var completedTodayCount = {{ completed_today }};
 
     var scheme = location.protocol === 'https:' ? 'wss' : 'ws';
-    var ws = new WebSocket(scheme + '://' + location.host + '/ws/queue/');
+    var WS_URL = scheme + '://' + location.host + '/ws/queue/';
+    var RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000, 30000];
+    var reconnectAttempt = 0;
+    var ws = null;
+    var heartbeatTimer = null;
+    var lastMsgTime = null;
+    var reconnectingNotice = null;
 
-    ws.onmessage = function (e) {
-        var data;
-        try { data = JSON.parse(e.data); } catch (_) { return; }
-        if (data.kind === 'task_added') {
-            handleTaskAdded(data);
-        } else {
-            handleStatusUpdate(data);
-        }
-    };
+    function connect() {
+        ws = new WebSocket(WS_URL);
 
-    ws.onerror = function () { /* silently ignore */ };
+        ws.onopen = function () {
+            reconnectAttempt = 0;
+            removeReconnectingNotice();
+            startHeartbeat();
+            if (lastMsgTime) { fetchMissedUpdates(lastMsgTime); }
+        };
+
+        ws.onmessage = function (e) {
+            lastMsgTime = new Date().toISOString();
+            var data;
+            try { data = JSON.parse(e.data); } catch (_) { return; }
+            if (data.type === 'pong') { return; }
+            if (data.kind === 'task_added') {
+                handleTaskAdded(data);
+            } else {
+                handleStatusUpdate(data);
+            }
+        };
+
+        ws.onclose = function () {
+            stopHeartbeat();
+            showReconnectingNotice();
+            var delay = RECONNECT_DELAYS[Math.min(reconnectAttempt, RECONNECT_DELAYS.length - 1)];
+            reconnectAttempt++;
+            setTimeout(connect, delay);
+        };
+
+        ws.onerror = function () {};
+    }
+
+    function startHeartbeat() {
+        stopHeartbeat();
+        heartbeatTimer = setInterval(function () {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({type: 'ping'}));
+            }
+        }, 30000);
+    }
+
+    function stopHeartbeat() {
+        if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+    }
+
+    function showReconnectingNotice() {
+        if (reconnectingNotice) { return; }
+        var strip = document.querySelector('.queue-health-strip .container');
+        if (!strip) { return; }
+        reconnectingNotice = document.createElement('div');
+        reconnectingNotice.style.cssText = 'display:flex;align-items:center;gap:0.4rem;padding-top:0.45rem;font-size:0.75rem;color:var(--tars-muted,#888);font-style:italic;';
+        reconnectingNotice.innerHTML = '<i class="bi bi-wifi-off" style="font-size:0.8rem;"></i> Reconnecting…';
+        strip.appendChild(reconnectingNotice);
+    }
+
+    function removeReconnectingNotice() {
+        if (reconnectingNotice) { reconnectingNotice.remove(); reconnectingNotice = null; }
+    }
+
+    function fetchMissedUpdates(since) {
+        fetch('/api/tasks/updates/?since=' + encodeURIComponent(since))
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (body) {
+                if (!body) { return; }
+                (body.tasks || []).forEach(function (item) {
+                    var card = document.querySelector('[data-task-id="' + item.task_id + '"]');
+                    if (card) {
+                        handleStatusUpdate(item);
+                    } else if (['pending','queued','assigned','in_progress','reviewing'].indexOf(item.status) !== -1) {
+                        handleTaskAdded(item);
+                    }
+                });
+            })
+            .catch(function () {});
+    }
 
     function handleStatusUpdate(data) {
         var card = document.querySelector('[data-task-id="' + data.task_id + '"]');
@@ -547,6 +618,8 @@
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;');
     }
+
+    connect();
 })();
 </script>
 {% endblock %}

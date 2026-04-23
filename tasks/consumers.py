@@ -26,6 +26,14 @@ class TaskDetailConsumer(AsyncWebsocketConsumer):
         if hasattr(self, "group_name"):
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
+    async def receive(self, text_data):
+        try:
+            data = json.loads(text_data)
+        except (json.JSONDecodeError, ValueError):
+            return
+        if data.get("type") == "ping":
+            await self.send(text_data=json.dumps({"type": "pong"}))
+
     # Receive message from the channel group (sent by workers/views.py)
     async def task_update(self, event):
         await self.send(text_data=json.dumps(event["data"]))
@@ -53,6 +61,14 @@ class DashboardConsumer(AsyncWebsocketConsumer):
         if hasattr(self, "group_name"):
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
+    async def receive(self, text_data):
+        try:
+            data = json.loads(text_data)
+        except (json.JSONDecodeError, ValueError):
+            return
+        if data.get("type") == "ping":
+            await self.send(text_data=json.dumps({"type": "pong"}))
+
     # Receive message from the channel group (sent by workers/views.py)
     async def task_update(self, event):
         await self.send(text_data=json.dumps(event["data"]))
@@ -79,6 +95,14 @@ class QueueConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         if hasattr(self, "group_name"):
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    async def receive(self, text_data):
+        try:
+            data = json.loads(text_data)
+        except (json.JSONDecodeError, ValueError):
+            return
+        if data.get("type") == "ping":
+            await self.send(text_data=json.dumps({"type": "pong"}))
 
     async def queue_update(self, event):
         await self.send(text_data=json.dumps(event["data"]))

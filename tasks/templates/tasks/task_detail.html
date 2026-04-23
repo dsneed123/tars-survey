@@ -534,7 +534,113 @@
     }
 
     var scheme = location.protocol === 'https:' ? 'wss' : 'ws';
-    var ws = new WebSocket(scheme + '://' + location.host + '/ws/tasks/{{ task.pk }}/');
+    var WS_URL = scheme + '://' + location.host + '/ws/tasks/{{ task.pk }}/';
+    var RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000, 30000];
+    var reconnectAttempt = 0;
+    var ws = null;
+    var heartbeatTimer = null;
+    var lastMsgTime = null;
+    var reconnectingBubble = null;
+
+    function connect() {
+        ws = new WebSocket(WS_URL);
+
+        ws.onopen = function () {
+            reconnectAttempt = 0;
+            removeReconnectingBubble();
+            startHeartbeat();
+            if (lastMsgTime) { fetchMissedUpdates(lastMsgTime); }
+        };
+
+        ws.onmessage = function (e) {
+            lastMsgTime = new Date().toISOString();
+            var data;
+            try { data = JSON.parse(e.data); } catch (_) { return; }
+            if (data.type === 'pong') { return; }
+            handleMessage(data);
+        };
+
+        ws.onclose = function () {
+            stopHeartbeat();
+            showReconnectingBubble();
+            var delay = RECONNECT_DELAYS[Math.min(reconnectAttempt, RECONNECT_DELAYS.length - 1)];
+            reconnectAttempt++;
+            setTimeout(connect, delay);
+        };
+
+        ws.onerror = function () {};
+    }
+
+    function startHeartbeat() {
+        stopHeartbeat();
+        heartbeatTimer = setInterval(function () {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({type: 'ping'}));
+            }
+        }, 30000);
+    }
+
+    function stopHeartbeat() {
+        if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+    }
+
+    function showReconnectingBubble() {
+        if (reconnectingBubble) { return; }
+        var feed = document.getElementById('chat-feed');
+        if (!feed) { return; }
+        reconnectingBubble = document.createElement('div');
+        reconnectingBubble.className = 'chat-bubble';
+        reconnectingBubble.innerHTML =
+            '<div class="chat-avatar"><i class="bi bi-wifi-off"></i></div>' +
+            '<div class="chat-content"><div class="chat-sender">System</div>' +
+            '<p style="color:var(--tars-muted,#888);font-style:italic;margin:0;">Reconnecting…</p></div>';
+        feed.appendChild(reconnectingBubble);
+        feed.scrollTop = feed.scrollHeight;
+    }
+
+    function removeReconnectingBubble() {
+        if (reconnectingBubble) { reconnectingBubble.remove(); reconnectingBubble = null; }
+    }
+
+    function fetchMissedUpdates(since) {
+        fetch('/api/tasks/updates/?since=' + encodeURIComponent(since))
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (body) {
+                if (!body) { return; }
+                (body.tasks || []).forEach(function (data) {
+                    if (String(data.task_id) === '{{ task.pk }}') { handleMessage(data); }
+                });
+            })
+            .catch(function () {});
+    }
+
+    function handleMessage(data) {
+        if (data.status) {
+            updateBadge(data.status, data.status_display);
+            updateTimeline(data.status);
+            showToast('• Status updated: ' + data.status_display);
+
+            if (data.status === 'in_progress') {
+                appendChatMessage('Working on it...');
+            } else if (data.status === 'reviewing') {
+                appendChatMessage('Code review in progress');
+            } else if (data.status === 'completed') {
+                if (data.pr_url) {
+                    appendChatMessage('Done! Here\'s the PR: <a href="' + escHtml(data.pr_url) + '" target="_blank" rel="noopener noreferrer" style="color:var(--tars-accent)">' + escHtml(data.pr_url) + '</a>');
+                } else {
+                    appendChatMessage('Done!');
+                }
+            } else if (data.status === 'failed') {
+                var msg = 'Something went wrong';
+                if (data.error_message) { msg += ': ' + escHtml(data.error_message); }
+                appendChatMessage(msg);
+            }
+        }
+
+        if (data.pr_url) { showHeroPrBtn(data.pr_url); }
+    }
+
+    connect();
 
     // Timeline order must match tasks/views.py::_build_timeline.
     var TIMELINE_ORDER = ["pending", "queued", "assigned", "in_progress", "reviewing", "completed"];
@@ -601,37 +707,6 @@
         feed.scrollTop = feed.scrollHeight;
     }
 
-    ws.onmessage = function (e) {
-        var data;
-        try { data = JSON.parse(e.data); } catch (_) { return; }
-
-        if (data.status) {
-            updateBadge(data.status, data.status_display);
-            updateTimeline(data.status);
-            showToast('\u2022 Status updated: ' + data.status_display);
-
-            if (data.status === 'in_progress') {
-                appendChatMessage('Working on it...');
-            } else if (data.status === 'reviewing') {
-                appendChatMessage('Code review in progress');
-            } else if (data.status === 'completed') {
-                if (data.pr_url) {
-                    appendChatMessage('Done! Here\'s the PR: <a href="' + escHtml(data.pr_url) + '" target="_blank" rel="noopener noreferrer" style="color:var(--tars-accent)">' + escHtml(data.pr_url) + '</a>');
-                } else {
-                    appendChatMessage('Done!');
-                }
-            } else if (data.status === 'failed') {
-                var msg = 'Something went wrong';
-                if (data.error_message) msg += ': ' + escHtml(data.error_message);
-                appendChatMessage(msg);
-            }
-        }
-
-        if (data.pr_url) {
-            showHeroPrBtn(data.pr_url);
-        }
-    };
-    ws.onerror = function () { /* silently ignore connection errors */ };
 })();
 </script>
 {% endblock %}
