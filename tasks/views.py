@@ -26,11 +26,27 @@ logger = logging.getLogger(__name__)
 _TARS_STATUS_CHOICES = {s for s, _ in Task.STATUS_CHOICES}
 
 
+def _get_queue_positions(user_id):
+    """Return {task_pk: position} (1-indexed, oldest first) for pending/queued tasks."""
+    pks = list(
+        Task.objects.filter(
+            created_by_id=user_id,
+            status__in=("pending", "queued"),
+        )
+        .order_by("created_at")
+        .values_list("pk", flat=True)
+    )
+    return {pk: i + 1 for i, pk in enumerate(pks)}
+
+
 def _broadcast_task_update(task):
     """Push a task status update to the WS groups listening for this task."""
     channel_layer = get_channel_layer()
     if channel_layer is None:
         return
+
+    queue_positions = _get_queue_positions(task.created_by_id)
+
     data = {
         "task_id": task.pk,
         "title": task.title,
@@ -39,10 +55,33 @@ def _broadcast_task_update(task):
         "branch_name": task.branch_name,
         "pr_url": task.pr_url,
         "error_message": task.error_message,
+        "queue_position": queue_positions.get(task.pk),
     }
     send = async_to_sync(channel_layer.group_send)
     send(f"task_{task.pk}", {"type": "task_update", "data": data})
     send(f"dashboard_{task.created_by_id}", {"type": "task_update", "data": data})
+
+    # When the queue shifts, broadcast updated positions to other pending/queued tasks.
+    other_pks = [pk for pk in queue_positions if pk != task.pk]
+    if other_pks:
+        status_display_map = dict(Task.STATUS_CHOICES)
+        other_statuses = dict(
+            Task.objects.filter(pk__in=other_pks).values_list("pk", "status")
+        )
+        for pk in other_pks:
+            st = other_statuses.get(pk, "pending")
+            send(
+                f"dashboard_{task.created_by_id}",
+                {
+                    "type": "task_update",
+                    "data": {
+                        "task_id": pk,
+                        "status": st,
+                        "status_display": status_display_map.get(st, st),
+                        "queue_position": queue_positions[pk],
+                    },
+                },
+            )
 
 
 @login_required

@@ -10,7 +10,7 @@ from inquiries.models import Inquiry
 from projects.forms import ProjectForm
 from projects.models import Project
 from tasks.models import Task
-from tasks.views import _forward_to_controller
+from tasks.views import _forward_to_controller, _get_queue_positions
 
 from .models import MemberProfile
 
@@ -22,11 +22,16 @@ def dashboard(request):
     projects = Project.objects.filter(owner=request.user)
 
     # All tasks for the chat feed, newest last
-    all_tasks = (
+    all_tasks = list(
         Task.objects.filter(created_by=request.user)
         .select_related("project", "created_by")
         .order_by("-created_at")[:50]
     )
+
+    # Annotate each task with its queue position (pending/queued only)
+    queue_positions = _get_queue_positions(request.user.pk)
+    for task in all_tasks:
+        task.queue_position = queue_positions.get(task.pk)
 
     completed_count = Task.objects.filter(created_by=request.user, status="completed").count()
     active_count = Task.objects.filter(

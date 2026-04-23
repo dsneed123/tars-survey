@@ -189,6 +189,13 @@ body { overflow: hidden; height: 100vh; }
 
 .error-text { color: #ef4444; font-size: 13px; margin-top: 4px; }
 
+/* ── Queue position label ──────────────────────────────── */
+.queue-pos-label {
+    font-size: 12px;
+    color: #555;
+    margin: 2px 0 6px;
+}
+
 /* ── Typing indicator ──────────────────────────────────── */
 .typing-indicator {
     display: flex;
@@ -471,6 +478,9 @@ body { overflow: hidden; height: 100vh; }
                     <div class="msg-content" id="tars-content-{{ task.pk }}">
                         {% if task.status == 'pending' or task.status == 'queued' %}
                         <p>Got it. This is in the queue.</p>
+                        {% if task.queue_position %}
+                        <div class="queue-pos-label">Position #{{ task.queue_position }} in queue</div>
+                        {% endif %}
                         <div class="status-card">
                             <span class="status-badge badge-{{ task.status }}">{{ task.get_status_display }}</span>
                         </div>
@@ -748,13 +758,16 @@ document.addEventListener('keydown', function(e) {
         var s = data.status;
         var html = '';
         if (s === 'pending' || s === 'queued') {
-            html = '<p>Got it. This is in the queue.</p>' +
-                '<div class="status-card"><span class="status-badge badge-' + s + '">' + escHtml(data.status_display) + '</span></div>';
+            html = '<p>Got it. This is in the queue.</p>';
+            if (data.queue_position) {
+                html += '<div class="queue-pos-label">Position #' + parseInt(data.queue_position) + ' in queue</div>';
+            }
+            html += '<div class="status-card"><span class="status-badge badge-' + s + '">' + escHtml(data.status_display) + '</span></div>';
         } else if (s === 'assigned') {
             html = '<p>Picked this up. Starting soon.</p>' +
                 '<div class="status-card"><span class="status-badge badge-assigned">Assigned</span></div>';
         } else if (s === 'in_progress') {
-            html = '<p>Working on this now...</p>' +
+            html = '<p>TARS is working on this now.</p>' +
                 '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>' +
                 '<div class="status-card"><span class="status-badge badge-in_progress">In Progress</span></div>';
         } else if (s === 'reviewing') {
