@@ -5,4 +5,5 @@ from . import consumers
 websocket_urlpatterns = [
     re_path(r"ws/tasks/(?P<task_id>\d+)/$", consumers.TaskDetailConsumer.as_asgi()),
     re_path(r"ws/dashboard/$", consumers.DashboardConsumer.as_asgi()),
+    re_path(r"ws/queue/$", consumers.QueueConsumer.as_asgi()),
 ]

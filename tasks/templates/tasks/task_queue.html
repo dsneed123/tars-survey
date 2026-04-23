@@ -133,6 +133,15 @@
         to   { opacity: 1; transform: translateY(0); }
     }
 
+    /* Slide-in for newly added cards */
+    @keyframes queue-slide-in {
+        from { opacity: 0; transform: translateY(14px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .queue-card-new {
+        animation: queue-slide-in 0.3s ease-out forwards;
+    }
+
     /* Empty state */
     .empty-state {
         background: var(--tars-surface);
@@ -204,7 +213,7 @@
                     </ol>
                 </nav>
                 <h1 class="h3 fw-bold mb-1" style="color:var(--tars-text)">Task Queue</h1>
-                <p class="mb-0 small" style="color:var(--tars-muted)">
+                <p class="mb-0 small" id="queue-hero-count" style="color:var(--tars-muted)">
                     {% if tasks %}
                         {{ tasks|length }} active task{{ tasks|length|pluralize }}
                     {% else %}
@@ -224,34 +233,42 @@
     <div class="container" style="max-width: 780px;">
         <div class="queue-health-track">
             {% if total_count > 0 %}
-            <div style="flex: {{ completed_today }}; background: var(--tars-green);"></div>
-            <div style="flex: {{ in_progress_count }}; background: #60a5fa;"></div>
-            <div style="flex: {{ pending_count }}; background: rgba(156,163,175,0.3);"></div>
+            <div id="health-bar-completed" style="flex: {{ completed_today }}; background: var(--tars-green);"></div>
+            <div id="health-bar-inprogress" style="flex: {{ in_progress_count }}; background: #60a5fa;"></div>
+            <div id="health-bar-pending" style="flex: {{ pending_count }}; background: rgba(156,163,175,0.3);"></div>
+            {% else %}
+            <div id="health-bar-completed" style="flex: 0; background: var(--tars-green);"></div>
+            <div id="health-bar-inprogress" style="flex: 0; background: #60a5fa;"></div>
+            <div id="health-bar-pending" style="flex: 0; background: rgba(156,163,175,0.3);"></div>
             {% endif %}
         </div>
         <div class="queue-health-legend">
             <span class="queue-health-label">
                 <span class="queue-health-dot" style="background: var(--tars-green);"></span>
-                {{ completed_today }} completed today
+                <span id="health-legend-completed">{{ completed_today }} completed today</span>
             </span>
             <span class="queue-health-label">
                 <span class="queue-health-dot" style="background: #60a5fa;"></span>
-                {{ in_progress_count }} in progress
+                <span id="health-legend-inprogress">{{ in_progress_count }} in progress</span>
             </span>
             <span class="queue-health-label">
                 <span class="queue-health-dot" style="background: rgba(156,163,175,0.4);"></span>
-                {{ pending_count }} queued
+                <span id="health-legend-pending">{{ pending_count }} queued</span>
             </span>
         </div>
     </div>
 </div>
 
 <div class="container py-5" style="max-width: 780px;">
-    {% if tasks %}
-        <p class="section-label">{{ tasks|length }} task{{ tasks|length|pluralize }} in queue</p>
-        <div class="content-list d-flex flex-column gap-3">
+    <!-- Task list section (hidden when queue is empty) -->
+    <div id="queue-list-section"{% if not tasks %} style="display:none;"{% endif %}>
+        <p class="section-label" id="queue-count-label">{{ tasks|length }} task{{ tasks|length|pluralize }} in queue</p>
+        <div class="content-list d-flex flex-column gap-3" id="queue-list">
             {% for task in tasks %}
-            <a href="{% url 'tasks:detail' pk=task.pk %}" class="queue-card{% if task.status == 'in_progress' %} is-active is-in-progress{% elif task.status != 'pending' %} is-active{% endif %}">
+            <a href="{% url 'tasks:detail' pk=task.pk %}"
+               data-task-id="{{ task.pk }}"
+               data-task-status="{{ task.status }}"
+               class="queue-card{% if task.status == 'in_progress' %} is-active is-in-progress{% elif task.status != 'pending' %} is-active{% endif %}">
 
                 <!-- Position number -->
                 <div class="queue-pos{% if task.status == 'in_progress' %} pos-in-progress{% endif %}">
@@ -287,19 +304,249 @@
             </a>
             {% endfor %}
         </div>
-    {% else %}
-        <div class="empty-state">
-            <div class="mb-3" style="display:inline-flex;align-items:center;justify-content:center;width:72px;height:72px;border-radius:18px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.15);">
-                <i class="bi bi-inbox" style="font-size:2rem; color:var(--tars-accent); opacity:0.7;"></i>
-            </div>
-            <h5 class="fw-bold mt-1 mb-2" style="color:var(--tars-text)">Queue is empty</h5>
-            <p class="small mb-4" style="color:var(--tars-muted); max-width:320px; margin:0 auto 1.5rem;">
-                No active tasks right now. Submit a task and TARS will pick it up automatically.
-            </p>
-            <a href="{% url 'tasks:add' %}" class="btn btn-accent">
-                <i class="bi bi-plus-lg me-1"></i> Submit a Task
-            </a>
+    </div>
+
+    <!-- Empty state (hidden when queue has tasks) -->
+    <div class="empty-state" id="queue-empty-state"{% if tasks %} style="display:none;"{% endif %}>
+        <div class="mb-3" style="display:inline-flex;align-items:center;justify-content:center;width:72px;height:72px;border-radius:18px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.15);">
+            <i class="bi bi-inbox" style="font-size:2rem; color:var(--tars-accent); opacity:0.7;"></i>
         </div>
-    {% endif %}
+        <h5 class="fw-bold mt-1 mb-2" style="color:var(--tars-text)">Queue is empty</h5>
+        <p class="small mb-4" style="color:var(--tars-muted); max-width:320px; margin:0 auto 1.5rem;">
+            No active tasks right now. Submit a task and TARS will pick it up automatically.
+        </p>
+        <a href="{% url 'tasks:add' %}" class="btn btn-accent">
+            <i class="bi bi-plus-lg me-1"></i> Submit a Task
+        </a>
+    </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    var completedTodayCount = {{ completed_today }};
+
+    var scheme = location.protocol === 'https:' ? 'wss' : 'ws';
+    var ws = new WebSocket(scheme + '://' + location.host + '/ws/queue/');
+
+    ws.onmessage = function (e) {
+        var data;
+        try { data = JSON.parse(e.data); } catch (_) { return; }
+        if (data.kind === 'task_added') {
+            handleTaskAdded(data);
+        } else {
+            handleStatusUpdate(data);
+        }
+    };
+
+    ws.onerror = function () { /* silently ignore */ };
+
+    function handleStatusUpdate(data) {
+        var card = document.querySelector('[data-task-id="' + data.task_id + '"]');
+
+        if (data.status === 'completed' || data.status === 'failed') {
+            if (card) {
+                if (data.status === 'completed') completedTodayCount++;
+                removeCard(card);
+            }
+            return;
+        }
+
+        if (card) {
+            card.dataset.taskStatus = data.status;
+            if (data.status_display) updateStatusBadge(card, data.status, data.status_display);
+            if (data.queue_position != null) updatePosition(card, data.queue_position, data.status);
+        }
+    }
+
+    function handleTaskAdded(data) {
+        var list = document.getElementById('queue-list');
+        if (!list) return;
+
+        var card = buildCard(data);
+        card.classList.add('queue-card-new');
+        list.appendChild(card);
+
+        showListSection();
+        syncCountsFromDom();
+        updateHealthBar();
+    }
+
+    function removeCard(card) {
+        var h = card.offsetHeight;
+        card.style.overflow = 'hidden';
+        card.style.maxHeight = h + 'px';
+        card.style.transition =
+            'opacity 0.25s ease, transform 0.25s ease, ' +
+            'max-height 0.35s 0.1s ease, margin-bottom 0.35s 0.1s ease, ' +
+            'padding-top 0.35s 0.1s ease, padding-bottom 0.35s 0.1s ease';
+
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(-8px)';
+                card.style.maxHeight = '0';
+                card.style.marginBottom = '0';
+                card.style.paddingTop = '0';
+                card.style.paddingBottom = '0';
+            });
+        });
+
+        setTimeout(function () {
+            card.remove();
+            renumberPositions();
+            syncCountsFromDom();
+            updateHealthBar();
+        }, 450);
+    }
+
+    function updateStatusBadge(card, status, statusDisplay) {
+        var badge = card.querySelector('.status-badge');
+        if (!badge) return;
+
+        badge.className = 'status-badge status-' + status;
+
+        if (status === 'in_progress') {
+            badge.innerHTML = '<span class="pulse-dot"></span> ' + escHtml(statusDisplay);
+            card.classList.add('is-active', 'is-in-progress');
+        } else {
+            badge.innerHTML = '<i class="bi bi-circle-fill" style="font-size:0.35rem;"></i> ' + escHtml(statusDisplay);
+            card.classList.add('is-active');
+            card.classList.remove('is-in-progress');
+        }
+
+        var pos = card.querySelector('.queue-pos');
+        if (pos) {
+            if (status === 'in_progress') {
+                pos.classList.add('pos-in-progress');
+            } else {
+                pos.classList.remove('pos-in-progress');
+            }
+        }
+    }
+
+    function updatePosition(card, position) {
+        var pos = card.querySelector('.queue-pos');
+        if (pos) pos.textContent = '#' + position;
+    }
+
+    function renumberPositions() {
+        var cards = document.querySelectorAll('#queue-list .queue-card[data-task-id]');
+        cards.forEach(function (c, i) {
+            var pos = c.querySelector('.queue-pos');
+            if (pos) pos.textContent = '#' + (i + 1);
+        });
+    }
+
+    function buildCard(data) {
+        var cards = document.querySelectorAll('#queue-list .queue-card[data-task-id]');
+        var posNum = cards.length + 1;
+
+        var a = document.createElement('a');
+        a.href = '/tasks/' + data.task_id + '/';
+        a.dataset.taskId = data.task_id;
+        a.dataset.taskStatus = data.status;
+        a.className = 'queue-card';
+
+        a.innerHTML =
+            '<div class="queue-pos">#' + posNum + '</div>' +
+            '<div class="flex-grow-1" style="min-width:0;">' +
+                '<div class="fw-semibold text-truncate mb-1" style="color:var(--tars-text);font-size:0.92rem;">' +
+                    escHtml(data.title) +
+                '</div>' +
+                '<div class="d-flex align-items-center gap-2 flex-wrap">' +
+                    '<span class="proj-tag">' +
+                        '<i class="bi bi-folder2-open me-1" style="font-size:0.65rem;"></i>' +
+                        escHtml(data.project_name) +
+                    '</span>' +
+                    '<span class="time-label">just now</span>' +
+                '</div>' +
+            '</div>' +
+            '<div class="d-flex align-items-center gap-2 flex-shrink-0">' +
+                '<span class="status-badge status-' + data.status + '">' +
+                    '<i class="bi bi-circle-fill" style="font-size:0.35rem;"></i> ' +
+                    escHtml(data.status_display) +
+                '</span>' +
+                '<i class="bi bi-chevron-right" style="color:var(--tars-border);"></i>' +
+            '</div>';
+
+        return a;
+    }
+
+    function syncCountsFromDom() {
+        var cards = document.querySelectorAll('#queue-list .queue-card[data-task-id]');
+        var total = cards.length;
+        var inProgress = 0, pending = 0;
+        cards.forEach(function (c) {
+            var st = c.dataset.taskStatus;
+            if (st === 'in_progress') inProgress++;
+            else pending++;
+        });
+
+        // Hero subtitle
+        var hero = document.getElementById('queue-hero-count');
+        if (hero) {
+            hero.textContent = total === 0
+                ? 'No active tasks'
+                : total + ' active task' + (total !== 1 ? 's' : '');
+        }
+
+        // Section label
+        var label = document.getElementById('queue-count-label');
+        if (label) {
+            label.textContent = total + ' task' + (total !== 1 ? 's' : '') + ' in queue';
+        }
+
+        // Show/hide list vs empty state
+        if (total === 0) {
+            showEmptyState();
+        } else {
+            showListSection();
+        }
+
+        return { inProgress: inProgress, pending: pending };
+    }
+
+    function updateHealthBar() {
+        var counts = syncCountsFromDom();
+
+        var barIP = document.getElementById('health-bar-inprogress');
+        var barP  = document.getElementById('health-bar-pending');
+        var barC  = document.getElementById('health-bar-completed');
+        if (barIP) barIP.style.flex = counts.inProgress;
+        if (barP)  barP.style.flex  = counts.pending;
+        if (barC)  barC.style.flex  = completedTodayCount;
+
+        var legIP = document.getElementById('health-legend-inprogress');
+        var legP  = document.getElementById('health-legend-pending');
+        var legC  = document.getElementById('health-legend-completed');
+        if (legIP) legIP.textContent = counts.inProgress + ' in progress';
+        if (legP)  legP.textContent  = counts.pending + ' queued';
+        if (legC)  legC.textContent  = completedTodayCount + ' completed today';
+    }
+
+    function showListSection() {
+        var listSection = document.getElementById('queue-list-section');
+        var emptyState  = document.getElementById('queue-empty-state');
+        if (listSection) listSection.style.display = '';
+        if (emptyState)  emptyState.style.display  = 'none';
+    }
+
+    function showEmptyState() {
+        var listSection = document.getElementById('queue-list-section');
+        var emptyState  = document.getElementById('queue-empty-state');
+        if (listSection) listSection.style.display = 'none';
+        if (emptyState)  emptyState.style.display  = '';
+    }
+
+    function escHtml(str) {
+        return String(str || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+})();
+</script>
 {% endblock %}
