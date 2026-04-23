@@ -352,6 +352,44 @@ def task_detail(request, pk):
     )
 
 
+@login_required
+@require_GET
+def api_task_detail(request, pk):
+    """Return task detail as JSON for the inline expandable panel."""
+    task = get_object_or_404(
+        Task.objects.select_related("project", "created_by").prefetch_related("attachments"),
+        pk=pk,
+        created_by=request.user,
+    )
+    attachments = [
+        {
+            "filename": a.filename,
+            "url": request.build_absolute_uri(a.file.url) if a.file else None,
+        }
+        for a in task.attachments.all()
+    ]
+    timeline = _build_timeline(task)
+    return JsonResponse({
+        "id": task.pk,
+        "title": task.title,
+        "description": task.description,
+        "status": task.status,
+        "status_display": task.get_status_display(),
+        "pr_url": task.pr_url,
+        "branch_name": task.branch_name,
+        "worker_id": task.worker_id,
+        "error_message": task.error_message,
+        "created_at": task.created_at.isoformat(),
+        "started_at": task.started_at.isoformat() if task.started_at else None,
+        "completed_at": task.completed_at.isoformat() if task.completed_at else None,
+        "attachments": attachments,
+        "timeline": [
+            {"status": s["status"], "label": s["label"], "state": s["state"]}
+            for s in timeline
+        ],
+    })
+
+
 def _build_timeline(task):
     """Return ordered list of timeline steps with state for display."""
     steps = [
