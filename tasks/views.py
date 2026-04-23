@@ -175,18 +175,28 @@ def _broadcast_queue_task_added(task):
 def task_queue(request):
     from django.db.models import Case, IntegerField, Value, When
 
+    _ACTIVE_STATUSES = {"in_progress", "assigned", "reviewing"}
+    _PENDING_STATUSES = {"pending", "queued"}
+    _FILTER_GROUP_MAP = {
+        "in_progress": "active", "assigned": "active", "reviewing": "active",
+        "pending": "pending", "queued": "pending",
+        "completed": "completed",
+        "failed": "failed",
+    }
+
     status_order = Case(
         When(status="in_progress", then=Value(0)),
         When(status="assigned", then=Value(1)),
         When(status="reviewing", then=Value(2)),
         When(status="queued", then=Value(3)),
         When(status="pending", then=Value(4)),
-        default=Value(5),
+        When(status="completed", then=Value(5)),
+        When(status="failed", then=Value(6)),
+        default=Value(7),
         output_field=IntegerField(),
     )
     tasks = list(
         Task.objects.filter(created_by=request.user)
-        .exclude(status__in=("completed", "failed"))
         .select_related("project")
         .annotate(status_order=status_order)
         .order_by("status_order", "created_at")
@@ -199,14 +209,18 @@ def task_queue(request):
         completed_at__date=today,
     ).count()
 
-    in_progress_count = sum(1 for t in tasks if t.status == "in_progress")
-    pending_count = len(tasks) - in_progress_count
-    total_count = in_progress_count + pending_count + completed_today
-
     queue_positions = _get_queue_positions(request.user.pk)
     wait_times = _get_wait_times(request.user.pk, queue_positions)
     for task in tasks:
         task.wait_time = wait_times.get(task.pk)
+        task.filter_group = _FILTER_GROUP_MAP.get(task.status, "pending")
+
+    in_progress_count = sum(1 for t in tasks if t.status == "in_progress")
+    active_count = sum(1 for t in tasks if t.status in _ACTIVE_STATUSES)
+    pending_count = sum(1 for t in tasks if t.status in _PENDING_STATUSES)
+    completed_count = sum(1 for t in tasks if t.status == "completed")
+    failed_count = sum(1 for t in tasks if t.status == "failed")
+    total_count = active_count + pending_count + completed_today
 
     return render(request, "tasks/task_queue.html", {
         "tasks": tasks,
@@ -214,6 +228,9 @@ def task_queue(request):
         "in_progress_count": in_progress_count,
         "pending_count": pending_count,
         "total_count": total_count,
+        "active_count": active_count,
+        "completed_count": completed_count,
+        "failed_count": failed_count,
     })
 
 
