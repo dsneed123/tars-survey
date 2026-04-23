@@ -406,6 +406,104 @@ body { overflow: hidden; height: 100vh; }
     /* Hide keyboard hint on touchscreens */
     .input-hint { display: none; }
 }
+
+/* ── Queue mini widget ─────────────────────────────── */
+.queue-widget { position: relative; }
+
+.queue-widget-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #141414;
+    border: 1px solid #1f1f1f;
+    color: #888;
+    padding: 5px 10px 5px 8px;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+}
+.queue-widget-btn:hover { border-color: #333; color: #aaa; }
+.queue-widget-btn.open { border-color: #333; color: #aaa; }
+
+.queue-ring-fill { transition: stroke-dashoffset 0.4s ease; }
+
+#queueChevron { transition: transform 0.2s ease; }
+
+.queue-panel {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: #141414;
+    border: 1px solid #252525;
+    border-radius: 12px;
+    padding: 14px;
+    min-width: 256px;
+    z-index: 200;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    animation: queue-panel-in 0.15s ease-out;
+}
+.queue-panel.show { display: block; }
+
+@keyframes queue-panel-in {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.queue-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+.queue-panel-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.queue-panel-task {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    border-top: 1px solid #1a1a1a;
+    min-width: 0;
+    transition: opacity 0.3s;
+}
+.queue-panel-task-title {
+    font-size: 12px;
+    color: #aaa;
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.queue-panel-footer {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #1a1a1a;
+    text-align: center;
+}
+.queue-panel-link {
+    color: #6366f1;
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.15s;
+}
+.queue-panel-link:hover { color: #818cf8; }
+
+@media (max-width: 768px) {
+    .queue-widget-label { display: none; }
+}
 </style>
 {% endblock %}
 
@@ -418,16 +516,60 @@ body { overflow: hidden; height: 100vh; }
     <!-- Top bar -->
     <div class="chat-topbar">
         <span class="topbar-title">TARS</span>
-        <div class="app-icon-nav d-none d-md-flex">
-            <a href="{% url 'members:dashboard' %}" class="app-icon-nav-item active" title="Chat">
-                <i class="bi bi-house-fill"></i>
-            </a>
-            <a href="{% url 'tasks:queue' %}" class="app-icon-nav-item" title="Queue">
-                <i class="bi bi-list-ul"></i>
-            </a>
-            <a href="{% url 'billing:billing' %}" class="app-icon-nav-item" title="Settings">
-                <i class="bi bi-gear-fill"></i>
-            </a>
+        <div style="display:flex;align-items:center;gap:10px;">
+
+            <!-- Queue mini widget -->
+            {% if active_count > 0 %}
+            <div class="queue-widget" id="queueWidget">
+                <button class="queue-widget-btn" id="queueWidgetBtn" type="button"
+                        onclick="toggleQueueWidget(event)">
+                    <svg width="18" height="18" viewBox="0 0 18 18" id="queueRingSvg"
+                         data-active="{{ active_count }}" data-in-progress="{{ in_progress_count }}">
+                        <circle cx="9" cy="9" r="6.5" fill="none" stroke="#252525" stroke-width="2"/>
+                        <circle class="queue-ring-fill" cx="9" cy="9" r="6.5"
+                                fill="none" stroke="#6366f1" stroke-width="2"
+                                stroke-dasharray="40.84" stroke-dashoffset="40.84"
+                                stroke-linecap="round" transform="rotate(-90 9 9)"/>
+                    </svg>
+                    <span class="queue-widget-label" id="queueWidgetLabel">
+                        {{ active_count }} task{{ active_count|pluralize }} in queue
+                    </span>
+                    <i class="bi bi-chevron-down" id="queueChevron" style="font-size:9px;"></i>
+                </button>
+                <div class="queue-panel" id="queuePanel">
+                    <div class="queue-panel-header">
+                        <span class="queue-panel-title">Queue</span>
+                        <span style="font-size:11px;color:#444;" id="queuePanelMeta">
+                            {{ active_count }} active
+                        </span>
+                    </div>
+                    {% for task in queue_widget_tasks %}
+                    <div class="queue-panel-task" id="widget-task-{{ task.pk }}" data-task-id="{{ task.pk }}">
+                        <span class="status-badge badge-{{ task.status }} flex-shrink-0">{{ task.get_status_display }}</span>
+                        <span class="queue-panel-task-title" title="{{ task.title }}">{{ task.title|truncatechars:42 }}</span>
+                    </div>
+                    {% endfor %}
+                    <div class="queue-panel-footer">
+                        <a href="{% url 'tasks:queue' %}" class="queue-panel-link">
+                            View full queue <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="app-icon-nav d-none d-md-flex">
+                <a href="{% url 'members:dashboard' %}" class="app-icon-nav-item active" title="Chat">
+                    <i class="bi bi-house-fill"></i>
+                </a>
+                <a href="{% url 'tasks:queue' %}" class="app-icon-nav-item" title="Queue">
+                    <i class="bi bi-list-ul"></i>
+                </a>
+                <a href="{% url 'billing:billing' %}" class="app-icon-nav-item" title="Settings">
+                    <i class="bi bi-gear-fill"></i>
+                </a>
+            </div>
+
         </div>
     </div>
 
@@ -742,6 +884,11 @@ document.addEventListener('keydown', function(e) {
             var type = data.status === 'failed' ? 'error' : data.status === 'completed' ? 'success' : 'info';
             showToast(data.status_display + ': ' + escHtml(data.title), type, 'Task Update');
         }
+
+        // Notify queue mini widget
+        if (typeof window._queueWidgetUpdate === 'function') {
+            window._queueWidgetUpdate(data);
+        }
     };
 
     ws.onerror = function () {};
@@ -794,6 +941,119 @@ document.addEventListener('keydown', function(e) {
         }
         return html;
     }
+}());
+</script>
+
+<script>
+// Queue mini widget — toggle, ring fill, real-time count updates
+(function () {
+    var CIRCUMFERENCE = 40.84; // 2π × r6.5
+    var ACTIVE_STATUSES = ['pending', 'queued', 'assigned', 'in_progress', 'reviewing'];
+
+    // Seed task-state map from server-rendered data
+    var taskStates = {};
+    {% for task in all_tasks %}
+    taskStates[{{ task.pk }}] = '{{ task.status }}';
+    {% endfor %}
+
+    // Running counters initialised from server
+    var _activeCount = {{ active_count|default:0 }};
+    var _inProgressCount = {{ in_progress_count|default:0 }};
+
+    function setRingFill(fraction) {
+        var fill = document.querySelector('.queue-ring-fill');
+        if (fill) {
+            fill.style.strokeDashoffset = CIRCUMFERENCE * (1 - Math.max(0, Math.min(1, fraction)));
+        }
+    }
+
+    function refreshWidget() {
+        var labelEl = document.getElementById('queueWidgetLabel');
+        if (labelEl) {
+            labelEl.textContent = _activeCount + ' task' + (_activeCount !== 1 ? 's' : '') + ' in queue';
+        }
+        var metaEl = document.getElementById('queuePanelMeta');
+        if (metaEl) metaEl.textContent = _activeCount + ' active';
+
+        var svg = document.getElementById('queueRingSvg');
+        if (svg) {
+            svg.dataset.active = _activeCount;
+            svg.dataset.inProgress = _inProgressCount;
+        }
+        setRingFill(_activeCount > 0 ? _inProgressCount / _activeCount : 0);
+
+        var widget = document.getElementById('queueWidget');
+        if (widget) widget.style.display = _activeCount > 0 ? '' : 'none';
+    }
+
+    // Receive status updates from the dashboard WebSocket handler
+    window._queueWidgetUpdate = function (data) {
+        var id = data.task_id;
+        if (!id || !data.status) return;
+
+        var prevStatus = taskStates[id];
+        var newStatus = data.status;
+        if (prevStatus === newStatus) return;
+
+        taskStates[id] = newStatus;
+
+        // Adjust counters based on the transition
+        var wasActive = prevStatus && ACTIVE_STATUSES.indexOf(prevStatus) !== -1;
+        var isActive = ACTIVE_STATUSES.indexOf(newStatus) !== -1;
+        if (wasActive && !isActive) { _activeCount = Math.max(0, _activeCount - 1); }
+        if (!wasActive && isActive && prevStatus) { _activeCount++; }
+
+        var wasIP = prevStatus === 'in_progress';
+        var isIP = newStatus === 'in_progress';
+        if (wasIP && !isIP) { _inProgressCount = Math.max(0, _inProgressCount - 1); }
+        if (!wasIP && isIP) { _inProgressCount++; }
+
+        // Update status badge in the panel if the task is shown there
+        var panelTask = document.getElementById('widget-task-' + id);
+        if (panelTask) {
+            var badge = panelTask.querySelector('.status-badge');
+            if (badge) {
+                badge.className = 'status-badge badge-' + newStatus + ' flex-shrink-0';
+                badge.textContent = data.status_display || newStatus;
+            }
+            if (!isActive) {
+                panelTask.style.opacity = '0';
+                setTimeout(function () {
+                    if (panelTask.parentNode) panelTask.parentNode.removeChild(panelTask);
+                }, 300);
+            }
+        }
+
+        refreshWidget();
+    };
+
+    // Toggle the panel open / closed
+    window.toggleQueueWidget = function (e) {
+        if (e) e.stopPropagation();
+        var panel = document.getElementById('queuePanel');
+        var btn = document.getElementById('queueWidgetBtn');
+        var chevron = document.getElementById('queueChevron');
+        if (!panel) return;
+        var open = panel.classList.toggle('show');
+        if (btn) btn.classList.toggle('open', open);
+        if (chevron) chevron.style.transform = open ? 'rotate(180deg)' : '';
+    };
+
+    // Close when clicking outside the widget
+    document.addEventListener('click', function (e) {
+        var widget = document.getElementById('queueWidget');
+        if (widget && !widget.contains(e.target)) {
+            var panel = document.getElementById('queuePanel');
+            var btn = document.getElementById('queueWidgetBtn');
+            var chevron = document.getElementById('queueChevron');
+            if (panel) panel.classList.remove('show');
+            if (btn) btn.classList.remove('open');
+            if (chevron) chevron.style.transform = '';
+        }
+    });
+
+    // Initialise ring on load
+    setRingFill(_activeCount > 0 ? _inProgressCount / _activeCount : 0);
 }());
 </script>
 {% endblock %}

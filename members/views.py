@@ -1,6 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Q
+from django.db.models import Case, Count, IntegerField, Q, Value, When
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -43,6 +43,28 @@ def dashboard(request):
         status__in=["pending", "queued"],
     ).count()
     failed_count = Task.objects.filter(created_by=request.user, status="failed").count()
+    in_progress_count = Task.objects.filter(
+        created_by=request.user, status="in_progress"
+    ).count()
+
+    _widget_status_order = Case(
+        When(status="in_progress", then=Value(0)),
+        When(status="assigned", then=Value(1)),
+        When(status="reviewing", then=Value(2)),
+        When(status="queued", then=Value(3)),
+        When(status="pending", then=Value(4)),
+        default=Value(5),
+        output_field=IntegerField(),
+    )
+    queue_widget_tasks = list(
+        Task.objects.filter(
+            created_by=request.user,
+            status__in=["pending", "queued", "assigned", "in_progress", "reviewing"],
+        )
+        .select_related("project")
+        .annotate(_widget_order=_widget_status_order)
+        .order_by("_widget_order", "created_at")[:3]
+    )
     total_tasks = Task.objects.filter(created_by=request.user).count()
 
     # Success rate
@@ -85,6 +107,8 @@ def dashboard(request):
         "active_pct": active_pct,
         "pending_pct": pending_pct,
         "onboarding_checklist": onboarding_checklist,
+        "queue_widget_tasks": queue_widget_tasks,
+        "in_progress_count": in_progress_count,
     }
     return render(request, "members/dashboard.html", ctx)
 
