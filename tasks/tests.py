@@ -918,6 +918,121 @@ class ApiTaskStatusTests(TestCase):
 
 
 # ---------------------------------------------------------------------------
+# GET /api/tasks/updates/  — polling fallback for WebSocket reconnect
+# ---------------------------------------------------------------------------
+
+class ApiTaskUpdatesTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.url = "/api/tasks/updates/"
+        self.user = make_user()
+        self.project = make_project(self.user)
+
+    def test_requires_authentication(self):
+        resp = self.client.get(self.url)
+        self.assertNotEqual(resp.status_code, 200)
+
+    def test_returns_200_for_authenticated_user(self):
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, 200)
+
+    def test_returns_json_with_tasks_key(self):
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        self.assertIn("tasks", resp.json())
+
+    def test_returns_correct_task_fields(self):
+        make_task(self.project, self.user, status="in_progress")
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        data = resp.json()
+        self.assertEqual(len(data["tasks"]), 1)
+        t = data["tasks"][0]
+        self.assertIn("task_id", t)
+        self.assertIn("title", t)
+        self.assertIn("status", t)
+        self.assertIn("status_display", t)
+        self.assertIn("branch_name", t)
+        self.assertIn("pr_url", t)
+        self.assertIn("error_message", t)
+        self.assertIn("queue_position", t)
+        self.assertIn("project_name", t)
+
+    def test_without_since_excludes_completed_and_failed(self):
+        make_task(self.project, self.user, title="Active", status="in_progress")
+        make_task(self.project, self.user, title="Done", status="completed")
+        make_task(self.project, self.user, title="Broken", status="failed")
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        titles = [t["title"] for t in resp.json()["tasks"]]
+        self.assertIn("Active", titles)
+        self.assertNotIn("Done", titles)
+        self.assertNotIn("Broken", titles)
+
+    def test_without_since_includes_pending_and_queued(self):
+        make_task(self.project, self.user, title="Pending", status="pending")
+        make_task(self.project, self.user, title="Queued", status="queued")
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        titles = [t["title"] for t in resp.json()["tasks"]]
+        self.assertIn("Pending", titles)
+        self.assertIn("Queued", titles)
+
+    def test_with_since_filters_by_updated_at(self):
+        from django.utils import timezone
+
+        past = timezone.now() - timezone.timedelta(minutes=10)
+        task_old = make_task(self.project, self.user, title="Old")
+        Task.objects.filter(pk=task_old.pk).update(updated_at=past)
+
+        task_new = make_task(self.project, self.user, title="New")
+
+        since = (timezone.now() - timezone.timedelta(minutes=5)).isoformat()
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url, {"since": since})
+        titles = [t["title"] for t in resp.json()["tasks"]]
+        self.assertIn("New", titles)
+        self.assertNotIn("Old", titles)
+
+    def test_with_since_in_future_returns_empty(self):
+        from django.utils import timezone
+
+        make_task(self.project, self.user)
+        future = (timezone.now() + timezone.timedelta(hours=1)).isoformat()
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url, {"since": future})
+        self.assertEqual(resp.json()["tasks"], [])
+
+    def test_only_returns_own_tasks(self):
+        make_task(self.project, self.user, title="Mine", status="in_progress")
+        other = make_user(email="other2@example.com", username="other2")
+        other_project = make_project(other, github_repo="other/repo2")
+        make_task(other_project, other, title="Theirs", status="in_progress")
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        titles = [t["title"] for t in resp.json()["tasks"]]
+        self.assertEqual(titles, ["Mine"])
+
+    def test_post_not_allowed(self):
+        self.client.force_login(self.user)
+        resp = self.client.post(self.url)
+        self.assertEqual(resp.status_code, 405)
+
+    def test_invalid_since_returns_active_tasks(self):
+        make_task(self.project, self.user, title="Active", status="in_progress")
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url, {"since": "not-a-date"})
+        self.assertEqual(resp.status_code, 200)
+        titles = [t["title"] for t in resp.json()["tasks"]]
+        self.assertIn("Active", titles)
+
+
+# ---------------------------------------------------------------------------
 # WebSocket consumers
 # ---------------------------------------------------------------------------
 
