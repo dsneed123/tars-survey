@@ -305,6 +305,13 @@ body { overflow: hidden; height: 100vh; }
     margin: 2px 0 6px;
 }
 
+.wait-time-label {
+    font-size: 11px;
+    color: var(--tars-accent, #6366f1);
+    opacity: 0.85;
+    font-weight: 500;
+}
+
 /* ── Typing indicator ──────────────────────────────────── */
 .typing-indicator {
     display: flex;
@@ -805,7 +812,10 @@ body { overflow: hidden; height: 100vh; }
                         {% if task.status == 'pending' or task.status == 'queued' %}
                         <p>Got it. This is in the queue.</p>
                         {% if task.queue_position %}
-                        <div class="queue-pos-label">Position #{{ task.queue_position }} in queue</div>
+                        <div class="queue-pos-label">
+                            Position #{{ task.queue_position }} in queue
+                            {% if task.wait_time %}&nbsp;<span class="wait-time-label" id="wait-time-{{ task.pk }}">{{ task.wait_time }}</span>{% endif %}
+                        </div>
                         {% endif %}
                         <div class="status-card">
                             <span class="status-badge badge-{{ task.status }}">{{ task.get_status_display }}</span>
@@ -1386,7 +1396,11 @@ document.addEventListener('keydown', function(e) {
         if (s === 'pending' || s === 'queued') {
             html = '<p>Got it. This is in the queue.</p>';
             if (data.queue_position) {
-                html += '<div class="queue-pos-label">Position #' + parseInt(data.queue_position) + ' in queue</div>';
+                html += '<div class="queue-pos-label">Position #' + parseInt(data.queue_position) + ' in queue';
+                if (data.estimated_wait) {
+                    html += '&nbsp;<span class="wait-time-label">' + escHtml(data.estimated_wait) + '</span>';
+                }
+                html += '</div>';
             }
             html += '<div class="status-card"><span class="status-badge badge-' + s + '">' + escHtml(data.status_display) + '</span></div>';
         } else if (s === 'assigned') {

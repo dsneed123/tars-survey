@@ -45,6 +45,48 @@ def _get_queue_positions(user_id):
     return {pk: i + 1 for i, pk in enumerate(pks)}
 
 
+def _get_avg_completion_seconds(user_id, sample=20):
+    """Return average task duration (started_at→completed_at) in seconds, or None if < 3 samples."""
+    tasks = list(
+        Task.objects.filter(
+            created_by_id=user_id,
+            status="completed",
+            started_at__isnull=False,
+            completed_at__isnull=False,
+        )
+        .order_by("-completed_at")
+        .values("started_at", "completed_at")[:sample]
+    )
+    durations = [
+        (t["completed_at"] - t["started_at"]).total_seconds()
+        for t in tasks
+        if t["completed_at"] > t["started_at"]
+    ]
+    if len(durations) < 3:
+        return None
+    return sum(durations) / len(durations)
+
+
+def _format_wait(seconds):
+    if seconds < 90:
+        return "~1m wait"
+    minutes = round(seconds / 60)
+    if minutes < 60:
+        return f"~{minutes}m wait"
+    return f"~{round(minutes / 60)}h wait"
+
+
+def _get_wait_times(user_id, queue_positions=None):
+    """Return {task_pk: str} estimated wait labels for pending/queued tasks."""
+    if queue_positions is None:
+        queue_positions = _get_queue_positions(user_id)
+    avg_seconds = _get_avg_completion_seconds(user_id)
+    return {
+        pk: ("Estimating..." if avg_seconds is None else _format_wait(avg_seconds * pos))
+        for pk, pos in queue_positions.items()
+    }
+
+
 def _broadcast_task_update(task):
     """Push a task status update to the WS groups listening for this task."""
     channel_layer = get_channel_layer()
@@ -52,6 +94,7 @@ def _broadcast_task_update(task):
         return
 
     queue_positions = _get_queue_positions(task.created_by_id)
+    wait_times = _get_wait_times(task.created_by_id, queue_positions)
     project_name = task.project.name if task.project_id else ""
 
     data = {
@@ -63,6 +106,7 @@ def _broadcast_task_update(task):
         "pr_url": task.pr_url,
         "error_message": task.error_message,
         "queue_position": queue_positions.get(task.pk),
+        "estimated_wait": wait_times.get(task.pk),
     }
     send = async_to_sync(channel_layer.group_send)
     send(f"task_{task.pk}", {"type": "task_update", "data": data})
@@ -89,6 +133,7 @@ def _broadcast_task_update(task):
                 "status": st,
                 "status_display": status_display_map.get(st, st),
                 "queue_position": queue_positions[pk],
+                "estimated_wait": wait_times.get(pk),
             }
             send(f"dashboard_{task.created_by_id}", {"type": "task_update", "data": pos_data})
             send(
@@ -107,6 +152,7 @@ def _broadcast_queue_task_added(task):
         return
 
     queue_positions = _get_queue_positions(task.created_by_id)
+    wait_times = _get_wait_times(task.created_by_id, queue_positions)
     project_name = task.project.name if task.project_id else ""
 
     data = {
@@ -116,6 +162,7 @@ def _broadcast_queue_task_added(task):
         "status": task.status,
         "status_display": task.get_status_display(),
         "queue_position": queue_positions.get(task.pk),
+        "estimated_wait": wait_times.get(task.pk),
         "project_name": project_name,
     }
     async_to_sync(channel_layer.group_send)(
@@ -155,6 +202,11 @@ def task_queue(request):
     in_progress_count = sum(1 for t in tasks if t.status == "in_progress")
     pending_count = len(tasks) - in_progress_count
     total_count = in_progress_count + pending_count + completed_today
+
+    queue_positions = _get_queue_positions(request.user.pk)
+    wait_times = _get_wait_times(request.user.pk, queue_positions)
+    for task in tasks:
+        task.wait_time = wait_times.get(task.pk)
 
     return render(request, "tasks/task_queue.html", {
         "tasks": tasks,
@@ -498,6 +550,7 @@ def api_task_updates(request):
         qs = qs.exclude(status__in=("completed", "failed"))
 
     queue_positions = _get_queue_positions(request.user.pk)
+    wait_times = _get_wait_times(request.user.pk, queue_positions)
     tasks = [
         {
             "task_id": task.pk,
@@ -508,6 +561,7 @@ def api_task_updates(request):
             "pr_url": task.pr_url,
             "error_message": task.error_message,
             "queue_position": queue_positions.get(task.pk),
+            "estimated_wait": wait_times.get(task.pk),
             "project_name": task.project.name if task.project_id else "",
         }
         for task in qs
