@@ -4,7 +4,7 @@
 
 {% block extra_head %}
 <style>
-/* ── Reset for chat layout ─────────────────────────────── */
+/* ── Reset for full-screen chat layout ─────────────────── */
 #main-nav { display: none !important; }
 footer { display: none !important; }
 body { overflow: hidden; height: 100vh; }
@@ -16,199 +16,6 @@ body { overflow: hidden; height: 100vh; }
     background: #0a0a0a;
 }
 
-/* ── Sidebar (like Claude/ChatGPT left panel) ──────────── */
-.chat-sidebar {
-    width: 260px;
-    background: #0f0f0f;
-    border-right: 1px solid #1a1a1a;
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-}
-
-.sidebar-header {
-    padding: 16px 16px 12px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid #1a1a1a;
-}
-
-.sidebar-brand {
-    font-family: 'Space Grotesk', system-ui, sans-serif;
-    font-weight: 700;
-    font-size: 1.25rem;
-    color: #f5f5f5;
-    text-decoration: none;
-}
-
-.sidebar-brand span { color: #6366f1; }
-
-.new-chat-btn {
-    background: none;
-    border: 1px solid #2a2a2a;
-    color: #a0a0a0;
-    border-radius: 8px;
-    padding: 6px 10px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.15s;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.new-chat-btn:hover { background: #1a1a1a; color: #e0e0e0; border-color: #333; }
-
-/* ── Sidebar nav links ─────────────────────────────────── */
-.sidebar-nav {
-    padding: 8px 8px 0;
-    border-bottom: 1px solid #1a1a1a;
-}
-
-.sidebar-nav-link {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 7px 8px;
-    border-radius: 7px;
-    font-size: 13px;
-    color: #666;
-    text-decoration: none;
-    transition: background 0.12s, color 0.12s;
-    margin-bottom: 2px;
-}
-
-.sidebar-nav-link:hover { background: #1a1a1a; color: #aaa; }
-.sidebar-nav-link.active { background: #1a1a1a; color: #d0d0d0; }
-.sidebar-nav-link i { font-size: 13px; width: 16px; text-align: center; flex-shrink: 0; }
-
-/* ── Queue section in sidebar ──────────────────────────── */
-.sidebar-section-label {
-    padding: 16px 16px 8px;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #555;
-}
-
-.sidebar-scroll {
-    flex: 1;
-    overflow-y: auto;
-    padding-bottom: 8px;
-}
-
-.sidebar-scroll::-webkit-scrollbar { width: 4px; }
-.sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
-.sidebar-scroll::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 4px; }
-
-.queue-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 16px;
-    cursor: pointer;
-    transition: background 0.12s;
-    text-decoration: none;
-    border-left: 3px solid transparent;
-}
-
-.queue-item:hover { background: #1a1a1a; }
-.queue-item.active { background: #1a1a1a; border-left-color: #6366f1; }
-
-.queue-status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-}
-.dot-pending { background: #555; }
-.dot-queued { background: #555; }
-.dot-assigned { background: #f59e0b; }
-.dot-in_progress { background: #3b82f6; animation: pulse-dot 1.5s infinite; }
-.dot-reviewing { background: #f59e0b; }
-.dot-completed { background: #22c55e; }
-.dot-failed { background: #ef4444; }
-
-@keyframes pulse-dot {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-}
-
-.queue-item-text {
-    flex: 1;
-    min-width: 0;
-}
-.queue-item-title {
-    font-size: 13px;
-    color: #d0d0d0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.queue-item-meta {
-    font-size: 11px;
-    color: #555;
-    margin-top: 2px;
-}
-
-.queue-position {
-    font-size: 11px;
-    color: #444;
-    font-weight: 600;
-    flex-shrink: 0;
-    min-width: 18px;
-    text-align: right;
-}
-
-/* ── Sidebar footer (user) ─────────────────────────────── */
-.sidebar-footer {
-    padding: 12px 16px;
-    border-top: 1px solid #1a1a1a;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.user-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: #1a1a1a;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    font-weight: 600;
-    color: #888;
-    flex-shrink: 0;
-}
-
-.user-info {
-    flex: 1;
-    min-width: 0;
-}
-.user-name {
-    font-size: 13px;
-    color: #d0d0d0;
-    font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.user-plan {
-    font-size: 11px;
-    color: #555;
-}
-
-.sidebar-footer a {
-    color: #555;
-    font-size: 16px;
-    text-decoration: none;
-    transition: color 0.15s;
-}
-.sidebar-footer a:hover { color: #aaa; }
-
 /* ── Main chat area ────────────────────────────────────── */
 .chat-main {
     flex: 1;
@@ -218,9 +25,9 @@ body { overflow: hidden; height: 100vh; }
     background: #0a0a0a;
 }
 
-/* ── Top bar (minimal) ─────────────────────────────────── */
+/* ── Top bar ───────────────────────────────────────────── */
 .chat-topbar {
-    padding: 12px 20px;
+    padding: 10px 16px;
     border-bottom: 1px solid #141414;
     display: flex;
     align-items: center;
@@ -313,10 +120,7 @@ body { overflow: hidden; height: 100vh; }
     color: #888;
 }
 
-.msg-body {
-    flex: 1;
-    min-width: 0;
-}
+.msg-body { flex: 1; min-width: 0; }
 
 .msg-sender {
     font-size: 13px;
@@ -347,13 +151,6 @@ body { overflow: hidden; height: 100vh; }
     border-radius: 10px;
     padding: 12px 16px;
     margin-top: 8px;
-}
-
-.status-card-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
 }
 
 .status-badge {
@@ -553,129 +350,33 @@ body { overflow: hidden; height: 100vh; }
 
 /* ── Mobile responsive ─────────────────────────────────── */
 @media (max-width: 768px) {
-    .chat-sidebar { display: none; }
+    body { padding-bottom: 0 !important; }
+    .chat-app { padding-bottom: 60px; }
     .chat-container { padding: 0 12px; }
     .chat-input-area { padding: 8px 12px 16px; }
 }
-
-.mobile-toggle {
-    display: none;
-    background: none;
-    border: none;
-    color: #888;
-    font-size: 20px;
-    padding: 4px;
-    cursor: pointer;
-}
-@media (max-width: 768px) {
-    .mobile-toggle { display: block; }
-}
-
-/* ── Queue summary bar ─────────────────────────────────── */
-.queue-summary {
-    padding: 8px 16px;
-    border-bottom: 1px solid #1a1a1a;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-size: 11px;
-    color: #555;
-}
-
-.queue-bar {
-    flex: 1;
-    height: 3px;
-    background: #1a1a1a;
-    border-radius: 2px;
-    overflow: hidden;
-    display: flex;
-}
-.queue-bar-completed { background: #22c55e; transition: width 0.3s; }
-.queue-bar-active { background: #3b82f6; transition: width 0.3s; }
-.queue-bar-pending { background: #333; transition: width 0.3s; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="chat-app">
 
-<!-- ── Left sidebar ──────────────────────────────────────── -->
-<aside class="chat-sidebar">
-    <div class="sidebar-header">
-        <a href="{% url 'members:dashboard' %}" class="sidebar-brand">T<span>.</span>ARS</a>
-        <button class="new-chat-btn" onclick="focusInput()">
-            <i class="bi bi-plus-lg"></i> New Task
-        </button>
-    </div>
-
-    <!-- Sidebar nav -->
-    <nav class="sidebar-nav">
-        <a href="{% url 'members:dashboard' %}" class="sidebar-nav-link active">
-            <i class="bi bi-grid-1x2"></i> Dashboard
-        </a>
-        <a href="{% url 'projects:list' %}" class="sidebar-nav-link">
-            <i class="bi bi-folder2-open"></i> Projects
-        </a>
-        <a href="{% url 'tasks:queue' %}" class="sidebar-nav-link">
-            <i class="bi bi-list-ul"></i> Queue
-        </a>
-    </nav>
-
-    <!-- Queue summary bar -->
-    <div class="queue-summary">
-        <span>{{ active_count }} active</span>
-        <div class="queue-bar">
-            {% if total_tasks > 0 %}
-            <div class="queue-bar-completed" style="width:{{ completed_pct }}%"></div>
-            <div class="queue-bar-active" style="width:{{ active_pct }}%"></div>
-            <div class="queue-bar-pending" style="width:{{ pending_pct }}%"></div>
-            {% endif %}
-        </div>
-        <span>{{ completed_count }}/{{ total_tasks }}</span>
-    </div>
-
-    <div class="sidebar-section-label">Queue</div>
-
-    <div class="sidebar-scroll">
-        {% for task in all_tasks %}
-        <a href="{% url 'tasks:detail' task.pk %}" class="queue-item {% if task.is_active %}active{% endif %}" data-task-id="{{ task.pk }}">
-            <div class="queue-status-dot dot-{{ task.status }}"></div>
-            <div class="queue-item-text">
-                <div class="queue-item-title">{{ task.title }}</div>
-                <div class="queue-item-meta">{{ task.project.name }} &middot; {{ task.get_status_display }}</div>
-            </div>
-            {% if task.status == 'pending' or task.status == 'queued' %}
-            <div class="queue-position">#{{ forloop.counter }}</div>
-            {% endif %}
-        </a>
-        {% empty %}
-        <div style="padding: 20px 16px; text-align: center; color: #333; font-size: 13px;">
-            No tasks yet
-        </div>
-        {% endfor %}
-    </div>
-
-    <div class="sidebar-footer">
-        <div class="user-avatar">{{ user.email|first|upper }}</div>
-        <div class="user-info">
-            <div class="user-name">{{ user.company_name|default:user.email }}</div>
-            <div class="user-plan">{{ profile.get_plan_tier_display|default:"Free" }} plan</div>
-        </div>
-        <a href="{% url 'projects:list' %}" title="Projects &amp; Settings"><i class="bi bi-gear"></i></a>
-        <a href="{% url 'accounts:logout' %}" title="Sign out"><i class="bi bi-box-arrow-right"></i></a>
-    </div>
-</aside>
-
 <!-- ── Main chat area ────────────────────────────────────── -->
 <main class="chat-main">
 
     <!-- Top bar -->
     <div class="chat-topbar">
-        <div style="display:flex;align-items:center;gap:12px;">
-            <button class="mobile-toggle" onclick="document.querySelector('.chat-sidebar').classList.toggle('show')">
-                <i class="bi bi-list"></i>
-            </button>
-            <span class="topbar-title">TARS</span>
+        <span class="topbar-title">TARS</span>
+        <div class="app-icon-nav d-none d-md-flex">
+            <a href="{% url 'members:dashboard' %}" class="app-icon-nav-item active" title="Chat">
+                <i class="bi bi-house-fill"></i>
+            </a>
+            <a href="{% url 'tasks:queue' %}" class="app-icon-nav-item" title="Queue">
+                <i class="bi bi-list-ul"></i>
+            </a>
+            <a href="{% url 'billing:billing' %}" class="app-icon-nav-item" title="Settings">
+                <i class="bi bi-gear-fill"></i>
+            </a>
         </div>
     </div>
 
