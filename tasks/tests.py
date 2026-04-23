@@ -236,15 +236,14 @@ class TaskAddViewTests(TestCase):
         resp = self.client.post(self.url, {
             "project": self.project.pk,
             "title": "Add dark mode",
-            "description": "Implement a dark mode toggle in the settings page.",
-            "priority": 60,
         })
         self.assertEqual(Task.objects.count(), 1)
         task = Task.objects.get()
         self.assertEqual(task.title, "Add dark mode")
+        self.assertEqual(task.description, "Add dark mode")
         self.assertEqual(task.created_by, self.user)
         self.assertEqual(task.project, self.project)
-        self.assertEqual(task.priority, 60)
+        self.assertEqual(task.priority, 50)
 
     @patch("tasks.views._forward_to_controller")
     def test_post_redirects_to_task_detail(self, _mock):
@@ -285,16 +284,16 @@ class TaskAddViewTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(Task.objects.count(), 0)
 
-    def test_post_missing_description_stays_on_form(self):
+    @patch("tasks.views._forward_to_controller")
+    def test_post_without_description_creates_task(self, _mock):
         self.client.force_login(self.user)
         resp = self.client.post(self.url, {
             "project": self.project.pk,
             "title": "Some title",
-            "description": "",
-            "priority": 50,
         })
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(Task.objects.count(), 0)
+        self.assertEqual(Task.objects.count(), 1)
+        task = Task.objects.get()
+        self.assertEqual(task.description, "Some title")
 
     def test_post_project_not_belonging_to_user_rejected(self):
         other = make_user(email="other@example.com", username="other")

@@ -107,7 +107,6 @@ def dashboard(request):
 @require_POST
 def quick_add_task(request):
     title = request.POST.get("title", "").strip()
-    description = request.POST.get("description", "").strip()
     project_id = request.POST.get("project_id")
 
     if not title or not project_id:
@@ -118,10 +117,11 @@ def quick_add_task(request):
         project = Project.objects.get(pk=project_id, owner=request.user)
         task = Task.objects.create(
             title=title,
-            description=description or title,
+            description=title,
             project=project,
             created_by=request.user,
             status="pending",
+            priority=50,
         )
         _forward_to_controller(task)
         messages.success(request, f'Task "{title}" submitted — TARS is on it.')

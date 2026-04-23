@@ -28,79 +28,6 @@
         font-size: 0.8rem;
     }
 
-    /* Markdown preview split */
-    .editor-container {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-        min-height: 220px;
-    }
-
-    @media (max-width: 767px) {
-        .editor-container {
-            grid-template-columns: 1fr;
-        }
-        #markdown-preview-panel { display: none !important; }
-        #preview-toggle-btn { display: none !important; }
-    }
-
-    #markdown-preview-panel {
-        background: var(--tars-bg);
-        border: 1px solid var(--tars-border);
-        border-radius: 8px;
-        padding: 0.75rem 1rem;
-        font-size: 0.875rem;
-        line-height: 1.7;
-        overflow-y: auto;
-        color: var(--tars-text);
-        min-height: 220px;
-    }
-
-    #markdown-preview-panel h1, #markdown-preview-panel h2, #markdown-preview-panel h3 {
-        color: var(--tars-text);
-        margin-top: 1rem;
-    }
-
-    #markdown-preview-panel code {
-        background: rgba(99,102,241,0.12);
-        color: var(--tars-accent);
-        padding: 0.1em 0.35em;
-        border-radius: 4px;
-        font-size: 0.85em;
-    }
-
-    #markdown-preview-panel pre code {
-        background: transparent;
-        color: inherit;
-        padding: 0;
-    }
-
-    #markdown-preview-panel pre {
-        background: rgba(0,0,0,0.3);
-        border: 1px solid var(--tars-border);
-        border-radius: 8px;
-        padding: 0.75rem 1rem;
-        overflow-x: auto;
-    }
-
-    #markdown-preview-panel blockquote {
-        border-left: 3px solid var(--tars-accent);
-        margin-left: 0;
-        padding-left: 1rem;
-        color: var(--tars-muted);
-    }
-
-    #markdown-preview-panel a { color: var(--tars-accent); }
-
-    .preview-label {
-        font-size: 0.7rem;
-        font-weight: 700;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: var(--tars-muted);
-        margin-bottom: 0.4rem;
-    }
-
     /* Dropzone */
     .dropzone-area {
         border: 2px dashed var(--tars-border);
@@ -140,17 +67,21 @@
         margin: 0.25rem;
     }
 
-    .file-chip button {
+    .expand-attachments-btn {
         background: none;
         border: none;
-        color: var(--tars-muted);
+        color: var(--tars-accent);
+        font-size: 0.8rem;
         cursor: pointer;
         padding: 0;
-        font-size: 0.8rem;
-        line-height: 1;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
     }
 
-    .file-chip button:hover { color: #f87171; }
+    .expand-attachments-btn:hover {
+        opacity: 0.8;
+    }
 </style>
 {% endblock %}
 
@@ -189,68 +120,33 @@
                         {% endif %}
                     </div>
 
-                    <!-- Title -->
+                    <!-- Message / Task -->
                     <div class="mb-4">
-                        <label class="form-label" for="{{ form.title.id_for_label }}">Task Title</label>
+                        <label class="form-label" for="{{ form.title.id_for_label }}">What do you want TARS to do?</label>
                         {{ form.title }}
                         {% if form.title.errors %}
                         <div class="invalid-feedback d-block">{{ form.title.errors.0 }}</div>
                         {% endif %}
                     </div>
 
-                    <!-- Description with markdown preview -->
-                    <div class="mb-4">
-                        <div class="d-flex align-items-center justify-content-between mb-1">
-                            <label class="form-label mb-0" for="{{ form.description.id_for_label }}">Description</label>
-                            <span class="preview-label" id="preview-toggle-btn" style="cursor:pointer; color:var(--tars-accent)">
-                                <i class="bi bi-eye me-1"></i>Preview
-                            </span>
-                        </div>
-                        <div class="editor-container">
-                            <div>
-                                <div class="preview-label d-none d-md-block">Write</div>
-                                {{ form.description }}
-                            </div>
-                            <div>
-                                <div class="preview-label d-none d-md-block">Preview</div>
-                                <div id="markdown-preview-panel">
-                                    <span style="color:var(--tars-muted); font-style:italic; font-size:0.85rem">Markdown preview will appear here…</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-text mt-1">
-                            <i class="bi bi-markdown me-1"></i>Markdown is supported. Include context, file paths, and acceptance criteria.
-                        </div>
-                        {% if form.description.errors %}
-                        <div class="invalid-feedback d-block">{{ form.description.errors.0 }}</div>
-                        {% endif %}
-                    </div>
-
-                    <!-- Priority -->
-                    <div class="mb-4">
-                        <label class="form-label" for="{{ form.priority.id_for_label }}">Priority</label>
-                        {{ form.priority }}
-                        <div class="form-text mt-1">
-                            <i class="bi bi-info-circle me-1"></i>{{ form.priority.help_text }}
-                        </div>
-                        {% if form.priority.errors %}
-                        <div class="invalid-feedback d-block">{{ form.priority.errors.0 }}</div>
-                        {% endif %}
-                    </div>
-
-                    <!-- File attachments -->
+                    <!-- Optional attachments (collapsed by default) -->
                     <div class="mb-5">
-                        <label class="form-label">Attachments <span class="fw-normal" style="color:var(--tars-muted)">(optional)</span></label>
-                        <div class="dropzone-area" id="dropzone">
-                            <input type="file" name="attachments" id="id_attachments" multiple
-                                   accept=".png,.jpg,.jpeg,.gif,.webp,.svg,.pdf,.txt,.md,.csv,.json,.yaml,.yml,.zip">
-                            <i class="bi bi-cloud-upload" style="font-size:2rem; color:var(--tars-muted)"></i>
-                            <p class="mb-1 mt-2 small fw-semibold" style="color:var(--tars-text)">Drag & drop files here</p>
-                            <p class="mb-0" style="font-size:0.78rem; color:var(--tars-muted)">
-                                or click to browse — images, PDFs, docs, screenshots
-                            </p>
+                        <button type="button" class="expand-attachments-btn mb-3" onclick="toggleAttachments()">
+                            <i class="bi bi-paperclip" id="attachIcon"></i>
+                            <span id="attachLabel">Add attachments</span>
+                        </button>
+                        <div id="attachmentsSection" style="display:none">
+                            <div class="dropzone-area" id="dropzone">
+                                <input type="file" name="attachments" id="id_attachments" multiple
+                                       accept=".png,.jpg,.jpeg,.gif,.webp,.svg,.pdf,.txt,.md,.csv,.json,.yaml,.yml,.zip">
+                                <i class="bi bi-cloud-upload" style="font-size:2rem; color:var(--tars-muted)"></i>
+                                <p class="mb-1 mt-2 small fw-semibold" style="color:var(--tars-text)">Drag & drop files here</p>
+                                <p class="mb-0" style="font-size:0.78rem; color:var(--tars-muted)">
+                                    or click to browse — images, PDFs, docs, screenshots
+                                </p>
+                            </div>
+                            <div id="file-chips" class="mt-2"></div>
                         </div>
-                        <div id="file-chips" class="mt-2"></div>
                     </div>
 
                     <!-- Non-field errors -->
@@ -285,28 +181,8 @@
 {% endblock %}
 
 {% block extra_scripts %}
-<!-- Marked.js for markdown preview -->
-<script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
 <script>
 (function () {
-    const textarea = document.getElementById('id_description');
-    const preview  = document.getElementById('markdown-preview-panel');
-
-    if (!textarea || !preview) return;
-
-    function renderPreview() {
-        const raw = textarea.value.trim();
-        if (!raw) {
-            preview.innerHTML = '<span style="color:var(--tars-muted); font-style:italic; font-size:0.85rem">Markdown preview will appear here…</span>';
-        } else {
-            preview.innerHTML = marked.parse(raw);
-        }
-    }
-
-    textarea.addEventListener('input', renderPreview);
-    renderPreview();
-
-    // Dropzone visual feedback
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('id_attachments');
     const chipsContainer = document.getElementById('file-chips');
@@ -327,7 +203,7 @@
     function updateChips() {
         chipsContainer.innerHTML = '';
         if (!fileInput.files.length) return;
-        Array.from(fileInput.files).forEach((file, i) => {
+        Array.from(fileInput.files).forEach(file => {
             const chip = document.createElement('span');
             chip.className = 'file-chip';
             const ext = file.name.split('.').pop().toLowerCase();
@@ -343,5 +219,15 @@
         return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
     }
 })();
+
+function toggleAttachments() {
+    const section = document.getElementById('attachmentsSection');
+    const label = document.getElementById('attachLabel');
+    const icon = document.getElementById('attachIcon');
+    const open = section.style.display === 'none';
+    section.style.display = open ? 'block' : 'none';
+    label.textContent = open ? 'Hide attachments' : 'Add attachments';
+    icon.className = open ? 'bi bi-x-circle' : 'bi bi-paperclip';
+}
 </script>
 {% endblock %}
