@@ -46,6 +46,29 @@ def _broadcast_task_update(task):
 
 
 @login_required
+def task_queue(request):
+    from django.db.models import Case, IntegerField, Value, When
+
+    status_order = Case(
+        When(status="in_progress", then=Value(0)),
+        When(status="assigned", then=Value(1)),
+        When(status="reviewing", then=Value(2)),
+        When(status="queued", then=Value(3)),
+        When(status="pending", then=Value(4)),
+        default=Value(5),
+        output_field=IntegerField(),
+    )
+    tasks = (
+        Task.objects.filter(created_by=request.user)
+        .exclude(status__in=("completed", "failed"))
+        .select_related("project")
+        .annotate(status_order=status_order)
+        .order_by("status_order", "created_at")
+    )
+    return render(request, "tasks/task_queue.html", {"tasks": list(tasks)})
+
+
+@login_required
 def task_list(request):
     tasks = Task.objects.filter(created_by=request.user).select_related("project")
 
