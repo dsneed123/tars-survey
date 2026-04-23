@@ -504,6 +504,26 @@ body { overflow: hidden; height: 100vh; }
 @media (max-width: 768px) {
     .queue-widget-label { display: none; }
 }
+
+/* ── Project detection card ────────────────────────────── */
+.project-detect-card {
+    background: #0f0f0f;
+    border: 1px solid #252525;
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-top: 8px;
+}
+.detect-repo-slug { font-size: 11px; color: #555; margin-bottom: 6px; }
+.detect-repo-name { font-size: 15px; font-weight: 600; color: #e0e0e0; margin-bottom: 8px; }
+.detect-meta { display: flex; gap: 14px; font-size: 12px; color: #666; flex-wrap: wrap; }
+.detect-desc { font-size: 13px; color: #666; margin-top: 10px; line-height: 1.55; }
+.detect-add-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #6366f1; color: #fff; border: none;
+    padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 500;
+    cursor: pointer; margin-top: 12px; transition: background 0.15s;
+}
+.detect-add-btn:hover { background: #4f46e5; color: #fff; }
 </style>
 {% endblock %}
 
@@ -583,11 +603,11 @@ body { overflow: hidden; height: 100vh; }
                 <div class="empty-greeting">Hi! I'm TARS. Tell me what to code.</div>
                 {% if not projects %}
                 <p style="color:#555; font-size:13px; margin-top:16px; max-width:300px;">
-                    Connect a repository first to get started.
+                    Connect a GitHub repo to get started.
                 </p>
-                <a href="{% url 'projects:add' %}" style="display:inline-flex;align-items:center;gap:8px;background:#6366f1;color:#fff;padding:10px 20px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:500;margin-top:8px;">
+                <button type="button" onclick="triggerGithubInput()" style="display:inline-flex;align-items:center;gap:8px;background:#6366f1;color:#fff;padding:10px 20px;border-radius:10px;border:none;font-size:14px;font-weight:500;margin-top:8px;cursor:pointer;">
                     <i class="bi bi-plus-lg"></i> Add a Project
-                </a>
+                </button>
                 {% endif %}
             </div>
 
@@ -699,7 +719,7 @@ body { overflow: hidden; height: 100vh; }
     <div class="chat-input-area">
         <div class="chat-input-wrapper">
             {% if projects %}
-            <form method="post" action="{% url 'members:quick_task' %}" id="taskForm" data-no-loading-state>
+            <form method="post" action="{% url 'members:quick_task' %}" id="taskForm" data-no-loading-state onsubmit="return interceptTaskSubmit(event)">
                 {% csrf_token %}
                 <div class="input-container">
                     <div class="input-top-row">
@@ -730,11 +750,21 @@ body { overflow: hidden; height: 100vh; }
             </form>
             <div class="input-hint">Enter to send &middot; Shift+Enter for new line</div>
             {% else %}
-            <div style="text-align:center; padding: 16px 0 8px;">
-                <a href="{% url 'projects:add' %}" style="display:inline-flex;align-items:center;gap:6px;background:#141414;border:1px solid #252525;color:#6366f1;padding:10px 20px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:500;transition:all 0.15s;" onmouseover="this.style.borderColor='#6366f1'" onmouseout="this.style.borderColor='#252525'">
-                    <i class="bi bi-plus-lg"></i> Add a project to get started
-                </a>
-            </div>
+            <form id="githubUrlForm" onsubmit="submitGithubInput(); return false;" style="margin:0;">
+                {% csrf_token %}
+                <div class="input-container">
+                    <div class="input-row">
+                        <textarea class="chat-textarea" id="githubInput"
+                                  placeholder="Paste a GitHub repo URL (e.g. github.com/user/repo)"
+                                  rows="1" onkeydown="handleGithubKey(event)"
+                                  oninput="autoGrow(this); updateGithubSend()"></textarea>
+                        <button type="submit" class="send-btn" id="githubSendBtn" disabled>
+                            <i class="bi bi-arrow-up"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+            <div class="input-hint">Paste a GitHub URL to connect a repo</div>
             {% endif %}
         </div>
     </div>
@@ -777,6 +807,15 @@ function handleKey(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         var input = document.getElementById('chatInput');
+        if (!input || !input.value.trim()) return;
+        if (isGithubUrl(input.value.trim())) {
+            var url = input.value.trim();
+            input.value = '';
+            autoGrow(input);
+            updateSend();
+            detectRepo(url);
+            return;
+        }
         var hasProject = document.getElementById('projectIdInput').value;
         if (input.value.trim() && hasProject) {
             document.getElementById('taskForm').submit();
@@ -1055,5 +1094,185 @@ document.addEventListener('keydown', function(e) {
     // Initialise ring on load
     setRingFill(_activeCount > 0 ? _inProgressCount / _activeCount : 0);
 }());
+</script>
+
+<script>
+// ── Project-add chat flow ──────────────────────────────────
+var _userInitial = "{{ request.user.email|first|upper|escapejs }}";
+var _detectUrl = "{% url 'projects:detect' %}";
+var _addChatUrl = "{% url 'projects:add_chat' %}";
+var GH_URL_RE = /^(?:https?:\/\/)?(?:www\.)?github\.com\/([A-Za-z0-9_.\-]+\/[A-Za-z0-9_.\-]+?)(?:\.git)?(?:[\/\?#].*)?$/i;
+
+function isGithubUrl(text) {
+    return GH_URL_RE.test(text.trim());
+}
+
+function _esc(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function getCsrfToken() {
+    var el = document.querySelector('[name=csrfmiddlewaretoken]');
+    return el ? el.value : '';
+}
+
+function appendUserBubble(text) {
+    var container = document.querySelector('.chat-container');
+    if (!container) return;
+    var emptyState = container.querySelector('.empty-state');
+    if (emptyState) emptyState.style.display = 'none';
+    var div = document.createElement('div');
+    div.className = 'chat-message';
+    div.innerHTML =
+        '<div class="msg-avatar user-avatar-sm">' + _esc(_userInitial) + '</div>' +
+        '<div class="msg-body">' +
+            '<div class="msg-sender">You</div>' +
+            '<div class="msg-content"><p>' + _esc(text) + '</p></div>' +
+            '<div class="msg-time">just now</div>' +
+        '</div>';
+    container.appendChild(div);
+    var feed = document.getElementById('chatFeed');
+    if (feed) feed.scrollTop = feed.scrollHeight;
+}
+
+function appendTarsDetectBubble() {
+    var container = document.querySelector('.chat-container');
+    if (!container) return null;
+    var existing = document.getElementById('tars-detect-bubble');
+    if (existing) existing.parentNode.removeChild(existing);
+    var div = document.createElement('div');
+    div.className = 'chat-message tars-msg';
+    div.id = 'tars-detect-bubble';
+    div.innerHTML =
+        '<div class="msg-avatar tars-avatar">T</div>' +
+        '<div class="msg-body">' +
+            '<div class="msg-sender">TARS</div>' +
+            '<div class="msg-content" id="tars-detect-content">' +
+                '<div class="typing-indicator">' +
+                    '<div class="typing-dot"></div>' +
+                    '<div class="typing-dot"></div>' +
+                    '<div class="typing-dot"></div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="msg-time">just now</div>' +
+        '</div>';
+    container.appendChild(div);
+    var feed = document.getElementById('chatFeed');
+    if (feed) feed.scrollTop = feed.scrollHeight;
+    return document.getElementById('tars-detect-content');
+}
+
+function renderDetectCard(contentEl, data) {
+    var langLabels = {
+        python:'Python', javascript:'JavaScript', typescript:'TypeScript',
+        go:'Go', rust:'Rust', java:'Java', swift:'Swift', other:'Other'
+    };
+    var langLabel = langLabels[data.language] || data.language;
+    var html = '<p>Found it! Here\'s what I detected:</p>' +
+        '<div class="project-detect-card">' +
+            '<div class="detect-repo-slug"><i class="bi bi-github"></i> github.com/' + _esc(data.slug) + '</div>' +
+            '<div class="detect-repo-name">' + _esc(data.name) + '</div>' +
+            '<div class="detect-meta">' +
+                '<span><i class="bi bi-code-slash"></i> ' + _esc(langLabel) + '</span>' +
+                '<span><i class="bi bi-git"></i> ' + _esc(data.default_branch) + '</span>' +
+            '</div>';
+    if (data.description) {
+        html += '<div class="detect-desc">' + _esc(data.description) + '</div>';
+    }
+    html +=
+        '<form method="post" action="' + _addChatUrl + '">' +
+            '<input type="hidden" name="csrfmiddlewaretoken" value="' + _esc(getCsrfToken()) + '">' +
+            '<input type="hidden" name="github_repo" value="' + _esc(data.slug) + '">' +
+            '<input type="hidden" name="name" value="' + _esc(data.name) + '">' +
+            '<input type="hidden" name="language" value="' + _esc(data.language) + '">' +
+            '<input type="hidden" name="default_branch" value="' + _esc(data.default_branch) + '">' +
+            '<input type="hidden" name="description" value="' + _esc(data.description) + '">' +
+            '<button type="submit" class="detect-add-btn">' +
+                '<i class="bi bi-plus-lg"></i> Add Project' +
+            '</button>' +
+        '</form>' +
+        '</div>';
+    contentEl.innerHTML = html;
+    var feed = document.getElementById('chatFeed');
+    if (feed) feed.scrollTop = feed.scrollHeight;
+}
+
+function renderDetectError(contentEl, errorMsg) {
+    contentEl.innerHTML =
+        '<p>Couldn\'t find that repo.</p>' +
+        '<div class="error-text">' + _esc(errorMsg) + '</div>';
+}
+
+function detectRepo(repoUrl) {
+    appendUserBubble(repoUrl);
+    var contentEl = appendTarsDetectBubble();
+    if (!contentEl) return;
+    var formData = new FormData();
+    formData.append('repo_url', repoUrl);
+    formData.append('csrfmiddlewaretoken', getCsrfToken());
+    fetch(_detectUrl, { method: 'POST', body: formData, credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.ok) {
+                renderDetectCard(contentEl, data);
+            } else {
+                renderDetectError(contentEl, data.error || 'Could not detect repo info.');
+            }
+        })
+        .catch(function() {
+            renderDetectError(contentEl, 'Network error. Please check your connection and try again.');
+        });
+}
+
+function interceptTaskSubmit(e) {
+    var input = document.getElementById('chatInput');
+    if (input && isGithubUrl(input.value.trim())) {
+        e.preventDefault();
+        var url = input.value.trim();
+        input.value = '';
+        autoGrow(input);
+        updateSend();
+        detectRepo(url);
+        return false;
+    }
+    return true;
+}
+
+function handleGithubKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        submitGithubInput();
+    }
+}
+
+function updateGithubSend() {
+    var input = document.getElementById('githubInput');
+    var btn = document.getElementById('githubSendBtn');
+    if (!input || !btn) return;
+    var hasText = input.value.trim().length > 0;
+    btn.classList.toggle('active', hasText);
+    btn.disabled = !hasText;
+}
+
+function submitGithubInput() {
+    var input = document.getElementById('githubInput');
+    if (!input || !input.value.trim()) return;
+    var url = input.value.trim();
+    input.value = '';
+    autoGrow(input);
+    updateGithubSend();
+    detectRepo(url);
+}
+
+function triggerGithubInput() {
+    var chatInput = document.getElementById('chatInput');
+    if (chatInput) {
+        chatInput.placeholder = 'Paste a GitHub repo URL (e.g. github.com/user/repo)';
+        chatInput.focus();
+        return;
+    }
+    var ghInput = document.getElementById('githubInput');
+    if (ghInput) ghInput.focus();
+}
 </script>
 {% endblock %}
