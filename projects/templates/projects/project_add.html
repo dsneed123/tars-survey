@@ -97,21 +97,6 @@
                         </div>
                     </div>
 
-                    <!-- Team -->
-                    <div class="mb-4">
-                        <label class="form-label" for="{{ form.team.id_for_label }}">
-                            Team <span class="fw-normal" style="color:var(--tars-muted)">(optional)</span>
-                        </label>
-                        {{ form.team }}
-                        <div class="form-text" style="color:var(--tars-muted)">
-                            Link this project to a team so members can collaborate on it.
-                            <a href="{% url 'teams:list' %}" style="color:var(--tars-accent)">Manage teams</a>.
-                        </div>
-                        {% if form.team.errors %}
-                        <div class="invalid-feedback d-block">{{ form.team.errors.0 }}</div>
-                        {% endif %}
-                    </div>
-
                     <!-- Description -->
                     <div class="mb-5">
                         <label class="form-label" for="{{ form.description.id_for_label }}">
