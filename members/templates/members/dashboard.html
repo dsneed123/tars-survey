@@ -763,7 +763,7 @@ body { overflow: hidden; height: 100vh; }
             {% for task in all_tasks reversed %}
 
             <!-- User message: the task request -->
-            <div class="chat-message">
+            <div class="chat-message" data-timestamp="{{ task.created_at|date:'c' }}">
                 <div class="msg-avatar user-avatar-sm">{{ task.created_by.email|first|upper }}</div>
                 <div class="msg-body">
                     <div class="msg-sender">You</div>
@@ -773,12 +773,12 @@ body { overflow: hidden; height: 100vh; }
                         <p style="color:#888;font-size:13px;">{{ task.description|truncatewords:40 }}</p>
                         {% endif %}
                     </div>
-                    <div class="msg-time">{{ task.created_at|timesince }} ago &middot; {{ task.project.name }}</div>
+                    <div class="msg-time"><span class="msg-timestamp" data-timestamp="{{ task.created_at|date:'c' }}">{{ task.created_at|timesince }} ago</span> &middot; {{ task.project.name }}</div>
                 </div>
             </div>
 
             <!-- TARS response -->
-            <div class="chat-message tars-msg" data-task-id="{{ task.pk }}">
+            <div class="chat-message tars-msg" data-task-id="{{ task.pk }}" data-timestamp="{{ task.created_at|date:'c' }}">
                 <div class="msg-avatar tars-avatar">T</div>
                 <div class="msg-body">
                     <div class="msg-sender">TARS</div>
@@ -847,12 +847,7 @@ body { overflow: hidden; height: 100vh; }
                         </button>
                         {% endif %}
                     </div>
-                    <div class="msg-time">
-                        {% if task.completed_at %}{{ task.completed_at|timesince }} ago
-                        {% elif task.started_at %}Started {{ task.started_at|timesince }} ago
-                        {% else %}{{ task.created_at|timesince }} ago
-                        {% endif %}
-                    </div>
+                    <div class="msg-time">{% if task.completed_at %}<span class="msg-timestamp" data-timestamp="{{ task.completed_at|date:'c' }}">{{ task.completed_at|timesince }} ago</span>{% elif task.started_at %}<span class="msg-timestamp" data-timestamp="{{ task.started_at|date:'c' }}">{{ task.started_at|timesince }} ago</span>{% else %}<span class="msg-timestamp" data-timestamp="{{ task.created_at|date:'c' }}">{{ task.created_at|timesince }} ago</span>{% endif %}</div>
                 </div>
             </div>
 
@@ -1037,6 +1032,8 @@ function loadOlderMessages() {
             if (data.oldest_id) _oldestTaskId = data.oldest_id;
             if (indicator) indicator.style.display = 'none';
             _isLoadingOlder = false;
+            insertDateDividers();
+            formatAllTimestamps();
         })
         .catch(function () {
             if (indicator) indicator.style.display = 'none';
@@ -1319,7 +1316,16 @@ document.addEventListener('keydown', function(e) {
             var tarsMsg = contentEl.closest('.tars-msg');
             if (tarsMsg) {
                 var timeEl = tarsMsg.querySelector('.msg-time');
-                if (timeEl) timeEl.textContent = 'just now';
+                if (timeEl) {
+                    var span = timeEl.querySelector('.msg-timestamp');
+                    var nowIso = new Date().toISOString();
+                    if (span) {
+                        span.setAttribute('data-timestamp', nowIso);
+                        span.textContent = 'just now';
+                    } else {
+                        timeEl.innerHTML = '<span class="msg-timestamp" data-timestamp="' + nowIso + '">just now</span>';
+                    }
+                }
             }
             // Scroll if near bottom; otherwise notify user
             if (isNearBottom()) {
@@ -1566,16 +1572,19 @@ function appendUserBubble(text) {
     if (!container) return;
     var emptyState = container.querySelector('.empty-state');
     if (emptyState) emptyState.style.display = 'none';
+    var nowIso = new Date().toISOString();
     var div = document.createElement('div');
     div.className = 'chat-message';
+    div.setAttribute('data-timestamp', nowIso);
     div.innerHTML =
         '<div class="msg-avatar user-avatar-sm">' + _esc(_userInitial) + '</div>' +
         '<div class="msg-body">' +
             '<div class="msg-sender">You</div>' +
             '<div class="msg-content"><p>' + _esc(text) + '</p></div>' +
-            '<div class="msg-time">just now</div>' +
+            '<div class="msg-time"><span class="msg-timestamp" data-timestamp="' + nowIso + '">just now</span></div>' +
         '</div>';
     container.appendChild(div);
+    insertDateDividers();
     scrollToBottom(true);
     hideNewMsgPill();
 }
@@ -1585,9 +1594,11 @@ function appendTarsDetectBubble() {
     if (!container) return null;
     var existing = document.getElementById('tars-detect-bubble');
     if (existing) existing.parentNode.removeChild(existing);
+    var nowIso = new Date().toISOString();
     var div = document.createElement('div');
     div.className = 'chat-message tars-msg';
     div.id = 'tars-detect-bubble';
+    div.setAttribute('data-timestamp', nowIso);
     div.innerHTML =
         '<div class="msg-avatar tars-avatar">T</div>' +
         '<div class="msg-body">' +
@@ -1599,9 +1610,10 @@ function appendTarsDetectBubble() {
                     '<div class="typing-dot"></div>' +
                 '</div>' +
             '</div>' +
-            '<div class="msg-time">just now</div>' +
+            '<div class="msg-time"><span class="msg-timestamp" data-timestamp="' + nowIso + '">just now</span></div>' +
         '</div>';
     container.appendChild(div);
+    insertDateDividers();
     scrollToBottom(true);
     hideNewMsgPill();
     return document.getElementById('tars-detect-content');
@@ -1719,5 +1731,68 @@ function triggerGithubInput() {
     var ghInput = document.getElementById('githubInput');
     if (ghInput) ghInput.focus();
 }
+</script>
+
+<script>
+// ── Message timestamps and date dividers ───────────────────
+
+function formatTimestamp(isoStr) {
+    if (!isoStr) return '';
+    var d = new Date(isoStr);
+    if (isNaN(d)) return '';
+    var diffMs = Date.now() - d;
+    var diffSecs = Math.floor(diffMs / 1000);
+    var diffMins = Math.floor(diffSecs / 60);
+    var diffHours = Math.floor(diffMins / 60);
+    if (diffSecs < 60) return 'just now';
+    if (diffMins < 60) return diffMins + 'm ago';
+    if (diffHours < 24) return diffHours + 'h ago';
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+function getDateLabel(d) {
+    var now = new Date();
+    var todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var yesterdayMidnight = new Date(+todayMidnight - 864e5);
+    var msgMidnight = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    if (+msgMidnight === +todayMidnight) return 'Today';
+    if (+msgMidnight === +yesterdayMidnight) return 'Yesterday';
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
+function localDateKey(d) {
+    return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate();
+}
+
+function insertDateDividers() {
+    var container = document.querySelector('.chat-container');
+    if (!container) return;
+    container.querySelectorAll('.date-divider').forEach(function(el) { el.remove(); });
+    var lastKey = null;
+    container.querySelectorAll('.chat-message[data-timestamp]').forEach(function(msg) {
+        var ts = msg.getAttribute('data-timestamp');
+        if (!ts) return;
+        var d = new Date(ts);
+        if (isNaN(d)) return;
+        var key = localDateKey(d);
+        if (key !== lastKey) {
+            var divider = document.createElement('div');
+            divider.className = 'date-divider';
+            divider.textContent = getDateLabel(d);
+            msg.parentNode.insertBefore(divider, msg);
+            lastKey = key;
+        }
+    });
+}
+
+function formatAllTimestamps() {
+    document.querySelectorAll('.msg-timestamp[data-timestamp]').forEach(function(el) {
+        el.textContent = formatTimestamp(el.getAttribute('data-timestamp'));
+    });
+}
+
+insertDateDividers();
+formatAllTimestamps();
+setInterval(formatAllTimestamps, 60000);
 </script>
 {% endblock %}

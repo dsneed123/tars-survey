@@ -1,7 +1,7 @@
 {% load tz %}
 {% for task in tasks reversed %}
 
-<div class="chat-message">
+<div class="chat-message" data-timestamp="{{ task.created_at|date:'c' }}">
     <div class="msg-avatar user-avatar-sm">{{ task.created_by.email|first|upper }}</div>
     <div class="msg-body">
         <div class="msg-sender">You</div>
@@ -11,11 +11,11 @@
             <p style="color:#888;font-size:13px;">{{ task.description|truncatewords:40 }}</p>
             {% endif %}
         </div>
-        <div class="msg-time">{{ task.created_at|timesince }} ago &middot; {{ task.project.name }}</div>
+        <div class="msg-time"><span class="msg-timestamp" data-timestamp="{{ task.created_at|date:'c' }}">{{ task.created_at|timesince }} ago</span> &middot; {{ task.project.name }}</div>
     </div>
 </div>
 
-<div class="chat-message tars-msg" data-task-id="{{ task.pk }}">
+<div class="chat-message tars-msg" data-task-id="{{ task.pk }}" data-timestamp="{{ task.created_at|date:'c' }}">
     <div class="msg-avatar tars-avatar">T</div>
     <div class="msg-body">
         <div class="msg-sender">TARS</div>
@@ -84,12 +84,7 @@
             </button>
             {% endif %}
         </div>
-        <div class="msg-time">
-            {% if task.completed_at %}{{ task.completed_at|timesince }} ago
-            {% elif task.started_at %}Started {{ task.started_at|timesince }} ago
-            {% else %}{{ task.created_at|timesince }} ago
-            {% endif %}
-        </div>
+        <div class="msg-time">{% if task.completed_at %}<span class="msg-timestamp" data-timestamp="{{ task.completed_at|date:'c' }}">{{ task.completed_at|timesince }} ago</span>{% elif task.started_at %}<span class="msg-timestamp" data-timestamp="{{ task.started_at|date:'c' }}">{{ task.started_at|timesince }} ago</span>{% else %}<span class="msg-timestamp" data-timestamp="{{ task.created_at|date:'c' }}">{{ task.created_at|timesince }} ago</span>{% endif %}</div>
     </div>
 </div>
 
