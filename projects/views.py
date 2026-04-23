@@ -177,7 +177,7 @@ def project_detail(request, pk):
             ][:5]
 
     recent_tasks = list(
-        Task.objects.filter(project=project).order_by("-created_at")[:5]
+        Task.objects.filter(project=project).select_related("created_by").order_by("-created_at")[:5]
     )
     open_pr_count = len(open_prs)
     task_count = Task.objects.filter(project=project).count()
