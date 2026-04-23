@@ -157,10 +157,16 @@ def load_more_messages(request):
 @login_required
 @require_POST
 def quick_add_task(request):
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
     title = request.POST.get("title", "").strip()
     project_id = request.POST.get("project_id")
 
     if not title or not project_id:
+        if is_ajax:
+            return JsonResponse(
+                {"ok": False, "error": "Please provide a task title and select a project."},
+                status=400,
+            )
         messages.error(request, "Please provide a task title and select a project.")
         return redirect("members:dashboard")
 
@@ -175,8 +181,12 @@ def quick_add_task(request):
             priority=50,
         )
         _forward_to_controller(task)
+        if is_ajax:
+            return JsonResponse({"ok": True, "task_id": task.pk, "title": task.title, "status": task.status})
         messages.success(request, f'Task "{title}" submitted — TARS is on it.')
     except Project.DoesNotExist:
+        if is_ajax:
+            return JsonResponse({"ok": False, "error": "Project not found."}, status=400)
         messages.error(request, "Project not found.")
 
     return redirect("members:dashboard")
