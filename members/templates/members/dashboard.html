@@ -589,6 +589,24 @@ body { overflow: hidden; height: 100vh; }
     .queue-widget-label { display: none; }
 }
 
+/* ── Polling fallback notice ───────────────────────────── */
+.polling-notice {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 5;
+    background: rgba(14, 14, 14, 0.92);
+    border-bottom: 1px solid #1e1e1e;
+    padding: 5px 16px;
+    font-size: 12px;
+    color: #555;
+    text-align: center;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+.polling-notice i { margin-right: 5px; }
+
 /* ── Project detection card ────────────────────────────── */
 .project-detect-card {
     background: #0f0f0f;
@@ -679,6 +697,9 @@ body { overflow: hidden; height: 100vh; }
 
     <!-- Chat feed -->
     <div class="chat-feed-wrapper">
+    <div id="pollingNoticeBanner" class="polling-notice" hidden>
+        <i class="bi bi-wifi-off"></i>Live updates unavailable — refreshing periodically
+    </div>
     <div class="chat-feed" id="chatFeed">
         <div class="chat-container">
             <div id="loadOlderIndicator" class="load-older-indicator">Loading older messages…</div>
@@ -1091,6 +1112,8 @@ document.addEventListener('keydown', function(e) {
     var heartbeatTimer = null;
     var lastMsgTime = null;
     var reconnectingBanner = null;
+    var pollingTimer = null;
+    var pollingMode = false;
 
     function connect() {
         ws = new WebSocket(WS_URL);
@@ -1098,6 +1121,7 @@ document.addEventListener('keydown', function(e) {
         ws.onopen = function () {
             reconnectAttempt = 0;
             removeReconnectingBanner();
+            stopPolling();
             startHeartbeat();
             if (lastMsgTime) { fetchMissedUpdates(lastMsgTime); }
         };
@@ -1112,9 +1136,14 @@ document.addEventListener('keydown', function(e) {
 
         ws.onclose = function () {
             stopHeartbeat();
-            showReconnectingBanner();
             var delay = RECONNECT_DELAYS[Math.min(reconnectAttempt, RECONNECT_DELAYS.length - 1)];
             reconnectAttempt++;
+            if (reconnectAttempt >= RECONNECT_DELAYS.length) {
+                if (!pollingMode) { startPolling(); }
+                removeReconnectingBanner();
+            } else {
+                showReconnectingBanner();
+            }
             setTimeout(connect, delay);
         };
 
@@ -1154,6 +1183,39 @@ document.addEventListener('keydown', function(e) {
 
     function removeReconnectingBanner() {
         if (reconnectingBanner) { reconnectingBanner.remove(); reconnectingBanner = null; }
+    }
+
+    function showPollingNotice() {
+        var el = document.getElementById('pollingNoticeBanner');
+        if (el) el.hidden = false;
+    }
+
+    function hidePollingNotice() {
+        var el = document.getElementById('pollingNoticeBanner');
+        if (el) el.hidden = true;
+    }
+
+    function startPolling() {
+        if (pollingTimer) return;
+        pollingMode = true;
+        showPollingNotice();
+        pollingTimer = setInterval(function () {
+            var since = lastMsgTime;
+            lastMsgTime = new Date().toISOString();
+            fetch('/api/tasks/updates/?since=' + (since ? encodeURIComponent(since) : ''))
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (body) {
+                    if (!body) return;
+                    (body.tasks || []).forEach(function (data) { handleMessage(data); });
+                })
+                .catch(function () {});
+        }, 30000);
+    }
+
+    function stopPolling() {
+        if (pollingTimer) { clearInterval(pollingTimer); pollingTimer = null; }
+        pollingMode = false;
+        hidePollingNotice();
     }
 
     function fetchMissedUpdates(since) {
