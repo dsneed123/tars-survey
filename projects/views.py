@@ -298,6 +298,68 @@ def project_settings(request, pk):
     )
 
 
+@login_required
+@require_POST
+def project_detect(request):
+    """AJAX: detect GitHub repo metadata from a URL. Returns JSON."""
+    from .forms import _parse_github_repo
+    raw = request.POST.get("repo_url", "").strip()
+    slug = _parse_github_repo(raw)
+    if not slug:
+        return JsonResponse({"ok": False, "error": "Enter a valid GitHub URL or owner/repo slug."})
+    token = getattr(settings, "GITHUB_TOKEN", "")
+    data = _github_request(f"/repos/{slug}", token)
+    if not data or not isinstance(data, dict):
+        return JsonResponse({"ok": False, "error": f'Repository "{slug}" not found on GitHub. Make sure it\'s public.'})
+    lang = (data.get("language") or "other").lower()
+    valid = [c[0] for c in Project.LANGUAGE_CHOICES]
+    if lang not in valid:
+        lang = "other"
+    return JsonResponse({
+        "ok": True,
+        "slug": slug,
+        "name": data.get("name", slug.split("/")[-1]),
+        "language": lang,
+        "default_branch": data.get("default_branch", "main"),
+        "description": data.get("description", "") or "",
+    })
+
+
+@login_required
+@require_POST
+def project_add_chat(request):
+    """Create a project from the chat-based simplified one-field flow."""
+    github_repo = request.POST.get("github_repo", "").strip()
+    name = request.POST.get("name", "").strip()
+    language = request.POST.get("language", "other").strip()
+    default_branch = request.POST.get("default_branch", "main").strip()
+    description = request.POST.get("description", "").strip()
+    if not github_repo or not name:
+        messages.error(request, "Missing project data.")
+        return redirect("members:dashboard")
+    if Project.objects.filter(owner=request.user, github_repo=github_repo).exists():
+        messages.info(request, f'"{name}" is already connected.')
+        return redirect("members:dashboard")
+    valid_languages = [c[0] for c in Project.LANGUAGE_CHOICES]
+    if language not in valid_languages:
+        language = "other"
+    project = Project.objects.create(
+        owner=request.user,
+        github_repo=github_repo,
+        name=name,
+        language=language,
+        default_branch=default_branch or "main",
+        description=description,
+    )
+    fire_event(
+        "project_added",
+        user=request.user,
+        metadata={"project_id": project.pk, "repo": project.github_repo},
+    )
+    messages.success(request, f'Connected "{project.name}". Now tell TARS what to build!')
+    return redirect("members:dashboard")
+
+
 def _forward_task_to_controller(task):
     """Send a newly created task to the TARS controller API."""
     import requests as http_requests
