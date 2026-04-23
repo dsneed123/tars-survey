@@ -15,4 +15,6 @@ urlpatterns = [
     path("api/tasks/updates/", views.api_task_updates, name="api_updates"),
     # Callback from TARS controller/worker (X-API-Key auth via TARS_API_KEY)
     path("api/tasks/<int:pk>/status", views.api_task_status, name="api_status"),
+    # Retry a failed task (session auth + CSRF)
+    path("api/tasks/<int:pk>/retry", views.api_task_retry, name="api_retry"),
 ]

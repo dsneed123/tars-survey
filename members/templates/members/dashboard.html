@@ -230,6 +230,25 @@ body { overflow: hidden; height: 100vh; }
 
 .error-text { color: #ef4444; font-size: 13px; margin-top: 4px; }
 
+.retry-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(99,102,241,0.1);
+    border: 1px solid rgba(99,102,241,0.25);
+    color: #6366f1;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.retry-btn:hover:not(:disabled) { background: rgba(99,102,241,0.18); color: #818cf8; }
+.retry-btn:disabled { opacity: 0.5; cursor: default; }
+.retry-done { font-size: 12px; color: #555; margin-top: 8px; display: inline-block; }
+
 /* ── Queue position label ──────────────────────────────── */
 .queue-pos-label {
     font-size: 12px;
@@ -762,8 +781,11 @@ body { overflow: hidden; height: 100vh; }
                         <div class="error-text">{{ task.error_message }}</div>
                         {% endif %}
                         <div class="status-card" style="border-color:rgba(239,68,68,0.2);">
-                            <span class="status-badge badge-failed">Failed</span>
+                            <span class="status-badge badge-failed" id="failed-badge-{{ task.pk }}">Failed</span>
                         </div>
+                        <button class="retry-btn" onclick="retryTask({{ task.pk }}, this)" data-task-id="{{ task.pk }}">
+                            <i class="bi bi-arrow-clockwise"></i> Retry
+                        </button>
                         {% endif %}
                     </div>
                     <div class="msg-time">
@@ -1242,7 +1264,9 @@ document.addEventListener('keydown', function(e) {
                 html += '<div class="error-text">' + escHtml(data.error_message) + '</div>';
             }
             html += '<div class="status-card" style="border-color:rgba(239,68,68,0.2);">' +
-                '<span class="status-badge badge-failed">Failed</span></div>';
+                '<span class="status-badge badge-failed" id="failed-badge-' + data.task_id + '">Failed</span></div>' +
+                '<button class="retry-btn" onclick="retryTask(' + data.task_id + ', this)" data-task-id="' + data.task_id + '">' +
+                '<i class="bi bi-arrow-clockwise"></i> Retry</button>';
         }
         return html;
     }
@@ -1380,6 +1404,37 @@ function _esc(str) {
 function getCsrfToken() {
     var el = document.querySelector('[name=csrfmiddlewaretoken]');
     return el ? el.value : '';
+}
+
+function retryTask(pk, btn) {
+    btn.disabled = true;
+
+    var tarsBubble = btn.closest('.tars-msg');
+    var title = '';
+    if (tarsBubble && tarsBubble.previousElementSibling) {
+        var titleEl = tarsBubble.previousElementSibling.querySelector('.msg-content p');
+        if (titleEl) title = titleEl.textContent.trim();
+    }
+
+    fetch('/api/tasks/' + pk + '/retry', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCsrfToken(), 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'same-origin'
+    })
+    .then(function(r) {
+        if (!r.ok) { throw new Error('failed'); }
+        return r.json();
+    })
+    .then(function(data) {
+        appendUserBubble('Retrying: ' + (title || data.title || 'task'));
+        var retried = document.createElement('span');
+        retried.className = 'retry-done';
+        retried.textContent = 'Retried';
+        btn.parentNode.replaceChild(retried, btn);
+    })
+    .catch(function() {
+        btn.disabled = false;
+    });
 }
 
 function appendUserBubble(text) {

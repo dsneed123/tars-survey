@@ -573,3 +573,42 @@ def api_task_status(request, pk):
             "status_display": task.get_status_display(),
         }
     )
+
+
+# ---------------------------------------------------------------------------
+# POST /api/tasks/<pk>/retry
+#
+# Retry a failed task by creating a new task with the same title/description/
+# project.  Protected by Django's standard session auth + CSRF.
+# ---------------------------------------------------------------------------
+
+
+@login_required
+@require_POST
+def api_task_retry(request, pk):
+    task = get_object_or_404(Task, pk=pk, created_by=request.user)
+
+    if task.status != "failed":
+        return JsonResponse({"error": "Only failed tasks can be retried"}, status=400)
+
+    new_task = Task.objects.create(
+        project=task.project,
+        created_by=request.user,
+        title=task.title,
+        description=task.description or task.title,
+        priority=task.priority,
+    )
+
+    _forward_to_controller(new_task)
+    _broadcast_queue_task_added(new_task)
+
+    logger.info("Task %s retried as task %s by user %s", task.pk, new_task.pk, request.user.id)
+    return JsonResponse(
+        {
+            "id": new_task.pk,
+            "title": new_task.title,
+            "status": new_task.status,
+            "status_display": new_task.get_status_display(),
+        },
+        status=201,
+    )
