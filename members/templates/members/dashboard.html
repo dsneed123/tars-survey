@@ -1,1559 +1,974 @@
 {% extends "base.html" %}
-
-{% block title %}Dashboard — TARS{% endblock %}
-
-{% block meta_description %}<meta name="description" content="Your TARS member dashboard — manage your projects, services, and tasks.">{% endblock %}
+{% block title %}TARS{% endblock %}
+{% block meta_description %}<meta name="description" content="TARS — your autonomous coding assistant.">{% endblock %}
 
 {% block extra_head %}
 <style>
-/* ── Dashboard Layout ──────────────────────────────────── */
-.dash-wrap {
+/* ── Reset for chat layout ─────────────────────────────── */
+#main-nav { display: none !important; }
+footer { display: none !important; }
+body { overflow: hidden; height: 100vh; }
+
+/* ── Full-screen chat layout ───────────────────────────── */
+.chat-app {
     display: flex;
-    min-height: calc(100vh - 60px);
+    height: 100vh;
+    background: #0a0a0a;
 }
 
-/* Sidebar column */
-.dash-sidebar {
-    width: 240px;
-    flex-shrink: 0;
-    background: var(--tars-surface);
-    border-right: 1px solid var(--tars-border);
-}
-
-.dash-sidebar-inner {
-    position: sticky;
-    top: 60px;
-    height: calc(100vh - 60px);
-    overflow-y: auto;
+/* ── Sidebar (like Claude/ChatGPT left panel) ──────────── */
+.chat-sidebar {
+    width: 260px;
+    background: #0f0f0f;
+    border-right: 1px solid #1a1a1a;
     display: flex;
     flex-direction: column;
-    padding: 1.5rem 0 1rem;
-}
-
-/* Sidebar nav items */
-.snav-item {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.65rem 1.25rem;
-    color: var(--tars-muted);
-    text-decoration: none;
-    font-size: 0.875rem;
-    font-weight: 500;
-    border-left: 3px solid transparent;
-    transition: color 0.15s, background 0.15s, border-color 0.15s;
-    cursor: pointer;
-    user-select: none;
-}
-
-.snav-item:hover {
-    color: var(--tars-text);
-    background: rgba(99,102,241,0.06);
-}
-
-.snav-item.active {
-    color: var(--tars-accent);
-    background: rgba(99,102,241,0.1);
-    border-left-color: var(--tars-accent);
-}
-
-.snav-item i {
-    font-size: 1rem;
     flex-shrink: 0;
-    width: 20px;
-    text-align: center;
 }
 
-.snav-badge {
-    margin-left: auto;
-    font-size: 0.65rem;
-    background: rgba(99,102,241,0.15);
-    color: var(--tars-accent);
-    border-radius: 999px;
-    padding: 0.1rem 0.45rem;
-    font-weight: 700;
-    line-height: 1.4;
-}
-
-.snav-section {
-    padding: 0.75rem 1.25rem 0.25rem;
-    font-size: 0.62rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: rgba(156,163,175,0.45);
-}
-
-.sidebar-user-info {
-    margin-top: auto;
-    padding: 1rem 1.25rem 0;
-    border-top: 1px solid var(--tars-border);
-}
-
-/* Main content area */
-.dash-main {
-    flex: 1;
-    min-width: 0;
-    background: var(--tars-bg);
-}
-
-/* ── Topbar ────────────────────────────────────────────── */
-.dash-topbar {
+.sidebar-header {
+    padding: 16px 16px 12px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1rem 2rem;
-    border-bottom: 1px solid var(--tars-border);
-    position: sticky;
-    top: 60px;
-    background: var(--tars-bg);
-    z-index: 100;
+    border-bottom: 1px solid #1a1a1a;
 }
 
-.breadcrumb {
-    margin: 0;
-    padding: 0;
+.sidebar-brand {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: #f5f5f5;
+    text-decoration: none;
+}
+
+.sidebar-brand span { color: #6366f1; }
+
+.new-chat-btn {
     background: none;
-    font-size: 0.82rem;
+    border: 1px solid #2a2a2a;
+    color: #a0a0a0;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.new-chat-btn:hover { background: #1a1a1a; color: #e0e0e0; border-color: #333; }
+
+/* ── Queue section in sidebar ──────────────────────────── */
+.sidebar-section-label {
+    padding: 16px 16px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #555;
 }
 
-.breadcrumb-item a {
-    color: var(--tars-muted);
+.sidebar-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 8px;
+}
+
+.sidebar-scroll::-webkit-scrollbar { width: 4px; }
+.sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+.sidebar-scroll::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 4px; }
+
+.queue-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: background 0.12s;
+    text-decoration: none;
+    border-left: 3px solid transparent;
+}
+
+.queue-item:hover { background: #1a1a1a; }
+.queue-item.active { background: #1a1a1a; border-left-color: #6366f1; }
+
+.queue-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.dot-pending { background: #555; }
+.dot-queued { background: #555; }
+.dot-assigned { background: #f59e0b; }
+.dot-in_progress { background: #3b82f6; animation: pulse-dot 1.5s infinite; }
+.dot-reviewing { background: #f59e0b; }
+.dot-completed { background: #22c55e; }
+.dot-failed { background: #ef4444; }
+
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.queue-item-text {
+    flex: 1;
+    min-width: 0;
+}
+.queue-item-title {
+    font-size: 13px;
+    color: #d0d0d0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.queue-item-meta {
+    font-size: 11px;
+    color: #555;
+    margin-top: 2px;
+}
+
+.queue-position {
+    font-size: 11px;
+    color: #444;
+    font-weight: 600;
+    flex-shrink: 0;
+    min-width: 18px;
+    text-align: right;
+}
+
+/* ── Sidebar footer (user) ─────────────────────────────── */
+.sidebar-footer {
+    padding: 12px 16px;
+    border-top: 1px solid #1a1a1a;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #1a1a1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #888;
+    flex-shrink: 0;
+}
+
+.user-info {
+    flex: 1;
+    min-width: 0;
+}
+.user-name {
+    font-size: 13px;
+    color: #d0d0d0;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.user-plan {
+    font-size: 11px;
+    color: #555;
+}
+
+.sidebar-footer a {
+    color: #555;
+    font-size: 16px;
     text-decoration: none;
     transition: color 0.15s;
 }
+.sidebar-footer a:hover { color: #aaa; }
 
-.breadcrumb-item a:hover { color: var(--tars-text); }
-
-.breadcrumb-item.active { color: var(--tars-text); }
-
-.breadcrumb-item + .breadcrumb-item::before {
-    color: var(--tars-border);
-    content: "/";
-}
-
-/* ── Inner content ─────────────────────────────────────── */
-.dash-inner {
-    max-width: 1160px;
-    margin: 0 auto;
-    padding: 2rem 2rem 5rem;
-}
-
-/* ── Welcome ───────────────────────────────────────────── */
-.welcome-heading {
-    font-size: clamp(1.35rem, 2.5vw, 1.75rem);
-    font-weight: 800;
-    color: var(--tars-text);
-    margin: 0 0 0.25rem;
-}
-
-/* ── Stats Cards ───────────────────────────────────────── */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
-    margin: 1.5rem 0 0;
-}
-
-@media (max-width: 1100px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 480px)  { .stats-grid { grid-template-columns: 1fr; } }
-
-.stat-card {
-    background: var(--tars-surface);
-    border: 1px solid var(--tars-border);
-    border-radius: 16px;
-    padding: 1.2rem 1.4rem;
+/* ── Main chat area ────────────────────────────────────── */
+.chat-main {
+    flex: 1;
     display: flex;
-    align-items: center;
-    gap: 1rem;
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.15s, border-color 0.2s;
-    animation: fadeUpIn 0.5s ease backwards;
+    flex-direction: column;
+    min-width: 0;
+    background: #0a0a0a;
 }
 
-.stat-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--stat-glow, transparent);
-    pointer-events: none;
-    border-radius: inherit;
-}
-
-/* Delayed so real cards appear after skeleton overlay is gone */
-.stat-card:nth-child(1) { animation-delay: 0.40s; }
-.stat-card:nth-child(2) { animation-delay: 0.47s; }
-.stat-card:nth-child(3) { animation-delay: 0.54s; }
-.stat-card:nth-child(4) { animation-delay: 0.61s; }
-
-/* Stats skeleton overlay (pure CSS, no JS) */
-.stats-wrap { position: relative; }
-
-.stats-grid-skeleton {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
-    z-index: 2;
-    pointer-events: none;
-    animation: stats-skel-out 0s 0.38s forwards;
-}
-@keyframes stats-skel-out { to { display: none; } }
-@media (max-width: 1100px) { .stats-grid-skeleton { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 480px)  { .stats-grid-skeleton { grid-template-columns: 1fr; } }
-
-.skel-stat-card {
-    background: var(--tars-surface);
-    border: 1px solid var(--tars-border);
-    border-radius: 16px;
-    padding: 1.2rem 1.4rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.stat-card:hover {
-    transform: translateY(-2px);
-    border-color: var(--stat-border, rgba(99,102,241,0.3));
-}
-
-@keyframes fadeUpIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-
-.stat-icon {
-    width: 46px;
-    height: 46px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.25rem;
-    flex-shrink: 0;
-    background: var(--stat-icon-bg, rgba(99,102,241,0.12));
-    color: var(--stat-icon-color, var(--tars-accent));
-}
-
-.stat-val {
-    font-size: 1.75rem;
-    font-weight: 800;
-    color: var(--tars-text);
-    line-height: 1;
-    font-family: "Space Grotesk", system-ui;
-}
-
-.stat-lbl {
-    font-size: 0.68rem;
-    color: var(--tars-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    font-weight: 600;
-    margin-top: 0.25rem;
-}
-
-/* ── Content Grid ──────────────────────────────────────── */
-.dash-content-grid {
-    display: grid;
-    grid-template-columns: 1fr 360px;
-    gap: 2rem;
-    margin-top: 2rem;
-}
-
-@media (max-width: 1100px) { .dash-content-grid { grid-template-columns: 1fr; } }
-
-/* ── Section headings ──────────────────────────────────── */
-.section-heading {
+/* ── Top bar (minimal) ─────────────────────────────────── */
+.chat-topbar {
+    padding: 12px 20px;
+    border-bottom: 1px solid #141414;
     display: flex;
     align-items: center;
     justify-content: space-between;
-}
-
-.section-title {
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--tars-muted);
-    margin: 0;
-}
-
-/* ── Project Cards ─────────────────────────────────────── */
-.project-card {
-    background: var(--tars-surface);
-    border: 1px solid var(--tars-border);
-    border-radius: 16px;
-    padding: 1.25rem 1.5rem;
-    transition: border-color 0.2s, transform 0.15s;
-}
-
-.project-card:hover {
-    border-color: rgba(99,102,241,0.35);
-    transform: translateY(-1px);
-}
-
-.health-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    margin-top: 3px;
-}
-
-.health-green  { background: var(--tars-green); box-shadow: 0 0 7px rgba(16,185,129,0.55); }
-.health-yellow { background: #f59e0b; box-shadow: 0 0 7px rgba(245,158,11,0.45); }
-.health-red    { background: #ef4444; box-shadow: 0 0 7px rgba(239,68,68,0.55); }
-.health-gray   { background: var(--tars-muted); }
-
-.project-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    background: rgba(99,102,241,0.12);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.1rem;
-    color: var(--tars-accent);
     flex-shrink: 0;
 }
 
-.lang-tag {
-    font-size: 0.68rem;
+.topbar-title {
+    font-size: 14px;
     font-weight: 500;
-    padding: 0.15rem 0.5rem;
-    border-radius: 6px;
-    background: rgba(99,102,241,0.1);
-    color: var(--tars-accent);
-    border: 1px solid rgba(99,102,241,0.2);
+    color: #888;
 }
 
-.health-label {
-    font-size: 0.65rem;
-    padding: 0.15rem 0.5rem;
-    border-radius: 999px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-}
-
-.svc-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    padding: 0.5rem 0.85rem;
-    border-radius: 8px;
-    font-size: 0.78rem;
-    font-weight: 600;
-    text-decoration: none;
-    transition: all 0.2s;
-    border: 1px solid transparent;
-}
-
-.svc-btn.code {
-    background: rgba(99,102,241,0.1);
-    color: var(--tars-accent);
-    border-color: rgba(99,102,241,0.25);
-}
-
-.svc-btn.code:hover {
-    background: rgba(99,102,241,0.2);
-    color: var(--tars-accent);
-}
-
-.svc-btn.disabled-svc {
-    opacity: 0.4;
-    pointer-events: none;
-    background: none;
-    border-color: var(--tars-border);
-    color: var(--tars-muted);
-}
-
-/* ── Task Rows ─────────────────────────────────────────── */
-.task-row {
+.topbar-stats {
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.65rem 0;
-    border-bottom: 1px solid var(--tars-border);
-    text-decoration: none;
-    color: inherit;
-    transition: opacity 0.15s;
+    gap: 16px;
+    font-size: 12px;
+    color: #555;
 }
 
-.task-row:last-child { border-bottom: none; }
-.task-row:hover { opacity: 0.8; color: inherit; }
-
-.task-dot {
-    width: 8px;
-    height: 8px;
+.stat-item { display: flex; align-items: center; gap: 5px; }
+.stat-dot {
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
-    flex-shrink: 0;
+    display: inline-block;
 }
 
-.task-dot.pending    { background: var(--tars-muted); }
-.task-dot.queued     { background: #f59e0b; }
-.task-dot.assigned   { background: #f59e0b; }
-.task-dot.reviewing  { background: #f59e0b; }
-.task-dot.in_progress { background: var(--tars-accent); animation: tars-pulse 1.4s ease-in-out infinite; }
-.task-dot.completed  { background: var(--tars-green); }
-.task-dot.failed     { background: #ef4444; }
-
-@keyframes tars-pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50%       { opacity: 0.5; transform: scale(1.6); }
+/* ── Chat messages feed ────────────────────────────────── */
+.chat-feed {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 0;
 }
 
-/* ── Status Pills ──────────────────────────────────────── */
-.status-pill {
-    display: inline-flex;
-    align-items: center;
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    padding: 0.2rem 0.55rem;
-    border-radius: 999px;
-    flex-shrink: 0;
-    white-space: nowrap;
+.chat-feed::-webkit-scrollbar { width: 6px; }
+.chat-feed::-webkit-scrollbar-track { background: transparent; }
+.chat-feed::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 6px; }
+
+.chat-container {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 20px;
 }
 
-.status-pill.active  { background: rgba(16,185,129,0.15); color: var(--tars-green); }
-.status-pill.error   { background: rgba(239,68,68,0.15);  color: #ef4444; }
-.status-pill.working { background: rgba(99,102,241,0.15); color: var(--tars-accent); }
-.status-pill.pending { background: rgba(156,163,175,0.1); color: var(--tars-muted); }
-.status-pill.warn    { background: rgba(245,158,11,0.15); color: #f59e0b; }
-
-/* ── Activity Feed ─────────────────────────────────────── */
-.feed-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.65rem;
-    padding: 0.6rem 0;
-    border-bottom: 1px solid var(--tars-border);
-    font-size: 0.82rem;
-    animation: fadeUpIn 0.3s ease;
-}
-
-.feed-item:last-child { border-bottom: none; }
-
-.feed-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    margin-top: 0.3rem;
-}
-
-.feed-dot.completed  { background: var(--tars-green); }
-.feed-dot.failed     { background: #ef4444; }
-.feed-dot.in_progress { background: var(--tars-accent); }
-.feed-dot.default    { background: var(--tars-muted); }
-
-/* ── Empty States ──────────────────────────────────────── */
+/* ── Empty state ───────────────────────────────────────── */
 .empty-state {
-    text-align: center;
-    padding: 2.5rem 1.5rem;
-}
-
-.empty-icon {
-    width: 72px;
-    height: 72px;
-    border-radius: 20px;
-    background: rgba(99,102,241,0.07);
-    border: 2px dashed rgba(99,102,241,0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.8rem;
-    color: rgba(99,102,241,0.35);
-    margin: 0 auto 1.25rem;
-}
-
-/* ── Onboarding Banner ─────────────────────────────────── */
-.onboarding-banner {
-    background: rgba(99,102,241,0.05);
-    border: 1px solid rgba(99,102,241,0.2);
-    border-radius: 16px;
-    padding: 1.25rem 1.5rem;
-    margin-bottom: 1.75rem;
-    animation: fadeUpIn 0.4s ease backwards;
-    animation-delay: 0.3s;
-}
-
-/* ── FAB ───────────────────────────────────────────────── */
-.fab {
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    width: 56px;
-    height: 56px;
-    border-radius: 50%;
-    background: var(--tars-accent);
-    color: #fff;
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    box-shadow: 0 4px 20px rgba(99,102,241,0.5);
-    cursor: pointer;
-    transition: transform 0.2s, box-shadow 0.2s;
-    z-index: 300;
-}
-
-.fab:hover {
-    transform: scale(1.08) translateY(-2px);
-    box-shadow: 0 8px 30px rgba(99,102,241,0.6);
-    color: #fff;
-}
-
-.fab:active { transform: scale(0.95); }
-
-/* ── Toast Portal ──────────────────────────────────────── */
-.toast-portal {
-    position: fixed;
-    bottom: 1.5rem;
-    right: 1.5rem;
-    z-index: 9999;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    pointer-events: none;
-    max-width: 360px;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    padding: 40px 20px;
 }
 
-.toast-item {
-    background: var(--tars-surface);
-    border: 1px solid var(--tars-border);
-    border-radius: 12px;
-    padding: 0.85rem 1.1rem;
+.empty-logo {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+    font-size: 3rem;
+    font-weight: 800;
+    color: #222;
+    margin-bottom: 16px;
+}
+.empty-logo span { color: #6366f1; }
+
+.empty-title {
+    font-size: 20px;
+    font-weight: 500;
+    color: #888;
+    margin-bottom: 32px;
+}
+
+.suggestion-chips {
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-    pointer-events: all;
-    animation: toastIn 0.3s ease;
-    font-size: 0.875rem;
-    width: 100%;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    max-width: 500px;
 }
 
-.toast-item.leaving { animation: toastOut 0.3s ease forwards; }
-.toast-item.success { border-color: rgba(16,185,129,0.3); }
-.toast-item.error   { border-color: rgba(239,68,68,0.3); }
-
-@keyframes toastIn  { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
-@keyframes toastOut { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(16px); } }
-
-.toast-item .t-icon          { font-size: 1rem; flex-shrink: 0; }
-.toast-item.success .t-icon  { color: var(--tars-green); }
-.toast-item.error   .t-icon  { color: #ef4444; }
-.toast-item .t-msg            { flex: 1; color: var(--tars-text); line-height: 1.4; }
-.toast-close {
-    background: none; border: none; color: var(--tars-muted);
-    cursor: pointer; padding: 0; line-height: 1; flex-shrink: 0;
-    font-size: 0.9rem;
+.suggestion-chip {
+    background: #141414;
+    border: 1px solid #1f1f1f;
+    color: #999;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
 }
-.toast-close:hover { color: var(--tars-text); }
-
-/* ── Modal overrides ───────────────────────────────────── */
-.modal-content {
-    background: var(--tars-surface) !important;
-    border: 1px solid var(--tars-border) !important;
-    border-radius: 20px !important;
+.suggestion-chip:hover {
+    background: #1a1a1a;
+    border-color: #333;
+    color: #d0d0d0;
 }
 
-.modal-header {
-    border-bottom: 1px solid var(--tars-border) !important;
-    padding: 1.4rem 1.5rem;
+/* ── Chat message bubbles ──────────────────────────────── */
+.chat-message {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    animation: msg-in 0.25s ease-out;
 }
 
-.modal-body  { padding: 1.5rem; }
-
-.modal-footer {
-    border-top: 1px solid var(--tars-border) !important;
-    padding: 1rem 1.5rem;
+@keyframes msg-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-.form-control,
-.form-select {
-    background-color: var(--tars-bg) !important;
-    border-color: var(--tars-border) !important;
-    color: var(--tars-text) !important;
-    border-radius: 10px !important;
-}
-
-.form-control:focus,
-.form-select:focus {
-    border-color: var(--tars-accent) !important;
-    box-shadow: 0 0 0 3px rgba(99,102,241,0.2) !important;
-}
-
-.form-control::placeholder { color: var(--tars-muted) !important; opacity: 1; }
-
-.form-label {
-    color: var(--tars-muted);
-    font-size: 0.78rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    margin-bottom: 0.4rem;
-}
-
-/* ── Mobile sidebar ────────────────────────────────────── */
-@media (max-width: 991px) {
-    .dash-sidebar {
-        position: fixed;
-        top: 0;
-        left: -260px;
-        height: 100vh;
-        z-index: 1070;
-        transition: left 0.3s cubic-bezier(.4,0,.2,1);
-        width: 240px;
-    }
-
-    .dash-sidebar.open {
-        left: 0;
-        box-shadow: 4px 0 40px rgba(0,0,0,0.7);
-    }
-
-    .dash-sidebar-inner {
-        position: static;
-        height: 100%;
-        top: auto;
-    }
-
-    .dash-topbar { display: none !important; }
-
-    .dash-inner { padding: 1.25rem 1rem 5rem; }
-
-    .stats-grid { grid-template-columns: repeat(2, 1fr); }
-
-    .fab { bottom: 1.25rem; right: 1.25rem; }
-}
-
-.sidebar-backdrop {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.55);
-    z-index: 1060;
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
-}
-
-.sidebar-backdrop.show { display: block; }
-
-/* Mobile top bar */
-.mobile-topbar {
-    display: none;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    background: var(--tars-surface);
-    border-bottom: 1px solid var(--tars-border);
-    position: sticky;
-    top: 60px;
-    z-index: 110;
-}
-
-@media (max-width: 991px) { .mobile-topbar { display: flex; } }
-
-.hamburger-btn {
-    background: none;
-    border: 1px solid var(--tars-border);
-    color: var(--tars-muted);
-    border-radius: 8px;
-    width: 36px;
-    height: 36px;
+.msg-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.15rem;
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: border-color 0.15s, color 0.15s;
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 2px;
 }
 
-.hamburger-btn:hover {
-    border-color: var(--tars-accent);
-    color: var(--tars-text);
+.msg-avatar.tars-avatar {
+    background: #6366f1;
+    color: #fff;
+    font-family: 'Space Grotesk', monospace;
+    font-size: 10px;
+    letter-spacing: -0.5px;
 }
 
-/* Quick actions */
-.quick-action {
+.msg-avatar.user-avatar-sm {
+    background: #1f1f1f;
+    color: #888;
+}
+
+.msg-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.msg-sender {
+    font-size: 13px;
+    font-weight: 600;
+    color: #d0d0d0;
+    margin-bottom: 4px;
+}
+
+.msg-content {
+    font-size: 14px;
+    line-height: 1.65;
+    color: #c0c0c0;
+}
+
+.msg-content p { margin: 0 0 8px; }
+.msg-content p:last-child { margin-bottom: 0; }
+
+.msg-time {
+    font-size: 11px;
+    color: #444;
+    margin-top: 6px;
+}
+
+/* ── Status cards in messages ──────────────────────────── */
+.status-card {
+    background: #141414;
+    border: 1px solid #1f1f1f;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-top: 8px;
+}
+
+.status-card-header {
     display: flex;
     align-items: center;
-    gap: 0.6rem;
-    background: var(--tars-surface);
-    border: 1px solid var(--tars-border);
-    border-radius: 10px;
-    padding: 0.85rem 1.1rem;
-    color: var(--tars-text);
-    text-decoration: none;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.status-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.badge-pending { background: rgba(85,85,85,0.2); color: #777; }
+.badge-queued { background: rgba(85,85,85,0.2); color: #777; }
+.badge-assigned { background: rgba(245,158,11,0.15); color: #f59e0b; }
+.badge-in_progress { background: rgba(59,130,246,0.15); color: #3b82f6; }
+.badge-reviewing { background: rgba(245,158,11,0.15); color: #f59e0b; }
+.badge-completed { background: rgba(34,197,94,0.15); color: #22c55e; }
+.badge-failed { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+.pr-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(34,197,94,0.1);
+    border: 1px solid rgba(34,197,94,0.25);
+    color: #22c55e;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
     font-weight: 500;
-    font-size: 0.875rem;
-    transition: border-color 0.2s, background 0.2s;
+    text-decoration: none;
+    margin-top: 8px;
+    transition: all 0.15s;
+}
+.pr-link:hover { background: rgba(34,197,94,0.18); color: #4ade80; }
+
+.error-text { color: #ef4444; font-size: 13px; margin-top: 4px; }
+
+/* ── Typing indicator ──────────────────────────────────── */
+.typing-indicator {
+    display: flex;
+    gap: 4px;
+    padding: 8px 0;
+}
+.typing-dot {
+    width: 6px;
+    height: 6px;
+    background: #444;
+    border-radius: 50%;
+    animation: typing-bounce 1.2s infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.typing-dot:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes typing-bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* ── Date dividers ─────────────────────────────────────── */
+.date-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 20px 0;
+    color: #333;
+    font-size: 11px;
+    font-weight: 500;
+}
+.date-divider::before,
+.date-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #1a1a1a;
+}
+
+/* ── Chat input bar ────────────────────────────────────── */
+.chat-input-area {
+    padding: 12px 20px 20px;
+    flex-shrink: 0;
+}
+
+.chat-input-wrapper {
+    max-width: 760px;
+    margin: 0 auto;
+}
+
+.input-container {
+    background: #141414;
+    border: 1px solid #1f1f1f;
+    border-radius: 16px;
+    padding: 12px 16px;
+    transition: border-color 0.2s;
+}
+.input-container:focus-within { border-color: #333; }
+
+.input-top-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.project-pill {
+    background: #1a1a1a;
+    border: 1px solid #252525;
+    color: #888;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    position: relative;
+}
+.project-pill:hover { border-color: #333; color: #aaa; }
+.project-pill i { font-size: 10px; }
+
+.project-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    background: #141414;
+    border: 1px solid #252525;
+    border-radius: 10px;
+    padding: 4px;
+    min-width: 200px;
+    z-index: 100;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+.project-dropdown.show { display: block; }
+
+.project-option {
+    display: block;
     width: 100%;
+    background: none;
+    border: none;
+    padding: 8px 12px;
+    text-align: left;
+    color: #aaa;
+    font-size: 13px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+.project-option:hover { background: #1a1a1a; color: #ddd; }
+.project-option.selected { color: #6366f1; }
+
+.input-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
 }
 
-.quick-action:hover {
-    border-color: var(--tars-accent);
-    background: rgba(99,102,241,0.07);
-    color: var(--tars-text);
+.chat-textarea {
+    flex: 1;
+    background: none;
+    border: none;
+    color: #e0e0e0;
+    font-size: 14px;
+    font-family: inherit;
+    resize: none;
+    outline: none;
+    line-height: 1.5;
+    max-height: 120px;
+    min-height: 21px;
+}
+.chat-textarea::placeholder { color: #444; }
+
+.send-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: #333;
+    color: #555;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+}
+.send-btn.active { background: #6366f1; color: #fff; }
+.send-btn.active:hover { background: #4f46e5; }
+
+.input-hint {
+    text-align: center;
+    font-size: 11px;
+    color: #333;
+    margin-top: 8px;
 }
 
-.quick-action i { color: var(--tars-accent); font-size: 1.05rem; }
+/* ── Mobile responsive ─────────────────────────────────── */
+@media (max-width: 768px) {
+    .chat-sidebar { display: none; }
+    .chat-container { padding: 0 12px; }
+    .chat-input-area { padding: 8px 12px 16px; }
+}
+
+.mobile-toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 20px;
+    padding: 4px;
+    cursor: pointer;
+}
+@media (max-width: 768px) {
+    .mobile-toggle { display: block; }
+}
+
+/* ── Queue summary bar ─────────────────────────────────── */
+.queue-summary {
+    padding: 8px 16px;
+    border-bottom: 1px solid #1a1a1a;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 11px;
+    color: #555;
+}
+
+.queue-bar {
+    flex: 1;
+    height: 3px;
+    background: #1a1a1a;
+    border-radius: 2px;
+    overflow: hidden;
+    display: flex;
+}
+.queue-bar-completed { background: #22c55e; transition: width 0.3s; }
+.queue-bar-active { background: #3b82f6; transition: width 0.3s; }
+.queue-bar-pending { background: #333; transition: width 0.3s; }
 </style>
 {% endblock %}
 
 {% block content %}
+<div class="chat-app">
 
-<!-- Toast Portal -->
-<div class="toast-portal" id="toastPortal"></div>
+<!-- ── Left sidebar ──────────────────────────────────────── -->
+<aside class="chat-sidebar">
+    <div class="sidebar-header">
+        <a href="{% url 'members:dashboard' %}" class="sidebar-brand">T<span>.</span>ARS</a>
+        <button class="new-chat-btn" onclick="focusInput()">
+            <i class="bi bi-plus-lg"></i> New Task
+        </button>
+    </div>
 
-<!-- FAB -->
-<button class="fab" data-bs-toggle="modal" data-bs-target="#newTaskModal" title="New Task">
-    <i class="bi bi-plus-lg"></i>
-</button>
-
-<!-- New Task Modal -->
-<div class="modal fade" id="newTaskModal" tabindex="-1" aria-labelledby="newTaskModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div>
-                    <h5 class="modal-title fw-bold mb-0" id="newTaskModalLabel" style="color:var(--tars-text)">
-                        <i class="bi bi-lightning-fill me-2" style="color:var(--tars-accent)"></i>New Task
-                    </h5>
-                    <p class="mb-0 mt-1" style="font-size:0.82rem; color:var(--tars-muted)">Tell TARS what to build or fix</p>
-                </div>
-                <button type="button" class="btn-close btn-close-white opacity-50" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-
-            {% if projects %}
-            <form method="post" action="{% url 'members:quick_task' %}">
-                {% csrf_token %}
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Project</label>
-                        <select name="project_id" class="form-select" required>
-                            <option value="">Select a project&hellip;</option>
-                            {% for project in projects %}
-                            <option value="{{ project.pk }}">{{ project.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Task Title</label>
-                        <input type="text" name="title" class="form-control" required maxlength="300"
-                               placeholder="e.g. Fix the login bug, Add dark mode, Write unit tests&hellip;">
-                    </div>
-                    <div>
-                        <label class="form-label">
-                            Details
-                            <span style="text-transform:none; letter-spacing:0; font-weight:400; opacity:0.55">(optional)</span>
-                        </label>
-                        <textarea name="description" class="form-control" rows="3"
-                                  placeholder="Add any requirements, constraints, or context&hellip;"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" data-bs-dismiss="modal"
-                            style="background:none; border:1px solid var(--tars-border); color:var(--tars-muted); border-radius:8px; padding:0.45rem 1rem; font-size:0.875rem; cursor:pointer; transition:all 0.15s;">
-                        Cancel
-                    </button>
-                    <button type="submit" class="btn btn-accent btn-sm">
-                        <i class="bi bi-send-fill me-1"></i> Submit Task
-                    </button>
-                </div>
-            </form>
-
-            {% else %}
-            <div class="modal-body">
-                <div class="empty-state">
-                    <div class="empty-icon"><i class="bi bi-folder-plus"></i></div>
-                    <h6 class="fw-bold mb-2" style="color:var(--tars-text)">No projects yet</h6>
-                    <p class="small mb-4" style="color:var(--tars-muted)">
-                        Connect a GitHub repository first, then you can submit tasks.
-                    </p>
-                    <a href="{% url 'projects:add' %}" class="btn btn-accent btn-sm" data-bs-dismiss="modal">
-                        <i class="bi bi-plus-lg me-1"></i> Add Project
-                    </a>
-                </div>
-            </div>
+    <!-- Queue summary bar -->
+    <div class="queue-summary">
+        <span>{{ active_count }} active</span>
+        <div class="queue-bar">
+            {% if total_tasks > 0 %}
+            <div class="queue-bar-completed" style="width:{{ completed_pct }}%"></div>
+            <div class="queue-bar-active" style="width:{{ active_pct }}%"></div>
+            <div class="queue-bar-pending" style="width:{{ pending_pct }}%"></div>
             {% endif %}
         </div>
+        <span>{{ completed_count }}/{{ total_tasks }}</span>
     </div>
-</div>
 
-<!-- Django flash messages -->
-{% if messages %}
-<div style="position:relative; z-index:200; padding:0.75rem 0 0;">
-    <div style="max-width:800px; margin:0 auto; padding:0 1rem;">
-        {% for message in messages %}
-        <div class="alert d-flex align-items-center gap-3 mb-2"
-             style="{% if 'error' in message.tags %}background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); color:#ef4444;{% else %}background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.25); color:var(--tars-green);{% endif %} border-radius:12px; padding:0.85rem 1.2rem;"
-             role="alert">
-            <i class="bi {% if 'error' in message.tags %}bi-x-circle-fill{% else %}bi-check-circle-fill{% endif %}"></i>
-            <div class="flex-grow-1 small fw-medium">{{ message }}</div>
-            <button type="button" class="btn-close btn-close-white opacity-50" data-bs-dismiss="alert" aria-label="Close"></button>
+    <div class="sidebar-section-label">Queue</div>
+
+    <div class="sidebar-scroll">
+        {% for task in all_tasks %}
+        <a href="{% url 'tasks:detail' task.pk %}" class="queue-item {% if task.is_active %}active{% endif %}">
+            <div class="queue-status-dot dot-{{ task.status }}"></div>
+            <div class="queue-item-text">
+                <div class="queue-item-title">{{ task.title }}</div>
+                <div class="queue-item-meta">{{ task.project.name }} &middot; {{ task.get_status_display }}</div>
+            </div>
+            {% if task.status == 'pending' or task.status == 'queued' %}
+            <div class="queue-position">#{{ forloop.counter }}</div>
+            {% endif %}
+        </a>
+        {% empty %}
+        <div style="padding: 20px 16px; text-align: center; color: #333; font-size: 13px;">
+            No tasks yet
         </div>
         {% endfor %}
     </div>
-</div>
-{% endif %}
 
-<!-- Dashboard Wrapper -->
-<div class="dash-wrap">
-
-    <!-- Mobile sidebar backdrop -->
-    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
-
-    <!-- ── Sidebar ───────────────────────────────────── -->
-    <aside class="dash-sidebar" id="dashSidebar">
-        <div class="dash-sidebar-inner">
-
-            <!-- Brand -->
-            <div style="padding:0 1.25rem 1.25rem; border-bottom:1px solid var(--tars-border);">
-                <a href="{% url 'pages:landing' %}" class="text-decoration-none d-flex align-items-center gap-2 mb-1"
-                   style="font-family:'Space Grotesk',system-ui; font-weight:700; font-size:1.2rem; color:var(--tars-text);">
-                    T<span style="color:var(--tars-accent)">.</span>ARS
-                </a>
-                <span style="font-size:0.72rem; color:var(--tars-muted);">Member Dashboard</span>
-            </div>
-
-            <!-- Nav -->
-            <nav style="flex:1; padding:0.75rem 0;">
-                <div class="snav-section">Main</div>
-
-                <a href="{% url 'members:dashboard' %}" class="snav-item active">
-                    <i class="bi bi-grid-1x2-fill"></i>
-                    <span>Dashboard</span>
-                </a>
-
-                <a href="{% url 'projects:list' %}" class="snav-item">
-                    <i class="bi bi-folder2-open"></i>
-                    <span>Projects</span>
-                    {% with cnt=projects.count %}
-                    {% if cnt > 0 %}<span class="snav-badge">{{ cnt }}</span>{% endif %}
-                    {% endwith %}
-                </a>
-
-                <a href="{% url 'tasks:list' %}" class="snav-item">
-                    <i class="bi bi-list-task"></i>
-                    <span>Tasks</span>
-                    {% with cnt=active_tasks.count %}
-                    {% if cnt > 0 %}<span class="snav-badge">{{ cnt }}</span>{% endif %}
-                    {% endwith %}
-                </a>
-
-                <a href="{% url 'tasks:queue' %}" class="snav-item">
-                    <i class="bi bi-collection"></i>
-                    <span>Queue</span>
-                    {% with cnt=active_tasks.count %}
-                    {% if cnt > 0 %}<span class="snav-badge">{{ cnt }}</span>{% endif %}
-                    {% endwith %}
-                </a>
-
-                <div class="snav-section" style="margin-top:0.75rem;">Resources</div>
-
-                <a href="{% url 'pages:docs_index' %}" class="snav-item">
-                    <i class="bi bi-book"></i>
-                    <span>Docs</span>
-                </a>
-
-                <a href="{% url 'pages:status' %}" class="snav-item">
-                    <i class="bi bi-activity"></i>
-                    <span>Status</span>
-                </a>
-
-                <div class="snav-section" style="margin-top:0.75rem;">Account</div>
-
-                <span class="snav-item" style="opacity:0.4; cursor:not-allowed;"
-                      title="Coming soon">
-                    <i class="bi bi-gear"></i>
-                    <span>Settings</span>
-                    <span style="margin-left:auto; font-size:0.6rem; color:var(--tars-muted);">Soon</span>
-                </span>
-
-                <a href="{% url 'inquiries:get_started' %}" class="snav-item">
-                    <i class="bi bi-arrow-up-circle"></i>
-                    <span>Upgrade</span>
-                </a>
-            </nav>
-
-            <!-- User info -->
-            <div class="sidebar-user-info">
-                <div class="d-flex align-items-center gap-2">
-                    <div style="width:32px; height:32px; border-radius:50%; background:rgba(99,102,241,0.2);
-                         display:flex; align-items:center; justify-content:center;
-                         font-size:0.85rem; font-weight:700; color:var(--tars-accent); flex-shrink:0;">
-                        {{ user.first_name|first|upper|default:user.email|first|upper }}
-                    </div>
-                    <div style="flex:1; min-width:0;">
-                        <div class="small fw-semibold text-truncate" style="color:var(--tars-text); max-width:130px;">
-                            {{ user.first_name|default:user.company_name|default:user.email }}
-                        </div>
-                        <div style="font-size:0.68rem; color:var(--tars-muted);">
-                            {{ profile.get_plan_tier_display }}
-                        </div>
-                    </div>
-                    <a href="{% url 'members:logout' %}" class="text-decoration-none" style="color:var(--tars-muted);" title="Sign out">
-                        <i class="bi bi-box-arrow-right"></i>
-                    </a>
-                </div>
-            </div>
-
+    <div class="sidebar-footer">
+        <div class="user-avatar">{{ user.email|first|upper }}</div>
+        <div class="user-info">
+            <div class="user-name">{{ user.company_name|default:user.email }}</div>
+            <div class="user-plan">{{ profile.get_plan_tier_display|default:"Free" }} plan</div>
         </div>
-    </aside>
+        <a href="{% url 'accounts:logout' %}" title="Sign out"><i class="bi bi-box-arrow-right"></i></a>
+    </div>
+</aside>
 
-    <!-- ── Main Content ───────────────────────────────── -->
-    <main class="dash-main">
+<!-- ── Main chat area ────────────────────────────────────── -->
+<main class="chat-main">
 
-        <!-- Mobile top bar -->
-        <div class="mobile-topbar">
-            <button class="hamburger-btn" id="sidebarToggle" aria-label="Open navigation">
+    <!-- Top bar -->
+    <div class="chat-topbar">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <button class="mobile-toggle" onclick="document.querySelector('.chat-sidebar').classList.toggle('show')">
                 <i class="bi bi-list"></i>
             </button>
-            <nav aria-label="breadcrumb" style="flex:1;">
-                <ol class="breadcrumb mb-0" style="font-size:0.8rem;">
-                    <li class="breadcrumb-item">
-                        <a href="{% url 'pages:landing' %}" style="color:var(--tars-muted); text-decoration:none;">TARS</a>
-                    </li>
-                    <li class="breadcrumb-item active" style="color:var(--tars-text);">Dashboard</li>
-                </ol>
-            </nav>
+            <span class="topbar-title">TARS</span>
         </div>
-
-        <!-- Desktop topbar with breadcrumb -->
-        <div class="dash-topbar d-none d-lg-flex">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item">
-                        <a href="{% url 'pages:landing' %}">TARS</a>
-                    </li>
-                    <li class="breadcrumb-item active">Dashboard</li>
-                </ol>
-            </nav>
-            <div class="d-flex align-items-center gap-3">
-                <span style="font-size:0.8rem; color:var(--tars-muted);">
-                    <i class="bi bi-calendar3 me-1"></i>
-                    Member since {{ profile.created_at|date:"N Y" }}
-                </span>
-                <button class="btn btn-accent btn-sm" data-bs-toggle="modal" data-bs-target="#newTaskModal">
-                    <i class="bi bi-plus-lg me-1"></i> New Task
-                </button>
-            </div>
-        </div>
-
-        <!-- ── Inner content ──────────────────────────── -->
-        <div class="dash-inner">
-
-            <!-- Welcome + Stats -->
-            <div>
-                <h1 class="welcome-heading">
-                    Welcome back, {{ user.first_name|default:user.username }}
-                </h1>
-                <p class="small mb-0" style="color:var(--tars-muted);">
-                    {{ user.email }}
-                    &nbsp;&middot;&nbsp;
-                    <span style="background:rgba(99,102,241,0.15); color:var(--tars-accent);
-                         border-radius:999px; padding:0.15rem 0.6rem;
-                         font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em;">
-                        {{ profile.get_plan_tier_display }}
-                    </span>
-                </p>
-
-                <div class="stats-wrap">
-                <!-- Skeleton overlay (CSS hides at 0.38s, real cards animate in at 0.40s+) -->
-                <div class="stats-grid-skeleton">
-                    {% for i in "1234" %}
-                    <div class="skel-stat-card">
-                        <div class="skeleton skeleton-circle" style="width:46px;height:46px;flex-shrink:0;"></div>
-                        <div class="flex-grow-1">
-                            <div class="skeleton" style="height:1.75rem;width:50%;margin-bottom:0.5rem;border-radius:6px;"></div>
-                            <div class="skeleton skeleton-text" style="width:65%;opacity:0.6;"></div>
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                <div class="stats-grid">
-                    <!-- Active Projects -->
-                    <div class="stat-card"
-                         style="--stat-border:rgba(99,102,241,0.35); --stat-glow:linear-gradient(135deg,rgba(99,102,241,0.04),transparent);">
-                        <div class="stat-icon" style="background:rgba(99,102,241,0.12); color:var(--tars-accent);">
-                            <i class="bi bi-folder2-open"></i>
-                        </div>
-                        <div>
-                            <div class="stat-val" data-count="{{ projects.count }}">{{ projects.count }}</div>
-                            <div class="stat-lbl">Active Projects</div>
-                        </div>
-                    </div>
-
-                    <!-- Tasks This Month -->
-                    <div class="stat-card"
-                         style="--stat-border:rgba(245,158,11,0.35); --stat-glow:linear-gradient(135deg,rgba(245,158,11,0.04),transparent);">
-                        <div class="stat-icon" style="background:rgba(245,158,11,0.12); color:#f59e0b;">
-                            <i class="bi bi-calendar-check"></i>
-                        </div>
-                        <div>
-                            <div class="stat-val" data-count="{{ tasks_this_month }}">{{ tasks_this_month }}</div>
-                            <div class="stat-lbl">Tasks This Month</div>
-                        </div>
-                    </div>
-
-                    <!-- Completed -->
-                    <div class="stat-card"
-                         style="--stat-border:rgba(16,185,129,0.35); --stat-glow:linear-gradient(135deg,rgba(16,185,129,0.04),transparent);">
-                        <div class="stat-icon" style="background:rgba(16,185,129,0.12); color:var(--tars-green);">
-                            <i class="bi bi-check2-circle"></i>
-                        </div>
-                        <div>
-                            <div class="stat-val" data-count="{{ completed_count }}">{{ completed_count }}</div>
-                            <div class="stat-lbl">Completed</div>
-                        </div>
-                    </div>
-
-                    <!-- Success Rate -->
-                    <div class="stat-card"
-                         style="--stat-border:rgba(16,185,129,0.25); --stat-glow:linear-gradient(135deg,rgba(16,185,129,0.03),transparent);">
-                        <div class="stat-icon" style="background:rgba(16,185,129,0.1); color:var(--tars-green);">
-                            <i class="bi bi-graph-up-arrow"></i>
-                        </div>
-                        <div>
-                            <div class="stat-val"
-                                 {% if total_done > 0 %}data-count="{{ success_rate }}" data-suffix="%"{% endif %}>
-                                {{ success_rate_display }}
-                            </div>
-                            <div class="stat-lbl">Success Rate</div>
-                        </div>
-                    </div>
-                </div>{# /stats-grid #}
-                </div>{# /stats-wrap #}
-            </div>
-
-            <!-- Onboarding Banner -->
-            {% if onboarding_checklist %}
-            <div class="onboarding-banner">
-                <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
-                    <div>
-                        <div class="fw-bold mb-1" style="color:var(--tars-text);">
-                            <i class="bi bi-rocket-takeoff-fill me-2" style="color:var(--tars-accent);"></i>Getting Started
-                        </div>
-                        <p class="small mb-0" style="color:var(--tars-muted);">Complete these steps to get the most out of TARS.</p>
-                    </div>
-                    <div class="d-flex gap-2 flex-shrink-0">
-                        <a href="{% url 'members:onboarding' %}" class="btn btn-accent btn-sm">
-                            Continue <i class="bi bi-arrow-right ms-1"></i>
-                        </a>
-                        <form method="post" action="{% url 'members:onboarding_skip' %}" class="d-inline">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-sm"
-                                    style="border:1px solid var(--tars-border); color:var(--tars-muted); background:none;">
-                                Dismiss
-                            </button>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- Progress bar -->
-                <div style="background:var(--tars-border); border-radius:999px; height:4px; margin-bottom:1rem; overflow:hidden;">
-                    <div style="height:100%; background:linear-gradient(90deg,var(--tars-accent),#818cf8); border-radius:999px;
-                         width:{% if profile.onboarding_step == 1 %}10{% elif profile.onboarding_step == 2 %}40{% else %}75{% endif %}%;
-                         transition:width 0.5s ease;"></div>
-                </div>
-
-                <div class="d-flex flex-wrap gap-4">
-                    {% for item in onboarding_checklist %}
-                    <div class="d-flex align-items-center gap-2">
-                        <div style="width:20px; height:20px; border-radius:50%; flex-shrink:0;
-                             display:flex; align-items:center; justify-content:center; font-size:0.65rem;
-                             {% if item.done %}background:rgba(16,185,129,0.15); color:var(--tars-green);
-                             {% else %}background:var(--tars-border); color:var(--tars-muted);{% endif %}">
-                            {% if item.done %}<i class="bi bi-check-lg"></i>{% else %}<i class="bi bi-circle"></i>{% endif %}
-                        </div>
-                        <span class="small {% if item.done %}text-decoration-line-through{% endif %}"
-                              style="color:{% if item.done %}var(--tars-muted){% else %}var(--tars-text){% endif %}">
-                            {{ item.label }}
-                        </span>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
+        <div class="topbar-stats">
+            <span class="stat-item">
+                <span class="stat-dot" style="background:#22c55e;"></span>
+                {{ completed_count }} completed
+            </span>
+            <span class="stat-item">
+                <span class="stat-dot" style="background:#3b82f6;"></span>
+                {{ active_count }} active
+            </span>
+            <span class="stat-item">
+                <span class="stat-dot" style="background:#555;"></span>
+                {{ pending_count }} pending
+            </span>
+            {% if success_rate > 0 %}
+            <span class="stat-item">{{ success_rate }}% success</span>
             {% endif %}
+        </div>
+    </div>
 
-            <!-- ── Content Grid ─────────────────────── -->
-            <div class="dash-content-grid">
+    <!-- Chat feed -->
+    <div class="chat-feed" id="chatFeed">
+        <div class="chat-container">
 
-                <!-- Left column -->
-                <div>
+            {% if not all_tasks %}
+            <!-- Empty state -->
+            <div class="empty-state">
+                <div class="empty-logo">T<span>.</span>ARS</div>
+                <div class="empty-title">What should I code for you?</div>
+                <div class="suggestion-chips">
+                    <span class="suggestion-chip" onclick="fillInput('Fix a bug in my project')">Fix a bug</span>
+                    <span class="suggestion-chip" onclick="fillInput('Add a new feature')">Add a feature</span>
+                    <span class="suggestion-chip" onclick="fillInput('Write tests for my code')">Write tests</span>
+                    <span class="suggestion-chip" onclick="fillInput('Refactor and clean up code')">Refactor code</span>
+                </div>
+            </div>
 
-                    <!-- Projects Section -->
-                    <div class="section-heading mb-3">
-                        <p class="section-title">Your Projects</p>
-                        <a href="{% url 'projects:add' %}" class="btn btn-accent btn-sm">
-                            <i class="bi bi-plus-lg me-1"></i> Add Project
+            {% else %}
+
+            <!-- TARS welcome message -->
+            <div class="chat-message">
+                <div class="msg-avatar tars-avatar">T</div>
+                <div class="msg-body">
+                    <div class="msg-sender">TARS</div>
+                    <div class="msg-content">
+                        <p>I'm working through your task queue. Here's the current status:</p>
+                        <div class="status-card">
+                            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center;">
+                                <div>
+                                    <div style="font-size:20px;font-weight:700;color:#22c55e;">{{ completed_count }}</div>
+                                    <div style="font-size:11px;color:#555;">Completed</div>
+                                </div>
+                                <div>
+                                    <div style="font-size:20px;font-weight:700;color:#3b82f6;">{{ active_count }}</div>
+                                    <div style="font-size:11px;color:#555;">In Progress</div>
+                                </div>
+                                <div>
+                                    <div style="font-size:20px;font-weight:700;color:#777;">{{ pending_count }}</div>
+                                    <div style="font-size:11px;color:#555;">Pending</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Task messages -->
+            {% load tz %}
+            {% for task in all_tasks reversed %}
+
+            <!-- User message: the task request -->
+            <div class="chat-message">
+                <div class="msg-avatar user-avatar-sm">{{ task.created_by.email|first|upper }}</div>
+                <div class="msg-body">
+                    <div class="msg-sender">You</div>
+                    <div class="msg-content">
+                        <p>{{ task.title }}</p>
+                        {% if task.description and task.description != task.title %}
+                        <p style="color:#888;font-size:13px;">{{ task.description|truncatewords:40 }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="msg-time">{{ task.created_at|timesince }} ago &middot; {{ task.project.name }}</div>
+                </div>
+            </div>
+
+            <!-- TARS response -->
+            <div class="chat-message">
+                <div class="msg-avatar tars-avatar">T</div>
+                <div class="msg-body">
+                    <div class="msg-sender">TARS</div>
+                    <div class="msg-content">
+                        {% if task.status == 'pending' or task.status == 'queued' %}
+                        <p>Got it. This is in the queue.</p>
+                        <div class="status-card">
+                            <span class="status-badge badge-{{ task.status }}">{{ task.get_status_display }}</span>
+                        </div>
+
+                        {% elif task.status == 'assigned' %}
+                        <p>Picked this up. Starting soon.</p>
+                        <div class="status-card">
+                            <span class="status-badge badge-assigned">Assigned</span>
+                        </div>
+
+                        {% elif task.status == 'in_progress' %}
+                        <p>Working on this now...</p>
+                        <div class="typing-indicator">
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                        </div>
+                        <div class="status-card">
+                            <span class="status-badge badge-in_progress">In Progress</span>
+                        </div>
+
+                        {% elif task.status == 'reviewing' %}
+                        <p>Code is written. Reviewing changes now...</p>
+                        <div class="status-card">
+                            <span class="status-badge badge-reviewing">Reviewing</span>
+                        </div>
+
+                        {% elif task.status == 'completed' %}
+                        <p>Done! Changes have been pushed.</p>
+                        {% if task.pr_url %}
+                        <a href="{{ task.pr_url }}" target="_blank" rel="noopener" class="pr-link">
+                            <i class="bi bi-git"></i> View Pull Request
                         </a>
-                    </div>
-
-                    {% if projects %}
-                    <div class="d-flex flex-column gap-3 mb-5">
-                        {% for project in projects %}
-                        <div class="project-card">
-                            <div class="d-flex align-items-start gap-3 mb-3">
-
-                                <!-- Health dot -->
-                                {% if not project.is_active %}
-                                <div class="health-dot health-gray" style="margin-top:12px;"
-                                     data-bs-toggle="tooltip" title="Paused"></div>
-                                {% elif project.failed_count > 0 and project.active_count == 0 %}
-                                <div class="health-dot health-red" style="margin-top:12px;"
-                                     data-bs-toggle="tooltip"
-                                     title="{{ project.failed_count }} failed — no active tasks"></div>
-                                {% elif project.failed_count > 0 %}
-                                <div class="health-dot health-yellow" style="margin-top:12px;"
-                                     data-bs-toggle="tooltip"
-                                     title="{{ project.failed_count }} failed task{{ project.failed_count|pluralize }}"></div>
-                                {% else %}
-                                <div class="health-dot health-green" style="margin-top:12px;"
-                                     data-bs-toggle="tooltip" title="Healthy"></div>
-                                {% endif %}
-
-                                <!-- Project icon -->
-                                <div class="project-icon flex-shrink-0">
-                                    <i class="bi bi-git"></i>
-                                </div>
-
-                                <!-- Info -->
-                                <div class="flex-grow-1 min-width-0">
-                                    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
-                                        <a href="{% url 'projects:detail' pk=project.pk %}"
-                                           class="fw-bold text-decoration-none" style="color:var(--tars-text);">
-                                            {{ project.name }}
-                                        </a>
-                                        {% if project.language != "other" %}
-                                        <span class="lang-tag">{{ project.get_language_display }}</span>
-                                        {% endif %}
-                                        <!-- Health label -->
-                                        {% if not project.is_active %}
-                                        <span class="health-label"
-                                              style="background:rgba(156,163,175,0.12); color:var(--tars-muted);">Paused</span>
-                                        {% elif project.failed_count > 0 and project.active_count == 0 %}
-                                        <span class="health-label"
-                                              style="background:rgba(239,68,68,0.12); color:#ef4444;">Failed</span>
-                                        {% elif project.failed_count > 0 %}
-                                        <span class="health-label"
-                                              style="background:rgba(245,158,11,0.12); color:#f59e0b;">Issues</span>
-                                        {% else %}
-                                        <span class="health-label"
-                                              style="background:rgba(16,185,129,0.12); color:var(--tars-green);">Healthy</span>
-                                        {% endif %}
-                                    </div>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <i class="bi bi-github" style="color:var(--tars-muted); font-size:0.78rem;"></i>
-                                        <a href="{{ project.github_url }}" target="_blank" rel="noopener noreferrer"
-                                           class="small text-truncate"
-                                           style="color:var(--tars-muted); text-decoration:none; max-width:200px;">
-                                            {{ project.github_repo }}
-                                        </a>
-                                    </div>
-                                </div>
-
-                                <a href="{% url 'projects:settings' pk=project.pk %}" class="btn btn-sm flex-shrink-0"
-                                   style="border:1px solid var(--tars-border); color:var(--tars-muted);">
-                                    <i class="bi bi-gear"></i>
-                                </a>
-                            </div>
-
-                            <!-- Service actions -->
-                            <div class="d-flex flex-wrap gap-2">
-                                <a href="{% url 'tasks:add' %}?project={{ project.pk }}&service=tars-code"
-                                   class="svc-btn code">
-                                    <i class="bi bi-code-slash"></i> Request TARS Code
-                                </a>
-                                <span class="svc-btn disabled-svc">
-                                    <i class="bi bi-megaphone"></i> TARS Marketing
-                                    <span style="font-size:0.6rem; opacity:0.7">(soon)</span>
-                                </span>
-                            </div>
-
-                            <!-- Task summary -->
-                            {% if project.task_count > 0 %}
-                            <div class="mt-3 pt-2" style="border-top:1px solid var(--tars-border);">
-                                <div class="d-flex align-items-center justify-content-between">
-                                    <a href="{% url 'tasks:list' %}?project={{ project.pk }}"
-                                       class="small text-decoration-none" style="color:var(--tars-muted);">
-                                        <i class="bi bi-list-task me-1"></i>
-                                        {{ project.task_count }} task{{ project.task_count|pluralize }}
-                                    </a>
-                                    {% if project.active_count > 0 %}
-                                    <span style="font-size:0.7rem; color:var(--tars-accent);">
-                                        <i class="bi bi-circle-fill"
-                                           style="font-size:0.4rem; animation:tars-pulse 1.4s infinite;"></i>
-                                        {{ project.active_count }} active
-                                    </span>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            {% endif %}
-                        </div>
-                        {% endfor %}
-                    </div>
-
-                    {% else %}
-                    <!-- Empty state: no projects -->
-                    <div class="card-surface mb-5">
-                        <div class="empty-state">
-                            <div class="empty-icon">
-                                <i class="bi bi-folder-plus"></i>
-                            </div>
-                            <h5 class="fw-bold mb-2" style="color:var(--tars-text);">No projects yet</h5>
-                            <p class="small mb-4" style="color:var(--tars-muted); max-width:280px; margin:0 auto 1.25rem;">
-                                Connect your first GitHub repository to start using TARS services.
-                            </p>
-                            <a href="{% url 'projects:add' %}" class="btn btn-accent">
-                                <i class="bi bi-plus-lg me-1"></i> Add Your First Project
-                            </a>
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    <!-- Recent Tasks Section -->
-                    <div class="section-heading mb-3">
-                        <p class="section-title">Recent Tasks</p>
-                        <a href="{% url 'tasks:list' %}" class="btn btn-outline-accent btn-sm">View All</a>
-                    </div>
-
-                    <div class="card-surface p-4">
-                        {% if recent_tasks %}
-                        {% for task in recent_tasks %}
-                        <a href="{% url 'tasks:detail' pk=task.pk %}" class="task-row" data-task-id="{{ task.pk }}">
-                            <div class="task-dot {{ task.status }}" data-dot="{{ task.pk }}"></div>
-                            <div class="flex-grow-1 min-width-0">
-                                <div class="fw-semibold small text-truncate" style="color:var(--tars-text);">
-                                    {{ task.title }}
-                                </div>
-                                <div class="small" style="color:var(--tars-muted);">
-                                    {{ task.project.name }} &middot; {{ task.created_at|date:"M j, Y" }}
-                                </div>
-                            </div>
-                            <span class="status-pill {% if task.status == 'completed' %}active{% elif task.status == 'failed' %}error{% elif task.status == 'in_progress' %}working{% elif task.status == 'pending' %}pending{% else %}warn{% endif %}"
-                                  data-pill="{{ task.pk }}">
-                                {{ task.get_status_display }}
+                        {% endif %}
+                        {% if task.branch_name %}
+                        <div style="font-size:12px;color:#555;margin-top:6px;">Branch: <code style="color:#888;">{{ task.branch_name }}</code></div>
+                        {% endif %}
+                        <div class="status-card" style="border-color:rgba(34,197,94,0.2);">
+                            <span class="status-badge badge-completed">Completed</span>
+                            {% if task.completed_at and task.started_at %}
+                            <span style="font-size:11px;color:#555;margin-left:8px;">
+                                {{ task.completed_at|timesince:task.started_at }}
                             </span>
-                        </a>
-                        {% endfor %}
-
-                        {% else %}
-                        <!-- Empty state: no tasks -->
-                        <div class="empty-state" style="padding:2rem 1rem;">
-                            <div class="empty-icon" style="width:56px; height:56px; font-size:1.4rem; border-radius:14px;">
-                                <i class="bi bi-list-task"></i>
-                            </div>
-                            <p class="small mb-3 mt-1" style="color:var(--tars-muted);">
-                                No tasks yet — select a project above to get started.
-                            </p>
-                            {% if projects %}
-                            <button class="btn btn-accent btn-sm" data-bs-toggle="modal" data-bs-target="#newTaskModal">
-                                <i class="bi bi-plus-lg me-1"></i> Create First Task
-                            </button>
                             {% endif %}
+                        </div>
+
+                        {% elif task.status == 'failed' %}
+                        <p>Something went wrong with this one.</p>
+                        {% if task.error_message %}
+                        <div class="error-text">{{ task.error_message }}</div>
+                        {% endif %}
+                        <div class="status-card" style="border-color:rgba(239,68,68,0.2);">
+                            <span class="status-badge badge-failed">Failed</span>
                         </div>
                         {% endif %}
                     </div>
-
-                </div>
-
-                <!-- Right column -->
-                <div>
-
-                    <!-- Live Activity Feed -->
-                    <p class="section-title mb-3">
-                        <i class="bi bi-broadcast me-1" style="color:var(--tars-accent);"></i>
-                        Live Activity
-                    </p>
-                    <div class="card-surface p-4 mb-4" id="activity-feed-card">
-                        <div id="activity-feed">
-                            {% for task in recent_tasks %}
-                            <div class="feed-item">
-                                <div class="feed-dot {% if task.status == 'completed' %}completed{% elif task.status == 'failed' %}failed{% elif task.status == 'in_progress' %}in_progress{% else %}default{% endif %}"></div>
-                                <div class="flex-grow-1">
-                                    <span style="color:var(--tars-text);font-weight:500">{{ task.title|truncatechars:55 }}</span>
-                                    &rarr; <span style="color:var(--tars-muted)">{{ task.get_status_display }}</span>
-                                    {% if task.pr_url %}
-                                    &mdash; <a href="{{ task.pr_url }}" target="_blank" rel="noopener noreferrer"
-                                               style="color:var(--tars-accent)">View PR</a>
-                                    {% endif %}
-                                    <div style="color:var(--tars-muted);font-size:0.72rem;margin-top:0.15rem">
-                                        {{ task.created_at|date:"M j, g:i A" }} &middot; {{ task.project.name }}
-                                    </div>
-                                </div>
-                            </div>
-                            {% endfor %}
-                            <div class="text-center py-3{% if recent_tasks %} d-none{% endif %}" id="feed-empty"
-                                 style="color:var(--tars-muted); font-size:0.82rem;">
-                                <i class="bi bi-broadcast me-1"></i> Waiting for task updates&hellip;
-                            </div>
-                        </div>
+                    <div class="msg-time">
+                        {% if task.completed_at %}{{ task.completed_at|timesince }} ago
+                        {% elif task.started_at %}Started {{ task.started_at|timesince }} ago
+                        {% else %}{{ task.created_at|timesince }} ago
+                        {% endif %}
                     </div>
-
-                    <!-- TARS Services -->
-                    <p class="section-title mb-3">TARS Services</p>
-                    <div class="card-surface p-4 mb-4">
-                        <div class="d-flex align-items-center gap-3 mb-3 pb-3"
-                             style="border-bottom:1px solid var(--tars-border);">
-                            <div style="width:36px; height:36px; border-radius:10px; background:rgba(99,102,241,0.15);
-                                 display:flex; align-items:center; justify-content:center;">
-                                <i class="bi bi-code-slash" style="color:var(--tars-accent);"></i>
-                            </div>
-                            <div class="flex-grow-1">
-                                <div class="fw-semibold small">TARS Code</div>
-                                <div style="font-size:0.75rem; color:var(--tars-muted);">Autonomous coding & PRs</div>
-                            </div>
-                            <span class="status-pill active">
-                                <i class="bi bi-circle-fill me-1" style="font-size:0.35rem;"></i>Live
-                            </span>
-                        </div>
-                        <div class="d-flex align-items-center gap-3 mb-3 pb-3"
-                             style="border-bottom:1px solid var(--tars-border);">
-                            <div style="width:36px; height:36px; border-radius:10px; background:rgba(251,146,60,0.1);
-                                 display:flex; align-items:center; justify-content:center;">
-                                <i class="bi bi-megaphone" style="color:#fb923c;"></i>
-                            </div>
-                            <div class="flex-grow-1">
-                                <div class="fw-semibold small">TARS Marketing</div>
-                                <div style="font-size:0.75rem; color:var(--tars-muted);">Content & SEO automation</div>
-                            </div>
-                            <span class="status-pill pending">Soon</span>
-                        </div>
-                        <div class="d-flex align-items-center gap-3">
-                            <div style="width:36px; height:36px; border-radius:10px; background:rgba(16,185,129,0.1);
-                                 display:flex; align-items:center; justify-content:center;">
-                                <i class="bi bi-diagram-3" style="color:var(--tars-green);"></i>
-                            </div>
-                            <div class="flex-grow-1">
-                                <div class="fw-semibold small">TARS DevOps</div>
-                                <div style="font-size:0.75rem; color:var(--tars-muted);">CI/CD & infrastructure</div>
-                            </div>
-                            <span class="status-pill pending">Soon</span>
-                        </div>
-                    </div>
-
-                    <!-- Plan Info -->
-                    <p class="section-title mb-3" id="plan-section">Your Plan</p>
-                    <div class="card-surface p-4">
-                        <div class="d-flex align-items-center gap-3 mb-3">
-                            <div style="width:42px; height:42px; border-radius:12px; background:rgba(99,102,241,0.15);
-                                 display:flex; align-items:center; justify-content:center;">
-                                <i class="bi bi-star-fill" style="color:var(--tars-accent);"></i>
-                            </div>
-                            <div>
-                                <div class="fw-bold">{{ profile.get_plan_tier_display }} Plan</div>
-                                <div class="small" style="color:var(--tars-green);">Active</div>
-                            </div>
-                        </div>
-                        <ul class="list-unstyled small mb-3" style="color:var(--tars-muted);">
-                            <li class="mb-1">
-                                <i class="bi bi-check-circle-fill me-2" style="color:var(--tars-green);"></i>TARS Code access
-                            </li>
-                            <li class="mb-1">
-                                <i class="bi bi-check-circle-fill me-2" style="color:var(--tars-green);"></i>PR generation
-                            </li>
-                            <li class="mb-1">
-                                <i class="bi bi-check-circle-fill me-2" style="color:var(--tars-green);"></i>Bug fix automation
-                            </li>
-                            <li class="mb-1 text-decoration-line-through">
-                                <i class="bi bi-dash-circle me-2"></i>TARS Marketing
-                            </li>
-                            <li class="text-decoration-line-through">
-                                <i class="bi bi-dash-circle me-2"></i>TARS DevOps
-                            </li>
-                        </ul>
-                        <a href="{% url 'inquiries:get_started' %}" class="btn btn-outline-accent btn-sm w-100">
-                            Upgrade Plan
-                        </a>
-                    </div>
-
                 </div>
             </div>
-        </div>
-    </main>
-</div>
 
+            {% endfor %}
+
+            {% endif %}
+
+        </div>
+    </div>
+
+    <!-- Chat input bar -->
+    <div class="chat-input-area">
+        <div class="chat-input-wrapper">
+            <form method="post" action="{% url 'members:quick_task' %}" id="taskForm">
+                {% csrf_token %}
+                <div class="input-container">
+                    <div class="input-top-row">
+                        <div class="project-pill" id="projectPill" onclick="toggleProjectDropdown()">
+                            <i class="bi bi-folder2"></i>
+                            <span id="selectedProjectName">
+                                {% if projects %}{{ projects.0.name }}{% else %}No projects{% endif %}
+                            </span>
+                            <i class="bi bi-chevron-down" style="font-size:9px;margin-left:2px;"></i>
+                            <div class="project-dropdown" id="projectDropdown">
+                                {% for project in projects %}
+                                <button type="button" class="project-option {% if forloop.first %}selected{% endif %}"
+                                        onclick="selectProject({{ project.pk }}, '{{ project.name }}', this)">
+                                    {{ project.name }}
+                                </button>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <input type="hidden" name="project_id" id="projectIdInput" value="{% if projects %}{{ projects.0.pk }}{% endif %}">
+                        <textarea name="title" class="chat-textarea" id="chatInput"
+                                  placeholder="Ask TARS to code something..." rows="1"
+                                  onkeydown="handleKey(event)" oninput="autoGrow(this); updateSend()"></textarea>
+                        <button type="submit" class="send-btn" id="sendBtn" disabled>
+                            <i class="bi bi-arrow-up"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+            <div class="input-hint">Enter to send &middot; Shift+Enter for new line</div>
+        </div>
+    </div>
+
+</main>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
-(function () {
-    'use strict';
+// Auto-scroll to bottom of chat
+var feed = document.getElementById('chatFeed');
+if (feed) feed.scrollTop = feed.scrollHeight;
 
-    // ── Sidebar toggle (mobile) ──────────────────────────
-    var sidebar  = document.getElementById('dashSidebar');
-    var backdrop = document.getElementById('sidebarBackdrop');
-    var toggle   = document.getElementById('sidebarToggle');
+// Auto-grow textarea
+function autoGrow(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
 
-    function openSidebar() {
-        sidebar.classList.add('open');
-        backdrop.classList.add('show');
-        document.body.style.overflow = 'hidden';
+// Update send button state
+function updateSend() {
+    var btn = document.getElementById('sendBtn');
+    var input = document.getElementById('chatInput');
+    var hasProject = document.getElementById('projectIdInput').value;
+    if (input.value.trim() && hasProject) {
+        btn.classList.add('active');
+        btn.disabled = false;
+    } else {
+        btn.classList.remove('active');
+        btn.disabled = true;
     }
+}
 
-    function closeSidebar() {
-        sidebar.classList.remove('open');
-        backdrop.classList.remove('show');
-        document.body.style.overflow = '';
-    }
-
-    if (toggle)   toggle.addEventListener('click', openSidebar);
-    if (backdrop) backdrop.addEventListener('click', closeSidebar);
-
-    // Close sidebar when a nav link is clicked on mobile
-    if (sidebar) {
-        sidebar.querySelectorAll('a.snav-item').forEach(function (el) {
-            el.addEventListener('click', function () {
-                if (window.innerWidth < 992) closeSidebar();
-            });
-        });
-    }
-
-    // ── Toast system ─────────────────────────────────────
-    var portal = document.getElementById('toastPortal');
-
-    function showToast(message, type) {
-        type = type || 'info';
-        var icons = { success: 'check-circle-fill', error: 'x-circle-fill', info: 'info-circle-fill' };
-        var el = document.createElement('div');
-        el.className = 'toast-item ' + type;
-        el.innerHTML =
-            '<i class="bi bi-' + (icons[type] || icons.info) + ' t-icon"></i>' +
-            '<span class="t-msg">' + message + '</span>' +
-            '<button class="toast-close" aria-label="Dismiss"><i class="bi bi-x-lg"></i></button>';
-        portal.appendChild(el);
-        el.querySelector('.toast-close').addEventListener('click', function () { dismiss(el); });
-        setTimeout(function () { dismiss(el); }, 5000);
-    }
-
-    function dismiss(el) {
-        if (!el || el.classList.contains('leaving')) return;
-        el.classList.add('leaving');
-        setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 320);
-    }
-
-    // ── Stat count-up animation ───────────────────────────
-    function animateCount(el) {
-        var target   = parseFloat(el.dataset.count) || 0;
-        var suffix   = el.dataset.suffix || '';
-        var duration = 700;
-        var startTs  = null;
-        if (target === 0) return;
-
-        function step(ts) {
-            if (!startTs) startTs = ts;
-            var t = Math.min((ts - startTs) / duration, 1);
-            var eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
-            el.textContent = Math.round(eased * target) + suffix;
-            if (t < 1) requestAnimationFrame(step);
-        }
-
-        requestAnimationFrame(step);
-    }
-
-    document.querySelectorAll('.stat-val[data-count]').forEach(function (el) {
-        setTimeout(function () { animateCount(el); }, 120);
-    });
-
-    // ── Live Activity Feed (WebSocket) ────────────────────
-    var feed      = document.getElementById('activity-feed');
-    var feedEmpty = document.getElementById('feed-empty');
-
-    var DOT_CLASSES  = ['pending','queued','assigned','in_progress','reviewing','completed','failed'];
-    var PILL_CLASSES = ['active','error','working','pending','warn'];
-
-    function pillClass(s) {
-        if (s === 'completed')   return 'active';
-        if (s === 'failed')      return 'error';
-        if (s === 'in_progress') return 'working';
-        if (s === 'pending')     return 'pending';
-        return 'warn';
-    }
-
-    function feedDotClass(s) {
-        if (s === 'completed' || s === 'failed' || s === 'in_progress') return s;
-        return 'default';
-    }
-
-    function prependFeedItem(data) {
-        if (feedEmpty) feedEmpty.style.display = 'none';
-
-        var now  = new Date();
-        var time = now.getHours().toString().padStart(2, '0') + ':' +
-                   now.getMinutes().toString().padStart(2, '0');
-
-        var prLink = data.pr_url
-            ? ' &mdash; <a href="' + data.pr_url +
-              '" target="_blank" rel="noopener noreferrer" style="color:var(--tars-accent)">View PR</a>'
-            : '';
-
-        var el = document.createElement('div');
-        el.className = 'feed-item';
-        el.innerHTML =
-            '<div class="feed-dot ' + feedDotClass(data.status) + '"></div>' +
-            '<div class="flex-grow-1">' +
-                '<span style="color:var(--tars-text);font-weight:500">' + data.title + '</span>' +
-                ' &rarr; <span style="color:var(--tars-muted)">' + data.status_display + '</span>' +
-                prLink +
-                '<div style="color:var(--tars-muted);font-size:0.72rem;margin-top:0.15rem">' + time + '</div>' +
-            '</div>';
-
-        feed.insertBefore(el, feed.firstChild);
-
-        var items = feed.querySelectorAll('.feed-item');
-        if (items.length > 20) feed.removeChild(items[items.length - 1]);
-    }
-
-    function updateTaskRow(data) {
-        var dot  = document.querySelector('[data-dot="'  + data.task_id + '"]');
-        var pill = document.querySelector('[data-pill="' + data.task_id + '"]');
-
-        if (dot) {
-            DOT_CLASSES.forEach(function (c) { dot.classList.remove(c); });
-            dot.classList.add(data.status);
-        }
-        if (pill) {
-            PILL_CLASSES.forEach(function (c) { pill.classList.remove(c); });
-            pill.classList.add(pillClass(data.status));
-            pill.textContent = data.status_display;
+// Enter to send, Shift+Enter for newline
+function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        var input = document.getElementById('chatInput');
+        if (input.value.trim()) {
+            document.getElementById('taskForm').submit();
         }
     }
+}
 
-    function onStatusChange(data) {
-        if (data.status === 'completed') {
-            showToast('"' + data.title + '" completed successfully!', 'success');
-        } else if (data.status === 'failed') {
-            showToast('"' + data.title + '" failed.', 'error');
-        }
+// Focus input
+function focusInput() {
+    document.getElementById('chatInput').focus();
+}
+
+// Fill input from suggestion chips
+function fillInput(text) {
+    var input = document.getElementById('chatInput');
+    input.value = text;
+    input.focus();
+    autoGrow(input);
+    updateSend();
+}
+
+// Project dropdown
+function toggleProjectDropdown() {
+    document.getElementById('projectDropdown').classList.toggle('show');
+}
+
+function selectProject(id, name, el) {
+    document.getElementById('projectIdInput').value = id;
+    document.getElementById('selectedProjectName').textContent = name;
+    document.querySelectorAll('.project-option').forEach(function(o) { o.classList.remove('selected'); });
+    el.classList.add('selected');
+    document.getElementById('projectDropdown').classList.remove('show');
+    updateSend();
+}
+
+// Close dropdown on outside click
+document.addEventListener('click', function(e) {
+    var pill = document.getElementById('projectPill');
+    if (pill && !pill.contains(e.target)) {
+        document.getElementById('projectDropdown').classList.remove('show');
     }
+});
 
-    try {
-        var scheme = location.protocol === 'https:' ? 'wss' : 'ws';
-        var ws = new WebSocket(scheme + '://' + location.host + '/ws/dashboard/');
-        ws.onmessage = function (e) {
-            var data;
-            try { data = JSON.parse(e.data); } catch (_) { return; }
-            prependFeedItem(data);
-            updateTaskRow(data);
-            onStatusChange(data);
-        };
-        ws.onerror = function () { /* silently ignore */ };
-    } catch (_) { /* WebSocket not available */ }
-
-    // ── Bootstrap tooltip init ────────────────────────────
-    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
-        new bootstrap.Tooltip(el, { trigger: 'hover' });
-    });
-
-})();
+// Keyboard shortcut: Cmd/Ctrl+K to focus input
+document.addEventListener('keydown', function(e) {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        focusInput();
+    }
+});
 </script>
 {% endblock %}

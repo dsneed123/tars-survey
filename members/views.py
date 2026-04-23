@@ -18,73 +18,49 @@ from .models import MemberProfile
 @login_required
 def dashboard(request):
     profile, _ = MemberProfile.objects.get_or_create(user=request.user)
-    recent_inquiries = Inquiry.objects.filter(email=request.user.email)[:5]
 
-    # Annotate projects with task health counts
-    projects = Project.objects.filter(owner=request.user).annotate(
-        task_count=Count("tasks"),
-        failed_count=Count("tasks", filter=Q(tasks__status="failed")),
-        active_count=Count(
-            "tasks",
-            filter=Q(tasks__status__in=["pending", "queued", "assigned", "in_progress", "reviewing"]),
-        ),
+    projects = Project.objects.filter(owner=request.user)
+
+    # All tasks for the chat feed, newest last
+    all_tasks = (
+        Task.objects.filter(created_by=request.user)
+        .select_related("project", "created_by")
+        .order_by("-created_at")[:50]
     )
 
-    recent_tasks = Task.objects.filter(created_by=request.user).select_related("project")[:10]
-    active_tasks = Task.objects.filter(
+    completed_count = Task.objects.filter(created_by=request.user, status="completed").count()
+    active_count = Task.objects.filter(
         created_by=request.user,
         status__in=["pending", "queued", "assigned", "in_progress", "reviewing"],
-    )
-    completed_count = Task.objects.filter(created_by=request.user, status="completed").count()
-
-    # Tasks this month
-    now = timezone.now()
-    this_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    tasks_this_month = Task.objects.filter(
-        created_by=request.user, created_at__gte=this_month_start
     ).count()
+    pending_count = Task.objects.filter(
+        created_by=request.user,
+        status__in=["pending", "queued"],
+    ).count()
+    failed_count = Task.objects.filter(created_by=request.user, status="failed").count()
+    total_tasks = Task.objects.filter(created_by=request.user).count()
 
     # Success rate
-    total_done = Task.objects.filter(
-        created_by=request.user, status__in=["completed", "failed"]
-    ).count()
+    total_done = completed_count + failed_count
     success_rate = round((completed_count / total_done * 100) if total_done > 0 else 0)
-    success_rate_display = "{}%".format(success_rate) if total_done > 0 else "—"
 
-    # Onboarding checklist state
-    has_project = projects.exists()
-    has_task = Task.objects.filter(created_by=request.user).exists()
-    onboarding_checklist = None
-    if not profile.onboarding_completed:
-        onboarding_checklist = [
-            {
-                "label": "Add Your First Project",
-                "done": has_project or profile.onboarding_step > 1,
-            },
-            {
-                "label": "Submit Your First Task",
-                "done": has_task or profile.onboarding_step > 2,
-            },
-            {
-                "label": "Watch TARS Work",
-                "done": False,
-            },
-        ]
+    # Queue bar percentages
+    completed_pct = round((completed_count / total_tasks * 100) if total_tasks > 0 else 0)
+    active_pct = round((active_count / total_tasks * 100) if total_tasks > 0 else 0)
+    pending_pct = max(0, 100 - completed_pct - active_pct)
 
     ctx = {
         "profile": profile,
-        "recent_inquiries": recent_inquiries,
         "projects": projects,
-        "recent_tasks": recent_tasks,
-        "active_tasks": active_tasks,
+        "all_tasks": all_tasks,
         "completed_count": completed_count,
-        "tasks_this_month": tasks_this_month,
+        "active_count": active_count,
+        "pending_count": pending_count,
+        "total_tasks": total_tasks,
         "success_rate": success_rate,
-        "success_rate_display": success_rate_display,
-        "total_done": total_done,
-        "onboarding_checklist": onboarding_checklist,
-        "has_project": has_project,
-        "has_task": has_task,
+        "completed_pct": completed_pct,
+        "active_pct": active_pct,
+        "pending_pct": pending_pct,
     }
     return render(request, "members/dashboard.html", ctx)
 
