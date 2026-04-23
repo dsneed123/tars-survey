@@ -78,11 +78,78 @@
         flex-shrink: 0;
     }
 
-    .status-pending    { background: rgba(156,163,175,0.12); color: var(--tars-muted); }
-    .status-queued     { background: rgba(99,102,241,0.12);  color: var(--tars-accent); }
-    .status-assigned   { background: rgba(245,158,11,0.12);  color: #f59e0b; }
-    .status-in_progress { background: rgba(59,130,246,0.12); color: #60a5fa; }
-    .status-reviewing  { background: rgba(168,85,247,0.12);  color: #c084fc; }
+    .status-pending     { background: rgba(156,163,175,0.12); color: var(--tars-muted); }
+    .status-queued      { background: rgba(99,102,241,0.12);  color: var(--tars-accent); }
+    .status-assigned    { background: rgba(245,158,11,0.12);  color: #f59e0b; }
+    .status-in_progress { background: rgba(59,130,246,0.12);  color: #60a5fa; }
+    .status-reviewing   { background: rgba(168,85,247,0.12);  color: #c084fc; }
+    .status-completed   { background: rgba(34,197,94,0.12);   color: #4ade80; }
+    .status-failed      { background: rgba(239,68,68,0.12);   color: #f87171; }
+
+    /* Completed / failed card muting */
+    .queue-card.is-done   { opacity: 0.65; }
+    .queue-card.is-done:hover { opacity: 1; }
+    .queue-card.is-failed { opacity: 0.6; border-left: 3px solid rgba(239,68,68,0.35); }
+    .queue-card.is-failed:hover { opacity: 1; }
+
+    /* Position badge variants for done/failed */
+    .queue-pos.pos-completed { background: rgba(34,197,94,0.1);  color: #4ade80; }
+    .queue-pos.pos-failed    { background: rgba(239,68,68,0.1);  color: #f87171; }
+
+    /* Filter pills */
+    .filter-pills {
+        display: flex;
+        gap: 0.4rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.25rem;
+    }
+
+    .filter-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.28rem 0.7rem;
+        border-radius: 999px;
+        border: 1px solid var(--tars-border);
+        background: transparent;
+        color: var(--tars-muted);
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        cursor: pointer;
+        transition: border-color 0.15s, background 0.15s, color 0.15s;
+        user-select: none;
+        line-height: 1;
+    }
+
+    .filter-pill:hover {
+        border-color: rgba(99,102,241,0.4);
+        color: var(--tars-text);
+    }
+
+    .filter-pill.is-active {
+        background: rgba(99,102,241,0.1);
+        border-color: rgba(99,102,241,0.35);
+        color: var(--tars-accent);
+    }
+
+    .pill-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 16px;
+        height: 16px;
+        padding: 0 4px;
+        border-radius: 999px;
+        background: rgba(156,163,175,0.15);
+        font-size: 0.62rem;
+        font-weight: 700;
+        color: inherit;
+    }
+
+    .filter-pill.is-active .pill-badge {
+        background: rgba(99,102,241,0.18);
+    }
 
     /* Pulse dot for in_progress */
     .pulse-dot {
@@ -224,11 +291,13 @@
                 </nav>
                 <h1 class="h3 fw-bold mb-1" style="color:var(--tars-text)">Task Queue</h1>
                 <p class="mb-0 small" id="queue-hero-count" style="color:var(--tars-muted)">
-                    {% if tasks %}
-                        {{ tasks|length }} active task{{ tasks|length|pluralize }}
+                    {% with queue_count=active_count|add:pending_count %}
+                    {% if queue_count %}
+                        {{ queue_count }} active task{{ queue_count|pluralize }}
                     {% else %}
                         No active tasks
                     {% endif %}
+                    {% endwith %}
                 </p>
             </div>
             <a href="{% url 'tasks:add' %}" class="btn btn-accent">
@@ -272,17 +341,44 @@
 <div class="container py-5" style="max-width: 780px;">
     <!-- Task list section (hidden when queue is empty) -->
     <div id="queue-list-section"{% if not tasks %} style="display:none;"{% endif %}>
-        <p class="section-label" id="queue-count-label">{{ tasks|length }} task{{ tasks|length|pluralize }} in queue</p>
+        <!-- Filter pills -->
+        <div class="filter-pills" id="filter-pills" role="group" aria-label="Filter tasks">
+            <button class="filter-pill is-active" data-filter="all" aria-pressed="true">
+                All <span class="pill-badge" id="pill-count-all">{{ tasks|length }}</span>
+            </button>
+            <button class="filter-pill" data-filter="active" aria-pressed="false">
+                Active <span class="pill-badge" id="pill-count-active">{{ active_count }}</span>
+            </button>
+            <button class="filter-pill" data-filter="pending" aria-pressed="false">
+                Pending <span class="pill-badge" id="pill-count-pending">{{ pending_count }}</span>
+            </button>
+            <button class="filter-pill" data-filter="completed" aria-pressed="false">
+                Completed <span class="pill-badge" id="pill-count-completed">{{ completed_count }}</span>
+            </button>
+            <button class="filter-pill" data-filter="failed" aria-pressed="false">
+                Failed <span class="pill-badge" id="pill-count-failed">{{ failed_count }}</span>
+            </button>
+        </div>
+
+        <p class="section-label" id="queue-count-label">{{ tasks|length }} task{{ tasks|length|pluralize }}</p>
         <div class="content-list d-flex flex-column gap-3" id="queue-list">
             {% for task in tasks %}
             <a href="{% url 'tasks:detail' pk=task.pk %}"
                data-task-id="{{ task.pk }}"
                data-task-status="{{ task.status }}"
-               class="queue-card{% if task.status == 'in_progress' %} is-active is-in-progress{% elif task.status != 'pending' %} is-active{% endif %}">
+               data-filter-group="{{ task.filter_group }}"
+               {% if task.filter_group == 'active' or task.filter_group == 'pending' %}data-has-position="true"{% endif %}
+               class="queue-card{% if task.status == 'in_progress' %} is-active is-in-progress{% elif task.status == 'assigned' or task.status == 'reviewing' or task.status == 'queued' %} is-active{% elif task.filter_group == 'completed' %} is-done{% elif task.filter_group == 'failed' %} is-failed{% endif %}">
 
-                <!-- Position number -->
-                <div class="queue-pos{% if task.status == 'in_progress' %} pos-in-progress{% endif %}">
-                    #{{ forloop.counter }}
+                <!-- Position / status icon -->
+                <div class="queue-pos{% if task.status == 'in_progress' %} pos-in-progress{% elif task.filter_group == 'completed' %} pos-completed{% elif task.filter_group == 'failed' %} pos-failed{% endif %}">
+                    {% if task.filter_group == 'completed' %}
+                        <i class="bi bi-check2" style="font-size:0.9rem;"></i>
+                    {% elif task.filter_group == 'failed' %}
+                        <i class="bi bi-x" style="font-size:1rem;"></i>
+                    {% else %}
+                        #{{ forloop.counter }}
+                    {% endif %}
                 </div>
 
                 <!-- Title + meta -->
@@ -306,6 +402,10 @@
                     <span class="status-badge status-{{ task.status }}">
                         {% if task.status == 'in_progress' %}
                             <span class="pulse-dot"></span>
+                        {% elif task.filter_group == 'completed' %}
+                            <i class="bi bi-check2" style="font-size:0.6rem;"></i>
+                        {% elif task.filter_group == 'failed' %}
+                            <i class="bi bi-x" style="font-size:0.75rem;"></i>
                         {% else %}
                             <i class="bi bi-circle-fill" style="font-size:0.35rem;"></i>
                         {% endif %}
@@ -339,6 +439,52 @@
 <script>
 (function () {
     var completedTodayCount = {{ completed_today }};
+    var currentFilter = 'all';
+
+    var ACTIVE_STATUSES = ['in_progress', 'assigned', 'reviewing'];
+    var PENDING_STATUSES = ['pending', 'queued'];
+
+    function statusToFilterGroup(status) {
+        if (ACTIVE_STATUSES.indexOf(status) !== -1) return 'active';
+        if (PENDING_STATUSES.indexOf(status) !== -1) return 'pending';
+        if (status === 'completed') return 'completed';
+        if (status === 'failed') return 'failed';
+        return 'pending';
+    }
+
+    // ── Filter pills ──────────────────────────────────────────────────────────
+
+    function applyFilter(filter) {
+        currentFilter = filter;
+
+        document.querySelectorAll('.filter-pill').forEach(function (pill) {
+            var active = pill.dataset.filter === filter;
+            pill.classList.toggle('is-active', active);
+            pill.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+
+        var cards = document.querySelectorAll('#queue-list .queue-card[data-task-id]');
+        var visibleCount = 0;
+        cards.forEach(function (card) {
+            var show = filter === 'all' || card.dataset.filterGroup === filter;
+            card.style.display = show ? '' : 'none';
+            if (show) visibleCount++;
+        });
+
+        var label = document.getElementById('queue-count-label');
+        if (label) {
+            var noun = filter === 'all' ? 'task' : filter + ' task';
+            label.textContent = visibleCount + ' ' + noun + (visibleCount !== 1 ? 's' : '');
+        }
+    }
+
+    document.querySelectorAll('.filter-pill').forEach(function (pill) {
+        pill.addEventListener('click', function () {
+            applyFilter(this.dataset.filter);
+        });
+    });
+
+    // ── WebSocket ─────────────────────────────────────────────────────────────
 
     var scheme = location.protocol === 'https:' ? 'wss' : 'ws';
     var WS_URL = scheme + '://' + location.host + '/ws/queue/';
@@ -418,7 +564,7 @@
                     var card = document.querySelector('[data-task-id="' + item.task_id + '"]');
                     if (card) {
                         handleStatusUpdate(item);
-                    } else if (['pending','queued','assigned','in_progress','reviewing'].indexOf(item.status) !== -1) {
+                    } else if (ACTIVE_STATUSES.concat(PENDING_STATUSES).indexOf(item.status) !== -1) {
                         handleTaskAdded(item);
                     }
                 });
@@ -450,10 +596,16 @@
 
         var card = buildCard(data);
         card.classList.add('queue-card-new');
-        list.appendChild(card);
 
+        var group = card.dataset.filterGroup;
+        if (currentFilter !== 'all' && group !== currentFilter) {
+            card.style.display = 'none';
+        }
+
+        list.appendChild(card);
         showListSection();
         syncCountsFromDom();
+        applyFilter(currentFilter);
         updateHealthBar();
     }
 
@@ -481,6 +633,7 @@
             card.remove();
             renumberPositions();
             syncCountsFromDom();
+            applyFilter(currentFilter);
             updateHealthBar();
         }, 450);
     }
@@ -533,7 +686,7 @@
     }
 
     function renumberPositions() {
-        var cards = document.querySelectorAll('#queue-list .queue-card[data-task-id]');
+        var cards = document.querySelectorAll('#queue-list .queue-card[data-has-position]');
         cards.forEach(function (c, i) {
             var pos = c.querySelector('.queue-pos');
             if (pos) pos.textContent = '#' + (i + 1);
@@ -541,13 +694,16 @@
     }
 
     function buildCard(data) {
-        var cards = document.querySelectorAll('#queue-list .queue-card[data-task-id]');
-        var posNum = cards.length + 1;
+        var filterGroup = statusToFilterGroup(data.status);
+        var positionCards = document.querySelectorAll('#queue-list .queue-card[data-has-position]');
+        var posNum = positionCards.length + 1;
 
         var a = document.createElement('a');
         a.href = '/tasks/' + data.task_id + '/';
         a.dataset.taskId = data.task_id;
         a.dataset.taskStatus = data.status;
+        a.dataset.filterGroup = filterGroup;
+        a.dataset.hasPosition = 'true';
         a.className = 'queue-card';
 
         a.innerHTML =
@@ -578,36 +734,36 @@
 
     function syncCountsFromDom() {
         var cards = document.querySelectorAll('#queue-list .queue-card[data-task-id]');
-        var total = cards.length;
-        var inProgress = 0, pending = 0;
+        var counts = { all: 0, active: 0, pending: 0, completed: 0, failed: 0 };
+        var inProgress = 0;
+
         cards.forEach(function (c) {
-            var st = c.dataset.taskStatus;
-            if (st === 'in_progress') inProgress++;
-            else pending++;
+            var group = c.dataset.filterGroup || 'pending';
+            counts.all++;
+            if (counts.hasOwnProperty(group)) counts[group]++;
+            if (c.dataset.taskStatus === 'in_progress') inProgress++;
         });
 
-        // Hero subtitle
+        ['all', 'active', 'pending', 'completed', 'failed'].forEach(function (f) {
+            var el = document.getElementById('pill-count-' + f);
+            if (el) el.textContent = counts[f];
+        });
+
+        var queueActive = counts.active + counts.pending;
         var hero = document.getElementById('queue-hero-count');
         if (hero) {
-            hero.textContent = total === 0
+            hero.textContent = queueActive === 0
                 ? 'No active tasks'
-                : total + ' active task' + (total !== 1 ? 's' : '');
+                : queueActive + ' active task' + (queueActive !== 1 ? 's' : '');
         }
 
-        // Section label
-        var label = document.getElementById('queue-count-label');
-        if (label) {
-            label.textContent = total + ' task' + (total !== 1 ? 's' : '') + ' in queue';
-        }
-
-        // Show/hide list vs empty state
-        if (total === 0) {
+        if (counts.all === 0) {
             showEmptyState();
         } else {
             showListSection();
         }
 
-        return { inProgress: inProgress, pending: pending };
+        return { inProgress: inProgress, pending: counts.pending };
     }
 
     function updateHealthBar() {
