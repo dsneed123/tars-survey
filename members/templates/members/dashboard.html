@@ -784,6 +784,19 @@ body { overflow: hidden; height: 100vh; }
 
             {% else %}
 
+            <!-- Queue stats welcome message -->
+            {% if active_count > 0 %}
+            <div class="chat-message tars-msg" id="tars-welcome-msg">
+                <div class="msg-avatar tars-avatar">T</div>
+                <div class="msg-body">
+                    <div class="msg-sender">TARS</div>
+                    <div class="msg-content" id="tars-welcome-stats-content">
+                        <p>I'm currently working on {{ active_count }} task{{ active_count|pluralize }}. {{ completed_today }} completed today.</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
             <!-- Task messages -->
             {% load tz %}
             {% for task in all_tasks reversed %}
@@ -1316,7 +1329,25 @@ document.addEventListener('keydown', function(e) {
             .catch(function () {});
     }
 
+    function updateWelcomeStats(activeCount, completedToday) {
+        var welcomeMsg = document.getElementById('tars-welcome-msg');
+        var contentEl = document.getElementById('tars-welcome-stats-content');
+        if (activeCount > 0) {
+            var taskWord = activeCount === 1 ? 'task' : 'tasks';
+            if (contentEl) {
+                contentEl.innerHTML = '<p>I\'m currently working on ' + activeCount + ' ' + taskWord + '. ' + completedToday + ' completed today.</p>';
+            }
+            if (welcomeMsg) { welcomeMsg.style.display = ''; }
+        } else {
+            if (welcomeMsg) { welcomeMsg.style.display = 'none'; }
+        }
+    }
+
     function handleMessage(data) {
+        if (data.type === 'queue_stats') {
+            updateWelcomeStats(data.active_count, data.completed_today);
+            return;
+        }
         if (!data.task_id || !data.status) return;
 
         var id = String(data.task_id);

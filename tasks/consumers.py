@@ -73,6 +73,9 @@ class DashboardConsumer(AsyncWebsocketConsumer):
     async def task_update(self, event):
         await self.send(text_data=json.dumps(event["data"]))
 
+    async def queue_stats(self, event):
+        await self.send(text_data=json.dumps(event["data"]))
+
 
 class QueueConsumer(AsyncWebsocketConsumer):
     """

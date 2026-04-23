@@ -34,6 +34,11 @@ def dashboard(request):
         task.queue_position = queue_positions.get(task.pk)
         task.wait_time = wait_times.get(task.pk)
 
+    completed_today = Task.objects.filter(
+        created_by=request.user,
+        status="completed",
+        completed_at__date=timezone.now().date(),
+    ).count()
     completed_count = Task.objects.filter(created_by=request.user, status="completed").count()
     active_count = Task.objects.filter(
         created_by=request.user,
@@ -103,6 +108,7 @@ def dashboard(request):
         "pending_pct": pending_pct,
         "queue_widget_tasks": queue_widget_tasks,
         "in_progress_count": in_progress_count,
+        "completed_today": completed_today,
         "has_more": total_tasks > 50,
         "oldest_task_id": all_tasks[-1].pk if all_tasks else None,
     }
