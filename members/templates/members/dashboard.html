@@ -679,6 +679,77 @@ body { overflow: hidden; height: 100vh; }
     cursor: pointer; margin-top: 12px; transition: background 0.15s;
 }
 .detect-add-btn:hover { background: #4f46e5; color: #fff; }
+
+/* ── Task expand/collapse panel ─────────────────────────── */
+.task-expand-btn {
+    background: none;
+    border: none;
+    color: #444;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 2px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    vertical-align: middle;
+    transition: color 0.15s;
+    line-height: 1;
+}
+.task-expand-btn:hover { color: #777; }
+.task-expand-btn .bi-chevron-down { font-size: 10px; transition: transform 0.2s; }
+.task-expand-btn[aria-expanded="true"] .bi-chevron-down { transform: rotate(180deg); }
+
+.task-detail-panel {
+    display: none;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #1a1a1a;
+}
+.task-detail-panel.open { display: block; }
+
+.tdp-section { margin-bottom: 10px; }
+.tdp-label {
+    font-size: 10px;
+    color: #3d3d3d;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+.tdp-description {
+    font-size: 13px;
+    color: #888;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.tdp-timeline { list-style: none; padding: 0; margin: 0; }
+.tdp-timeline li { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 4px; }
+.tdp-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.tdp-dot.done { background: #22c55e; }
+.tdp-dot.current { background: #6366f1; }
+.tdp-dot.pending { background: transparent; border: 1px solid #2a2a2a; }
+.tdp-dot.failed { background: #ef4444; }
+.tdp-tl-label.done { color: #555; }
+.tdp-tl-label.current { color: #ccc; font-weight: 500; }
+.tdp-tl-label.pending { color: #333; }
+.tdp-tl-label.failed { color: #ef4444; }
+.tdp-worker { font-size: 12px; color: #555; font-family: monospace; }
+.tdp-attachment { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #555; margin-bottom: 3px; }
+.tdp-attachment a { color: #6366f1; text-decoration: none; }
+.tdp-attachment a:hover { text-decoration: underline; }
+.tdp-full-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: #3a3a3a;
+    text-decoration: none;
+    margin-top: 6px;
+    transition: color 0.15s;
+}
+.tdp-full-link:hover { color: #666; }
 </style>
 {% endblock %}
 
@@ -889,7 +960,8 @@ body { overflow: hidden; height: 100vh; }
                         </button>
                         {% endif %}
                     </div>
-                    <div class="msg-time">{% if task.completed_at %}<span class="msg-timestamp" data-timestamp="{{ task.completed_at|date:'c' }}">{{ task.completed_at|timesince }} ago</span>{% elif task.started_at %}<span class="msg-timestamp" data-timestamp="{{ task.started_at|date:'c' }}">{{ task.started_at|timesince }} ago</span>{% else %}<span class="msg-timestamp" data-timestamp="{{ task.created_at|date:'c' }}">{{ task.created_at|timesince }} ago</span>{% endif %}</div>
+                    <div class="task-detail-panel" id="task-detail-panel-{{ task.pk }}"></div>
+                    <div class="msg-time">{% if task.completed_at %}<span class="msg-timestamp" data-timestamp="{{ task.completed_at|date:'c' }}">{{ task.completed_at|timesince }} ago</span>{% elif task.started_at %}<span class="msg-timestamp" data-timestamp="{{ task.started_at|date:'c' }}">{{ task.started_at|timesince }} ago</span>{% else %}<span class="msg-timestamp" data-timestamp="{{ task.created_at|date:'c' }}">{{ task.created_at|timesince }} ago</span>{% endif %} &middot; <button class="task-expand-btn" onclick="toggleTaskDetail(this, {{ task.pk }})" aria-expanded="false"><span>Details</span><i class="bi bi-chevron-down"></i></button></div>
                 </div>
             </div>
 
@@ -1409,6 +1481,11 @@ document.addEventListener('keydown', function(e) {
         if (typeof window._queueWidgetUpdate === 'function') {
             window._queueWidgetUpdate(data);
         }
+
+        // Invalidate or refresh task detail panel when status changes
+        if (typeof window._onTaskDetailCacheInvalidate === 'function') {
+            window._onTaskDetailCacheInvalidate(id);
+        }
     }
 
     connect();
@@ -1867,5 +1944,126 @@ function formatAllTimestamps() {
 insertDateDividers();
 formatAllTimestamps();
 setInterval(formatAllTimestamps, 60000);
+</script>
+
+<script>
+// ── Task detail expandable panel ───────────────────────────
+var _taskDetailCache = {};
+
+function toggleTaskDetail(btn, pk) {
+    var panel = document.getElementById('task-detail-panel-' + pk);
+    if (!panel) return;
+
+    var isOpen = panel.classList.contains('open');
+
+    if (isOpen) {
+        panel.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+        return;
+    }
+
+    if (_taskDetailCache[pk]) {
+        panel.classList.add('open');
+        btn.setAttribute('aria-expanded', 'true');
+        return;
+    }
+
+    btn.disabled = true;
+    var span = btn.querySelector('span');
+    if (span) span.textContent = 'Loading…';
+
+    fetch('/api/tasks/' + pk + '/detail', { credentials: 'same-origin' })
+        .then(function(r) {
+            if (!r.ok) throw new Error('fetch failed');
+            return r.json();
+        })
+        .then(function(data) {
+            _taskDetailCache[pk] = data;
+            panel.innerHTML = buildDetailPanelHtml(data, pk);
+            panel.classList.add('open');
+            btn.setAttribute('aria-expanded', 'true');
+            btn.disabled = false;
+            if (span) span.textContent = 'Details';
+        })
+        .catch(function() {
+            btn.disabled = false;
+            if (span) span.textContent = 'Details';
+        });
+}
+
+function buildDetailPanelHtml(data, pk) {
+    var html = '';
+
+    if (data.description && data.description !== data.title) {
+        html += '<div class="tdp-section">' +
+            '<div class="tdp-label">Description</div>' +
+            '<div class="tdp-description">' + _esc(data.description) + '</div>' +
+            '</div>';
+    }
+
+    if (data.timeline && data.timeline.length) {
+        html += '<div class="tdp-section">' +
+            '<div class="tdp-label">Timeline</div>' +
+            '<ul class="tdp-timeline">';
+        data.timeline.forEach(function(step) {
+            html += '<li>' +
+                '<span class="tdp-dot ' + _esc(step.state) + '"></span>' +
+                '<span class="tdp-tl-label ' + _esc(step.state) + '">' + _esc(step.label) + '</span>' +
+                '</li>';
+        });
+        html += '</ul></div>';
+    }
+
+    if (data.pr_url) {
+        html += '<div class="tdp-section">' +
+            '<a href="' + _esc(data.pr_url) + '" target="_blank" rel="noopener" class="pr-link">' +
+            '<i class="bi bi-git"></i> View Pull Request</a>' +
+            '</div>';
+    }
+
+    if (data.attachments && data.attachments.length) {
+        html += '<div class="tdp-section">' +
+            '<div class="tdp-label">Attachments</div>';
+        data.attachments.forEach(function(a) {
+            html += '<div class="tdp-attachment"><i class="bi bi-paperclip"></i>' +
+                (a.url
+                    ? '<a href="' + _esc(a.url) + '" target="_blank" rel="noopener">' + _esc(a.filename) + '</a>'
+                    : _esc(a.filename)) +
+                '</div>';
+        });
+        html += '</div>';
+    }
+
+    if (data.worker_id) {
+        html += '<div class="tdp-section">' +
+            '<div class="tdp-label">Worker</div>' +
+            '<div class="tdp-worker">' + _esc(data.worker_id) + '</div>' +
+            '</div>';
+    }
+
+    html += '<a href="/dashboard/tasks/' + parseInt(pk, 10) + '/" class="tdp-full-link">' +
+        'Full details <i class="bi bi-arrow-right"></i>' +
+        '</a>';
+
+    return html;
+}
+
+// Called by the WS handler when a task status changes so the panel stays current.
+window._onTaskDetailCacheInvalidate = function(taskId) {
+    if (!_taskDetailCache[taskId]) return;
+    var panel = document.getElementById('task-detail-panel-' + taskId);
+    if (panel && panel.classList.contains('open')) {
+        fetch('/api/tasks/' + taskId + '/detail', { credentials: 'same-origin' })
+            .then(function(r) { return r.ok ? r.json() : null; })
+            .then(function(data) {
+                if (!data) return;
+                _taskDetailCache[taskId] = data;
+                panel.innerHTML = buildDetailPanelHtml(data, taskId);
+            })
+            .catch(function() {});
+    } else {
+        delete _taskDetailCache[taskId];
+    }
+};
 </script>
 {% endblock %}
