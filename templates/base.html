@@ -706,6 +706,18 @@
 
 {% block extra_scripts %}{% endblock %}
 
+{% if messages %}
+<script>
+(function () {
+    {% for message in messages %}
+    if (typeof window.showToast === 'function') {
+        showToast("{{ message|escapejs }}", "{% if 'error' in message.tags or 'warning' in message.tags %}error{% else %}success{% endif %}");
+    }
+    {% endfor %}
+}());
+</script>
+{% endif %}
+
 {% if user.is_authenticated %}
 <script>
 (function () {

@@ -43,24 +43,43 @@ def dashboard(request):
     # Success rate
     total_done = completed_count + failed_count
     success_rate = round((completed_count / total_done * 100) if total_done > 0 else 0)
+    success_rate_display = f"{success_rate}%" if total_done > 0 else "—"
+
+    # Tasks this month
+    now = timezone.now()
+    tasks_this_month = Task.objects.filter(
+        created_by=request.user,
+        created_at__year=now.year,
+        created_at__month=now.month,
+    ).count()
 
     # Queue bar percentages
     completed_pct = round((completed_count / total_tasks * 100) if total_tasks > 0 else 0)
     active_pct = round((active_count / total_tasks * 100) if total_tasks > 0 else 0)
     pending_pct = max(0, 100 - completed_pct - active_pct)
 
+    # Onboarding checklist (None once completed)
+    onboarding_checklist = None if profile.onboarding_completed else {
+        "has_project": projects.exists(),
+        "has_task": total_tasks > 0,
+    }
+
     ctx = {
         "profile": profile,
         "projects": projects,
         "all_tasks": all_tasks,
+        "recent_tasks": all_tasks,
         "completed_count": completed_count,
         "active_count": active_count,
         "pending_count": pending_count,
         "total_tasks": total_tasks,
+        "tasks_this_month": tasks_this_month,
         "success_rate": success_rate,
+        "success_rate_display": success_rate_display,
         "completed_pct": completed_pct,
         "active_pct": active_pct,
         "pending_pct": pending_pct,
+        "onboarding_checklist": onboarding_checklist,
     }
     return render(request, "members/dashboard.html", ctx)
 

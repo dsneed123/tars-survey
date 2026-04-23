@@ -59,6 +59,29 @@ body { overflow: hidden; height: 100vh; }
 }
 .new-chat-btn:hover { background: #1a1a1a; color: #e0e0e0; border-color: #333; }
 
+/* ── Sidebar nav links ─────────────────────────────────── */
+.sidebar-nav {
+    padding: 8px 8px 0;
+    border-bottom: 1px solid #1a1a1a;
+}
+
+.sidebar-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 8px;
+    border-radius: 7px;
+    font-size: 13px;
+    color: #666;
+    text-decoration: none;
+    transition: background 0.12s, color 0.12s;
+    margin-bottom: 2px;
+}
+
+.sidebar-nav-link:hover { background: #1a1a1a; color: #aaa; }
+.sidebar-nav-link.active { background: #1a1a1a; color: #d0d0d0; }
+.sidebar-nav-link i { font-size: 13px; width: 16px; text-align: center; flex-shrink: 0; }
+
 /* ── Queue section in sidebar ──────────────────────────── */
 .sidebar-section-label {
     padding: 16px 16px 8px;
@@ -211,21 +234,6 @@ body { overflow: hidden; height: 100vh; }
     color: #888;
 }
 
-.topbar-stats {
-    display: flex;
-    gap: 16px;
-    font-size: 12px;
-    color: #555;
-}
-
-.stat-item { display: flex; align-items: center; gap: 5px; }
-.stat-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    display: inline-block;
-}
-
 /* ── Chat messages feed ────────────────────────────────── */
 .chat-feed {
     flex: 1;
@@ -254,45 +262,16 @@ body { overflow: hidden; height: 100vh; }
     padding: 40px 20px;
 }
 
-.empty-logo {
-    font-family: 'Space Grotesk', system-ui, sans-serif;
-    font-size: 3rem;
-    font-weight: 800;
-    color: #222;
-    margin-bottom: 16px;
+@keyframes greeting-in {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
-.empty-logo span { color: #6366f1; }
 
-.empty-title {
-    font-size: 20px;
+.empty-greeting {
+    font-size: 22px;
     font-weight: 500;
     color: #888;
-    margin-bottom: 32px;
-}
-
-.suggestion-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    justify-content: center;
-    max-width: 500px;
-}
-
-.suggestion-chip {
-    background: #141414;
-    border: 1px solid #1f1f1f;
-    color: #999;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.15s;
-    text-decoration: none;
-}
-.suggestion-chip:hover {
-    background: #1a1a1a;
-    border-color: #333;
-    color: #d0d0d0;
+    animation: greeting-in 0.55s ease-out forwards;
 }
 
 /* ── Chat message bubbles ──────────────────────────────── */
@@ -629,6 +608,19 @@ body { overflow: hidden; height: 100vh; }
         </button>
     </div>
 
+    <!-- Sidebar nav -->
+    <nav class="sidebar-nav">
+        <a href="{% url 'members:dashboard' %}" class="sidebar-nav-link active">
+            <i class="bi bi-grid-1x2"></i> Dashboard
+        </a>
+        <a href="{% url 'projects:list' %}" class="sidebar-nav-link">
+            <i class="bi bi-folder2-open"></i> Projects
+        </a>
+        <a href="{% url 'tasks:queue' %}" class="sidebar-nav-link">
+            <i class="bi bi-list-ul"></i> Queue
+        </a>
+    </nav>
+
     <!-- Queue summary bar -->
     <div class="queue-summary">
         <span>{{ active_count }} active</span>
@@ -646,7 +638,7 @@ body { overflow: hidden; height: 100vh; }
 
     <div class="sidebar-scroll">
         {% for task in all_tasks %}
-        <a href="{% url 'tasks:detail' task.pk %}" class="queue-item {% if task.is_active %}active{% endif %}">
+        <a href="{% url 'tasks:detail' task.pk %}" class="queue-item {% if task.is_active %}active{% endif %}" data-task-id="{{ task.pk }}">
             <div class="queue-status-dot dot-{{ task.status }}"></div>
             <div class="queue-item-text">
                 <div class="queue-item-title">{{ task.title }}</div>
@@ -669,6 +661,7 @@ body { overflow: hidden; height: 100vh; }
             <div class="user-name">{{ user.company_name|default:user.email }}</div>
             <div class="user-plan">{{ profile.get_plan_tier_display|default:"Free" }} plan</div>
         </div>
+        <a href="{% url 'projects:list' %}" title="Projects &amp; Settings"><i class="bi bi-gear"></i></a>
         <a href="{% url 'accounts:logout' %}" title="Sign out"><i class="bi bi-box-arrow-right"></i></a>
     </div>
 </aside>
@@ -684,23 +677,6 @@ body { overflow: hidden; height: 100vh; }
             </button>
             <span class="topbar-title">TARS</span>
         </div>
-        <div class="topbar-stats">
-            <span class="stat-item">
-                <span class="stat-dot" style="background:#22c55e;"></span>
-                {{ completed_count }} completed
-            </span>
-            <span class="stat-item">
-                <span class="stat-dot" style="background:#3b82f6;"></span>
-                {{ active_count }} active
-            </span>
-            <span class="stat-item">
-                <span class="stat-dot" style="background:#555;"></span>
-                {{ pending_count }} pending
-            </span>
-            {% if success_rate > 0 %}
-            <span class="stat-item">{{ success_rate }}% success</span>
-            {% endif %}
-        </div>
     </div>
 
     <!-- Chat feed -->
@@ -710,44 +686,18 @@ body { overflow: hidden; height: 100vh; }
             {% if not all_tasks %}
             <!-- Empty state -->
             <div class="empty-state">
-                <div class="empty-logo">T<span>.</span>ARS</div>
-                <div class="empty-title">What should I code for you?</div>
-                <div class="suggestion-chips">
-                    <span class="suggestion-chip" onclick="fillInput('Fix a bug in my project')">Fix a bug</span>
-                    <span class="suggestion-chip" onclick="fillInput('Add a new feature')">Add a feature</span>
-                    <span class="suggestion-chip" onclick="fillInput('Write tests for my code')">Write tests</span>
-                    <span class="suggestion-chip" onclick="fillInput('Refactor and clean up code')">Refactor code</span>
-                </div>
+                <div class="empty-greeting">Hi! I'm TARS. Tell me what to code.</div>
+                {% if not projects %}
+                <p style="color:#555; font-size:13px; margin-top:16px; max-width:300px;">
+                    Connect a repository first to get started.
+                </p>
+                <a href="{% url 'projects:add' %}" style="display:inline-flex;align-items:center;gap:8px;background:#6366f1;color:#fff;padding:10px 20px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:500;margin-top:8px;">
+                    <i class="bi bi-plus-lg"></i> Add a Project
+                </a>
+                {% endif %}
             </div>
 
             {% else %}
-
-            <!-- TARS welcome message -->
-            <div class="chat-message">
-                <div class="msg-avatar tars-avatar">T</div>
-                <div class="msg-body">
-                    <div class="msg-sender">TARS</div>
-                    <div class="msg-content">
-                        <p>I'm working through your task queue. Here's the current status:</p>
-                        <div class="status-card">
-                            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center;">
-                                <div>
-                                    <div style="font-size:20px;font-weight:700;color:#22c55e;">{{ completed_count }}</div>
-                                    <div style="font-size:11px;color:#555;">Completed</div>
-                                </div>
-                                <div>
-                                    <div style="font-size:20px;font-weight:700;color:#3b82f6;">{{ active_count }}</div>
-                                    <div style="font-size:11px;color:#555;">In Progress</div>
-                                </div>
-                                <div>
-                                    <div style="font-size:20px;font-weight:700;color:#777;">{{ pending_count }}</div>
-                                    <div style="font-size:11px;color:#555;">Pending</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <!-- Task messages -->
             {% load tz %}
@@ -769,11 +719,11 @@ body { overflow: hidden; height: 100vh; }
             </div>
 
             <!-- TARS response -->
-            <div class="chat-message">
+            <div class="chat-message tars-msg" data-task-id="{{ task.pk }}">
                 <div class="msg-avatar tars-avatar">T</div>
                 <div class="msg-body">
                     <div class="msg-sender">TARS</div>
-                    <div class="msg-content">
+                    <div class="msg-content" id="tars-content-{{ task.pk }}">
                         {% if task.status == 'pending' or task.status == 'queued' %}
                         <p>Got it. This is in the queue.</p>
                         <div class="status-card">
@@ -851,20 +801,19 @@ body { overflow: hidden; height: 100vh; }
     <!-- Chat input bar -->
     <div class="chat-input-area">
         <div class="chat-input-wrapper">
-            <form method="post" action="{% url 'members:quick_task' %}" id="taskForm">
+            {% if projects %}
+            <form method="post" action="{% url 'members:quick_task' %}" id="taskForm" data-no-loading-state>
                 {% csrf_token %}
                 <div class="input-container">
                     <div class="input-top-row">
                         <div class="project-pill" id="projectPill" onclick="toggleProjectDropdown()">
                             <i class="bi bi-folder2"></i>
-                            <span id="selectedProjectName">
-                                {% if projects %}{{ projects.0.name }}{% else %}No projects{% endif %}
-                            </span>
+                            <span id="selectedProjectName">{{ projects.0.name }}</span>
                             <i class="bi bi-chevron-down" style="font-size:9px;margin-left:2px;"></i>
                             <div class="project-dropdown" id="projectDropdown">
                                 {% for project in projects %}
                                 <button type="button" class="project-option {% if forloop.first %}selected{% endif %}"
-                                        onclick="selectProject({{ project.pk }}, '{{ project.name }}', this)">
+                                        onclick="selectProject({{ project.pk }}, '{{ project.name }}', this, event)">
                                     {{ project.name }}
                                 </button>
                                 {% endfor %}
@@ -872,7 +821,7 @@ body { overflow: hidden; height: 100vh; }
                         </div>
                     </div>
                     <div class="input-row">
-                        <input type="hidden" name="project_id" id="projectIdInput" value="{% if projects %}{{ projects.0.pk }}{% endif %}">
+                        <input type="hidden" name="project_id" id="projectIdInput" value="{{ projects.0.pk }}">
                         <textarea name="title" class="chat-textarea" id="chatInput"
                                   placeholder="Ask TARS to code something..." rows="1"
                                   onkeydown="handleKey(event)" oninput="autoGrow(this); updateSend()"></textarea>
@@ -883,6 +832,13 @@ body { overflow: hidden; height: 100vh; }
                 </div>
             </form>
             <div class="input-hint">Enter to send &middot; Shift+Enter for new line</div>
+            {% else %}
+            <div style="text-align:center; padding: 16px 0 8px;">
+                <a href="{% url 'projects:add' %}" style="display:inline-flex;align-items:center;gap:6px;background:#141414;border:1px solid #252525;color:#6366f1;padding:10px 20px;border-radius:10px;text-decoration:none;font-size:14px;font-weight:500;transition:all 0.15s;" onmouseover="this.style.borderColor='#6366f1'" onmouseout="this.style.borderColor='#252525'">
+                    <i class="bi bi-plus-lg"></i> Add a project to get started
+                </a>
+            </div>
+            {% endif %}
         </div>
     </div>
 
@@ -921,7 +877,8 @@ function handleKey(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         var input = document.getElementById('chatInput');
-        if (input.value.trim()) {
+        var hasProject = document.getElementById('projectIdInput').value;
+        if (input.value.trim() && hasProject) {
             document.getElementById('taskForm').submit();
         }
     }
@@ -932,21 +889,13 @@ function focusInput() {
     document.getElementById('chatInput').focus();
 }
 
-// Fill input from suggestion chips
-function fillInput(text) {
-    var input = document.getElementById('chatInput');
-    input.value = text;
-    input.focus();
-    autoGrow(input);
-    updateSend();
-}
-
 // Project dropdown
 function toggleProjectDropdown() {
     document.getElementById('projectDropdown').classList.toggle('show');
 }
 
-function selectProject(id, name, el) {
+function selectProject(id, name, el, e) {
+    if (e) e.stopPropagation();
     document.getElementById('projectIdInput').value = id;
     document.getElementById('selectedProjectName').textContent = name;
     document.querySelectorAll('.project-option').forEach(function(o) { o.classList.remove('selected'); });
@@ -970,5 +919,104 @@ document.addEventListener('keydown', function(e) {
         focusInput();
     }
 });
+</script>
+
+<script>
+// Dashboard WebSocket — real-time task status updates
+(function () {
+    var scheme = location.protocol === 'https:' ? 'wss' : 'ws';
+    var ws = new WebSocket(scheme + '://' + location.host + '/ws/dashboard/');
+
+    ws.onmessage = function (e) {
+        var data;
+        try { data = JSON.parse(e.data); } catch (_) { return; }
+        if (!data.task_id || !data.status) return;
+
+        var id = String(data.task_id);
+
+        // Update sidebar status dot and meta text
+        var sidebarItem = document.querySelector('.queue-item[data-task-id="' + id + '"]');
+        if (sidebarItem) {
+            var dot = sidebarItem.querySelector('.queue-status-dot');
+            if (dot) {
+                dot.className = 'queue-status-dot dot-' + data.status;
+            }
+            var meta = sidebarItem.querySelector('.queue-item-meta');
+            if (meta) {
+                var parts = meta.textContent.split('·');
+                if (parts.length >= 2) {
+                    meta.textContent = parts[0].trim() + ' · ' + data.status_display;
+                }
+            }
+        }
+
+        // Update TARS response content in the chat feed
+        var contentEl = document.getElementById('tars-content-' + id);
+        if (contentEl) {
+            contentEl.innerHTML = buildTarsHtml(data);
+            // Also update the msg-time below it
+            var tarsMsg = contentEl.closest('.tars-msg');
+            if (tarsMsg) {
+                var timeEl = tarsMsg.querySelector('.msg-time');
+                if (timeEl) timeEl.textContent = 'just now';
+            }
+        }
+
+        // Toast for active status transitions
+        var activeStatuses = ['assigned', 'in_progress', 'reviewing', 'completed', 'failed'];
+        if (activeStatuses.indexOf(data.status) !== -1 && typeof window.showToast === 'function') {
+            var type = data.status === 'failed' ? 'error' : data.status === 'completed' ? 'success' : 'info';
+            showToast(data.status_display + ': ' + escHtml(data.title), type, 'Task Update');
+        }
+    };
+
+    ws.onerror = function () {};
+
+    function escHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function buildTarsHtml(data) {
+        var s = data.status;
+        var html = '';
+        if (s === 'pending' || s === 'queued') {
+            html = '<p>Got it. This is in the queue.</p>' +
+                '<div class="status-card"><span class="status-badge badge-' + s + '">' + escHtml(data.status_display) + '</span></div>';
+        } else if (s === 'assigned') {
+            html = '<p>Picked this up. Starting soon.</p>' +
+                '<div class="status-card"><span class="status-badge badge-assigned">Assigned</span></div>';
+        } else if (s === 'in_progress') {
+            html = '<p>Working on this now...</p>' +
+                '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>' +
+                '<div class="status-card"><span class="status-badge badge-in_progress">In Progress</span></div>';
+        } else if (s === 'reviewing') {
+            html = '<p>Code is written. Reviewing changes now...</p>' +
+                '<div class="status-card"><span class="status-badge badge-reviewing">Reviewing</span></div>';
+        } else if (s === 'completed') {
+            html = '<p>Done! Changes have been pushed.</p>';
+            if (data.pr_url) {
+                html += '<a href="' + escHtml(data.pr_url) + '" target="_blank" rel="noopener" class="pr-link">' +
+                    '<i class="bi bi-git"></i> View Pull Request</a>';
+            }
+            if (data.branch_name) {
+                html += '<div style="font-size:12px;color:#555;margin-top:6px;">Branch: <code style="color:#888;">' + escHtml(data.branch_name) + '</code></div>';
+            }
+            html += '<div class="status-card" style="border-color:rgba(34,197,94,0.2);">' +
+                '<span class="status-badge badge-completed">Completed</span></div>';
+        } else if (s === 'failed') {
+            html = '<p>Something went wrong with this one.</p>';
+            if (data.error_message) {
+                html += '<div class="error-text">' + escHtml(data.error_message) + '</div>';
+            }
+            html += '<div class="status-card" style="border-color:rgba(239,68,68,0.2);">' +
+                '<span class="status-badge badge-failed">Failed</span></div>';
+        }
+        return html;
+    }
+}());
 </script>
 {% endblock %}

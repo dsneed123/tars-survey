@@ -128,7 +128,7 @@ class ProjectSettingsForm(ProjectForm):
     """Same as ProjectForm but also exposes is_active toggle."""
 
     class Meta(ProjectForm.Meta):
-        fields = ProjectForm.Meta.fields + ["is_active", "default_branch"]
+        fields = ProjectForm.Meta.fields + ["is_active"]
         widgets = {
             **ProjectForm.Meta.widgets,
             "is_active": forms.CheckboxInput(attrs={"class": "form-check-input"}),
