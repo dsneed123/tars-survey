@@ -295,6 +295,32 @@ body { overflow: hidden; height: 100vh; }
 .retry-btn:disabled { opacity: 0.5; cursor: default; }
 .retry-done { font-size: 12px; color: #555; margin-top: 8px; display: inline-block; }
 
+/* ── TARS error chat bubbles (connection/submission errors) ── */
+.tars-error-content {
+    background: rgba(239, 68, 68, 0.06);
+    border: 1px solid rgba(239, 68, 68, 0.18);
+    border-radius: 8px;
+    padding: 10px 14px;
+}
+.tars-error-content p { margin: 0 0 8px; color: #fca5a5; }
+.tars-error-content p:last-child { margin-bottom: 0; }
+.tars-inline-retry {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.25);
+    color: #ef4444;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.tars-inline-retry:hover:not(:disabled) { background: rgba(239, 68, 68, 0.18); color: #fca5a5; }
+.tars-inline-retry:disabled { opacity: 0.5; cursor: default; }
+
 /* ── Queue position label ──────────────────────────────── */
 .queue-pos-label {
     font-size: 12px;
@@ -1282,7 +1308,11 @@ function handleKey(e) {
         }
         var hasProject = document.getElementById('projectIdInput').value;
         if (input.value.trim() && hasProject) {
-            document.getElementById('taskForm').submit();
+            var text = input.value.trim();
+            input.value = '';
+            autoGrow(input);
+            updateSend();
+            submitTaskAjax(text, hasProject);
         }
     }
 }
@@ -1429,17 +1459,24 @@ document.addEventListener('keydown', function(e) {
 
     function showReconnectingBanner() {
         if (reconnectingBanner) { return; }
-        var feed = document.getElementById('chat-feed');
-        if (!feed) { return; }
+        var container = document.querySelector('.chat-container');
+        if (!container) { return; }
+        var nowIso = new Date().toISOString();
         reconnectingBanner = document.createElement('div');
-        reconnectingBanner.className = 'tars-msg';
+        reconnectingBanner.className = 'chat-message tars-msg';
+        reconnectingBanner.setAttribute('data-timestamp', nowIso);
         reconnectingBanner.innerHTML =
-            '<div class="msg-avatar"><i class="bi bi-wifi-off"></i></div>' +
+            '<div class="msg-avatar tars-avatar">T</div>' +
             '<div class="msg-body">' +
-            '<div class="msg-sender">System</div>' +
-            '<div class="tars-content"><p style="color:var(--tars-muted,#888);font-style:italic;margin:0;">Reconnecting…</p></div>' +
+                '<div class="msg-sender">TARS</div>' +
+                '<div class="msg-content">' +
+                    '<div class="tars-error-content">' +
+                        '<p>I lost connection — reconnecting...</p>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="msg-time"><span class="msg-timestamp" data-timestamp="' + nowIso + '">just now</span></div>' +
             '</div>';
-        feed.appendChild(reconnectingBanner);
+        container.appendChild(reconnectingBanner);
         if (typeof isNearBottom === 'function' && isNearBottom()) {
             if (typeof scrollToBottom === 'function') { scrollToBottom(true); }
         }
@@ -1463,6 +1500,12 @@ document.addEventListener('keydown', function(e) {
         if (pollingTimer) return;
         pollingMode = true;
         showPollingNotice();
+        if (typeof appendTarsErrorBubble === 'function') {
+            appendTarsErrorBubble(
+                "I’m having trouble staying connected. I’ll check for updates periodically — you won’t miss anything.",
+                null
+            );
+        }
         pollingTimer = setInterval(function () {
             var since = lastMsgTime;
             lastMsgTime = new Date().toISOString();
@@ -1756,6 +1799,7 @@ document.addEventListener('keydown', function(e) {
 var _userInitial = "{{ request.user.email|first|upper|escapejs }}";
 var _detectUrl = "{% url 'projects:detect' %}";
 var _addChatUrl = "{% url 'projects:add_chat' %}";
+var _quickTaskUrl = "{% url 'members:quick_task' %}";
 var GH_URL_RE = /^(?:https?:\/\/)?(?:www\.)?github\.com\/([A-Za-z0-9_.\-]+\/[A-Za-z0-9_.\-]+?)(?:\.git)?(?:[\/\?#].*)?$/i;
 
 function isGithubUrl(text) {
@@ -1924,16 +1968,24 @@ function detectRepo(repoUrl) {
 
 function interceptTaskSubmit(e) {
     var input = document.getElementById('chatInput');
-    if (input && isGithubUrl(input.value.trim())) {
+    if (!input) return true;
+    var text = input.value.trim();
+    if (isGithubUrl(text)) {
         e.preventDefault();
-        var url = input.value.trim();
         input.value = '';
         autoGrow(input);
         updateSend();
-        detectRepo(url);
+        detectRepo(text);
         return false;
     }
-    return true;
+    var projectId = document.getElementById('projectIdInput').value;
+    if (!text || !projectId) return true;
+    e.preventDefault();
+    input.value = '';
+    autoGrow(input);
+    updateSend();
+    submitTaskAjax(text, projectId);
+    return false;
 }
 
 function handleGithubKey(e) {
@@ -1971,6 +2023,170 @@ function triggerGithubInput() {
     }
     var ghInput = document.getElementById('githubInput');
     if (ghInput) ghInput.focus();
+}
+
+// ── AJAX task submission with chat-bubble error states ─────
+
+function submitTaskAjax(title, projectId, bubbleEl) {
+    if (!bubbleEl) {
+        bubbleEl = _appendTarsPendingBubble();
+    }
+    var fd = new FormData();
+    fd.append('title', title);
+    fd.append('project_id', projectId);
+    fd.append('csrfmiddlewaretoken', getCsrfToken());
+    fetch(_quickTaskUrl, {
+        method: 'POST',
+        body: fd,
+        credentials: 'same-origin',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.ok) {
+            _resolvePendingBubble(bubbleEl, data.task_id);
+        } else {
+            _rejectPendingBubble(bubbleEl, data.error || "Couldn't submit that task. Try again?", title, projectId);
+        }
+    })
+    .catch(function() {
+        _rejectPendingBubble(bubbleEl, "Couldn't submit that task — check your connection and try again.", title, projectId);
+    });
+}
+
+function _appendTarsPendingBubble() {
+    var container = document.querySelector('.chat-container');
+    if (!container) return null;
+    var emptyState = container.querySelector('.empty-state');
+    if (emptyState) emptyState.style.display = 'none';
+    var nowIso = new Date().toISOString();
+    var div = document.createElement('div');
+    div.className = 'chat-message tars-msg';
+    div.setAttribute('data-timestamp', nowIso);
+    div.innerHTML =
+        '<div class="msg-avatar tars-avatar">T</div>' +
+        '<div class="msg-body">' +
+            '<div class="msg-sender">TARS</div>' +
+            '<div class="msg-content">' +
+                '<div class="typing-indicator">' +
+                    '<div class="typing-dot"></div>' +
+                    '<div class="typing-dot"></div>' +
+                    '<div class="typing-dot"></div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="msg-time"><span class="msg-timestamp" data-timestamp="' + nowIso + '">just now</span></div>' +
+        '</div>';
+    container.appendChild(div);
+    if (typeof scrollToBottom === 'function') scrollToBottom(true);
+    if (typeof hideNewMsgPill === 'function') hideNewMsgPill();
+    return div;
+}
+
+function _resolvePendingBubble(bubbleEl, taskId) {
+    if (!bubbleEl) return;
+    var contentEl = bubbleEl.querySelector('.msg-content');
+    if (contentEl) {
+        contentEl.id = 'tars-content-' + taskId;
+        contentEl.classList.remove('msg-content-updating');
+        void contentEl.offsetWidth;
+        contentEl.innerHTML =
+            '<p>Got it. This is in the queue.</p>' +
+            '<div class="status-card"><span class="status-badge badge-pending">Pending</span></div>';
+        contentEl.classList.add('msg-content-updating');
+    }
+    bubbleEl.setAttribute('data-task-id', String(taskId));
+    var msgBody = bubbleEl.querySelector('.msg-body');
+    var timeEl = bubbleEl.querySelector('.msg-time');
+    if (msgBody && timeEl) {
+        var detailPanel = document.createElement('div');
+        detailPanel.className = 'task-detail-panel';
+        detailPanel.id = 'task-detail-panel-' + taskId;
+        msgBody.insertBefore(detailPanel, timeEl);
+        var nowIso = new Date().toISOString();
+        timeEl.innerHTML = '<span class="msg-timestamp" data-timestamp="' + nowIso + '">just now</span>' +
+            ' &middot; <button class="task-expand-btn" onclick="toggleTaskDetail(this, ' + parseInt(taskId, 10) + ')" aria-expanded="false">' +
+            '<span>Details</span><i class="bi bi-chevron-down"></i></button>';
+    }
+    if (typeof window._queueWidgetUpdate === 'function') {
+        window._queueWidgetUpdate({ task_id: taskId, status: 'pending', status_display: 'Pending' });
+    }
+    if (typeof insertDateDividers === 'function') insertDateDividers();
+    if (typeof formatAllTimestamps === 'function') formatAllTimestamps();
+    if (typeof scrollToBottom === 'function') scrollToBottom(true);
+}
+
+function _rejectPendingBubble(bubbleEl, message, title, projectId) {
+    if (!bubbleEl) return;
+    var contentEl = bubbleEl.querySelector('.msg-content');
+    if (!contentEl) return;
+    contentEl.innerHTML = '';
+    var errorDiv = document.createElement('div');
+    errorDiv.className = 'tars-error-content';
+    var p = document.createElement('p');
+    p.textContent = message;
+    errorDiv.appendChild(p);
+    var btn = document.createElement('button');
+    btn.className = 'tars-inline-retry';
+    btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Try again';
+    btn.addEventListener('click', function() {
+        btn.disabled = true;
+        contentEl.innerHTML =
+            '<div class="typing-indicator">' +
+                '<div class="typing-dot"></div>' +
+                '<div class="typing-dot"></div>' +
+                '<div class="typing-dot"></div>' +
+            '</div>';
+        submitTaskAjax(title, projectId, bubbleEl);
+    });
+    errorDiv.appendChild(btn);
+    contentEl.appendChild(errorDiv);
+}
+
+// Used by the WebSocket polling fallback (startPolling) and any other error path.
+function appendTarsErrorBubble(message, retryFn) {
+    var container = document.querySelector('.chat-container');
+    if (!container) return null;
+    var nowIso = new Date().toISOString();
+    var div = document.createElement('div');
+    div.className = 'chat-message tars-msg';
+    div.setAttribute('data-timestamp', nowIso);
+    div.innerHTML =
+        '<div class="msg-avatar tars-avatar">T</div>' +
+        '<div class="msg-body">' +
+            '<div class="msg-sender">TARS</div>' +
+            '<div class="msg-content"></div>' +
+            '<div class="msg-time"><span class="msg-timestamp" data-timestamp="' + nowIso + '">just now</span></div>' +
+        '</div>';
+    container.appendChild(div);
+    var contentEl = div.querySelector('.msg-content');
+    var errorDiv = document.createElement('div');
+    errorDiv.className = 'tars-error-content';
+    var p = document.createElement('p');
+    p.textContent = message;
+    errorDiv.appendChild(p);
+    if (retryFn) {
+        var btn = document.createElement('button');
+        btn.className = 'tars-inline-retry';
+        btn.innerHTML = '<i class="bi bi-arrow-clockwise"></i> Try again';
+        btn.addEventListener('click', function() {
+            btn.disabled = true;
+            contentEl.innerHTML =
+                '<div class="typing-indicator">' +
+                    '<div class="typing-dot"></div>' +
+                    '<div class="typing-dot"></div>' +
+                    '<div class="typing-dot"></div>' +
+                '</div>';
+            retryFn();
+        });
+        errorDiv.appendChild(btn);
+    }
+    contentEl.appendChild(errorDiv);
+    if (typeof insertDateDividers === 'function') insertDateDividers();
+    if (typeof isNearBottom === 'function' && isNearBottom()) {
+        if (typeof scrollToBottom === 'function') scrollToBottom(true);
+    }
+    if (typeof hideNewMsgPill === 'function') hideNewMsgPill();
+    return div;
 }
 </script>
 
