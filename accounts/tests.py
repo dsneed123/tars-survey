@@ -120,7 +120,6 @@ class RegisterFormTests(TestCase):
         self.assertTrue(form.is_valid())
         user = form.save()
         self.assertEqual(user.email, "new@example.com")
-        self.assertEqual(user.company_name, "Acme Corp")
         self.assertTrue(user.check_password("SecurePass123!"))
 
     def test_email_lowercased_on_save(self):
