@@ -18,11 +18,7 @@ class LoginForm(forms.Form):
 
 class RegisterForm(forms.Form):
     email = forms.EmailField(
-        widget=forms.EmailInput(attrs={"class": _INPUT, "placeholder": "you@company.com"})
-    )
-    company_name = forms.CharField(
-        max_length=200,
-        widget=forms.TextInput(attrs={"class": _INPUT, "placeholder": "Acme Corp"}),
+        widget=forms.EmailInput(attrs={"class": _INPUT, "placeholder": "you@company.com", "autofocus": True})
     )
     password1 = forms.CharField(
         label="Password",
@@ -54,10 +50,11 @@ class RegisterForm(forms.Form):
 
     def save(self):
         email = self.cleaned_data["email"].lower()
+        display_name = email.split("@")[0]
         user = CustomUser.objects.create_user(
             username=email,
             email=email,
             password=self.cleaned_data["password1"],
-            company_name=self.cleaned_data["company_name"],
+            first_name=display_name,
         )
         return user
