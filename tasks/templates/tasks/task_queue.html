@@ -54,7 +54,6 @@
         font-weight: 800;
         color: var(--tars-accent);
         flex-shrink: 0;
-        font-family: "Space Grotesk", system-ui;
         letter-spacing: -0.02em;
     }
 
@@ -229,9 +228,9 @@
     }
 
     .section-label {
-        font-size: 0.68rem;
-        font-weight: 700;
-        letter-spacing: 0.12em;
+        font-size: 13px;
+        font-weight: 500;
+        letter-spacing: 0.05em;
         text-transform: uppercase;
         color: var(--tars-muted);
         margin-bottom: 1rem;
@@ -487,7 +486,7 @@
 
                 <!-- Title + meta -->
                 <div class="flex-grow-1" style="min-width: 0;">
-                    <div class="fw-semibold text-truncate mb-1" style="color:var(--tars-text); font-size:0.92rem;">
+                    <div class="text-truncate mb-1" style="color:var(--tars-text); font-size:16px; font-weight:500;">
                         {{ task.title }}
                     </div>
                     <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -844,7 +843,7 @@
         a.innerHTML =
             '<div class="queue-pos">#' + posNum + '</div>' +
             '<div class="flex-grow-1" style="min-width:0;">' +
-                '<div class="fw-semibold text-truncate mb-1" style="color:var(--tars-text);font-size:0.92rem;">' +
+                '<div class="text-truncate mb-1" style="color:var(--tars-text);font-size:16px;font-weight:500;">' +
                     escHtml(data.title) +
                 '</div>' +
                 '<div class="d-flex align-items-center gap-2 flex-wrap">' +
