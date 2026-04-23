@@ -445,16 +445,120 @@
             vertical-align: -0.15em;
             flex-shrink: 0;
         }
+
+        /* ── Minimal 3-icon app nav (desktop) ───────────────────── */
+        .app-icon-nav {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+        }
+
+        .app-icon-nav-item {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            border-radius: 9px;
+            color: var(--tars-muted);
+            text-decoration: none;
+            font-size: 1.05rem;
+            transition: color 0.15s, background 0.15s;
+        }
+
+        .app-icon-nav-item:hover {
+            color: var(--tars-text);
+            background: rgba(255,255,255,0.04);
+        }
+
+        .app-icon-nav-item.active {
+            color: var(--tars-text);
+        }
+
+        .app-icon-nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 14px;
+            height: 2px;
+            background: var(--tars-accent);
+            border-radius: 2px;
+        }
+
+        /* ── Mobile bottom tab bar ──────────────────────────────── */
+        .app-bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            background: var(--tars-surface);
+            border-top: 1px solid var(--tars-border);
+            z-index: 1000;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        @media (min-width: 769px) {
+            .app-bottom-nav { display: none; }
+        }
+
+        .app-bottom-nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 0 8px;
+            color: #555;
+            text-decoration: none;
+            gap: 3px;
+            transition: color 0.15s;
+        }
+
+        .app-bottom-nav-item i {
+            font-size: 1.2rem;
+        }
+
+        .app-bottom-nav-item.active {
+            color: var(--tars-accent);
+        }
+
+        .app-bottom-nav-item span {
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.01em;
+        }
+
+        /* ── Authenticated mobile padding for bottom tab bar ────── */
+        @media (max-width: 768px) {
+            body.app-authed { padding-bottom: 60px; }
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
-<body>
+<body{% if user.is_authenticated %} class="app-authed"{% endif %}>
 
-<nav id="main-nav" class="navbar navbar-expand-lg sticky-top">
+<nav id="main-nav" class="navbar{% if not user.is_authenticated %} navbar-expand-lg{% endif %} sticky-top">
     <div class="container">
         <a class="navbar-brand" href="{% url 'pages:landing' %}">
             T<span>.</span>ARS
         </a>
+        {% if user.is_authenticated %}
+        <div class="app-icon-nav d-none d-md-flex">
+            <a href="{% url 'members:dashboard' %}"
+               class="app-icon-nav-item{% if '/dashboard/queue' not in request.path and '/dashboard/billing' not in request.path %} active{% endif %}"
+               title="Chat"><i class="bi bi-house-fill"></i></a>
+            <a href="{% url 'tasks:queue' %}"
+               class="app-icon-nav-item{% if '/dashboard/queue' in request.path %} active{% endif %}"
+               title="Queue"><i class="bi bi-list-ul"></i></a>
+            <a href="{% url 'billing:billing' %}"
+               class="app-icon-nav-item{% if '/dashboard/billing' in request.path %} active{% endif %}"
+               title="Settings"><i class="bi bi-gear-fill"></i></a>
+        </div>
+        {% else %}
         <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -464,102 +568,13 @@
                 <li class="nav-item"><a class="nav-link" href="#benefits">Benefits</a></li>
                 <li class="nav-item"><a class="nav-link" href="#how-it-works">How It Works</a></li>
                 <li class="nav-item"><a class="nav-link" href="{% url 'pages:docs_index' %}">Docs</a></li>
-                {% if user.is_authenticated %}
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'members:dashboard' %}">
-                        <i class="bi bi-grid-1x2 me-1"></i>Dashboard
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'projects:list' %}">
-                        <i class="bi bi-folder2-open me-1"></i>Projects
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'teams:list' %}">
-                        <i class="bi bi-people me-1"></i>Teams
-                    </a>
-                </li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle d-flex align-items-center gap-1" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-person-circle"></i>
-                        <span>{{ user.company_name|default:user.email }}</span>
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end" style="background-color:var(--tars-surface); border:1px solid var(--tars-border);">
-                        <li>
-                            <span class="dropdown-item-text small" style="color:var(--tars-muted)">{{ user.email }}</span>
-                        </li>
-                        <li><hr class="dropdown-divider" style="border-color:var(--tars-border)"></li>
-                        <li>
-                            <a class="dropdown-item" href="{% url 'members:dashboard' %}" style="color:var(--tars-text)">
-                                <i class="bi bi-grid-1x2 me-2"></i>Dashboard
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item" href="{% url 'projects:list' %}" style="color:var(--tars-text)">
-                                <i class="bi bi-folder2-open me-2"></i>Projects
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item" href="{% url 'teams:list' %}" style="color:var(--tars-text)">
-                                <i class="bi bi-people me-2"></i>Teams
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item" href="{% url 'accounts:logout' %}" style="color:var(--tars-muted)">
-                                <i class="bi bi-box-arrow-right me-2"></i>Sign Out
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-                <!-- Notification bell -->
-                <li class="nav-item" style="position:relative;">
-                    <button class="notif-bell-btn" id="notifBellBtn" type="button" aria-label="Notifications">
-                        <i class="bi bi-bell-fill" style="font-size:1.1rem;"></i>
-                        {% if notifications_unread_count %}
-                        <span class="notif-badge">{{ notifications_unread_count }}</span>
-                        {% endif %}
-                    </button>
-                    <div class="notif-dropdown" id="notifDropdown" style="display:none; position:absolute; right:0; top:calc(100% + 8px); z-index:1050;">
-                        <div class="notif-dropdown-header">
-                            <span>Notifications</span>
-                            {% if notifications_unread_count %}
-                            <button id="markAllReadBtn" type="button">Mark all read</button>
-                            {% endif %}
-                        </div>
-                        {% if notifications_recent %}
-                            {% for notif in notifications_recent %}
-                            <a class="notif-item {% if not notif.is_read %}unread{% endif %}"
-                               href="{% if notif.link %}{{ notif.link }}{% else %}#{% endif %}"
-                               data-notif-id="{{ notif.pk }}"
-                               onclick="markNotifRead({{ notif.pk }}, this)">
-                                <div class="notif-item-title">{{ notif.title }}</div>
-                                <div class="notif-item-msg">{{ notif.message|truncatechars:80 }}</div>
-                                <div class="notif-item-time">{{ notif.created_at|timesince }} ago</div>
-                            </a>
-                            {% endfor %}
-                        {% else %}
-                        <div class="notif-empty">
-                            <i class="bi bi-bell-slash" style="font-size:1.5rem;display:block;margin-bottom:8px;color:#374151;"></i>
-                            No notifications yet
-                        </div>
-                        {% endif %}
-                        <div class="notif-footer">
-                            <a href="{% url 'notifications:preferences' %}">Manage preferences</a>
-                        </div>
-                    </div>
-                </li>
-                <li class="nav-item">
-                    <a class="btn btn-accent" href="{% url 'inquiries:get_started' %}">Submit Task</a>
-                </li>
-                {% else %}
                 <li class="nav-item"><a class="nav-link" href="{% url 'accounts:login' %}">Sign In</a></li>
                 <li class="nav-item">
                     <a class="btn btn-accent" href="{% url 'inquiries:get_started' %}">Get Started</a>
                 </li>
-                {% endif %}
             </ul>
         </div>
+        {% endif %}
     </div>
 </nav>
 
@@ -703,6 +718,26 @@
     updateNav();
 }());
 </script>
+
+{% if user.is_authenticated %}
+<nav class="app-bottom-nav" aria-label="Main navigation">
+    <a href="{% url 'members:dashboard' %}"
+       class="app-bottom-nav-item{% if '/dashboard/queue' not in request.path and '/dashboard/billing' not in request.path %} active{% endif %}">
+        <i class="bi bi-house-fill"></i>
+        <span>Chat</span>
+    </a>
+    <a href="{% url 'tasks:queue' %}"
+       class="app-bottom-nav-item{% if '/dashboard/queue' in request.path %} active{% endif %}">
+        <i class="bi bi-list-ul"></i>
+        <span>Queue</span>
+    </a>
+    <a href="{% url 'billing:billing' %}"
+       class="app-bottom-nav-item{% if '/dashboard/billing' in request.path %} active{% endif %}">
+        <i class="bi bi-gear-fill"></i>
+        <span>Settings</span>
+    </a>
+</nav>
+{% endif %}
 
 {% block extra_scripts %}{% endblock %}
 
