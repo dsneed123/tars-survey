@@ -17,7 +17,7 @@ User = get_user_model()
 
 
 # ---------------------------------------------------------------------------
-# Full user flow: register → onboarding → add project → submit task → view task
+# Full user flow: register → dashboard → add project → submit task → view task
 # ---------------------------------------------------------------------------
 
 class UserRegistrationFlowTests(TestCase):
@@ -39,16 +39,14 @@ class UserRegistrationFlowTests(TestCase):
         self.assertTrue(MemberProfile.objects.filter(user=user).exists())
 
     @patch("accounts.views.send_welcome_email")
-    def test_register_logs_in_and_redirects_to_onboarding(self, _mock_email):
+    def test_register_logs_in_and_redirects_to_dashboard(self, _mock_email):
         resp = self.client.post("/register/", {
             "email": "flowuser@example.com",
             "company_name": "Flow Corp",
             "password1": "SecurePass123!",
             "password2": "SecurePass123!",
         })
-        # Should redirect to onboarding after successful registration
-        self.assertRedirects(resp, "/dashboard/onboarding/", fetch_redirect_response=False)
-        # User should now be authenticated
+        self.assertRedirects(resp, "/dashboard/", fetch_redirect_response=False)
         resp2 = self.client.get("/dashboard/")
         self.assertTrue(resp2.wsgi_request.user.is_authenticated)
 
@@ -301,7 +299,7 @@ class CheckTaskStatusFlowTests(TestCase):
 
 class FullEndToEndFlowTests(TestCase):
     """
-    Full end-to-end: register → view dashboard → add project →
+    Full end-to-end: register → dashboard → add project →
     submit task → check task detail.
     """
 
@@ -319,7 +317,7 @@ class FullEndToEndFlowTests(TestCase):
             "password1": "SecurePass123!",
             "password2": "SecurePass123!",
         })
-        self.assertRedirects(resp, "/dashboard/onboarding/", fetch_redirect_response=False)
+        self.assertRedirects(resp, "/dashboard/", fetch_redirect_response=False)
 
         user = User.objects.get(email="journey@example.com")
         self.assertTrue(MemberProfile.objects.filter(user=user).exists())
@@ -411,6 +409,3 @@ class UnauthenticatedAccessTests(TestCase):
 
     def test_notification_settings_requires_login(self):
         self._assert_redirects_to_login("/dashboard/settings/notifications/")
-
-    def test_onboarding_requires_login(self):
-        self._assert_redirects_to_login("/dashboard/onboarding/")

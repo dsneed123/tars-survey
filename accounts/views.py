@@ -45,7 +45,7 @@ def accounts_register(request):
             login(request, user)
             fire_event("signup_completed", user=user, metadata={"plan": user.plan})
             send_welcome_email(user)
-            return redirect("members:onboarding")
+            return redirect("members:dashboard")
     else:
         form = RegisterForm()
     return render(request, "accounts/register.html", {"form": form})
