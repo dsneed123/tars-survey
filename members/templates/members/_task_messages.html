@@ -77,8 +77,11 @@
             <div class="error-text">{{ task.error_message }}</div>
             {% endif %}
             <div class="status-card" style="border-color:rgba(239,68,68,0.2);">
-                <span class="status-badge badge-failed">Failed</span>
+                <span class="status-badge badge-failed" id="failed-badge-{{ task.pk }}">Failed</span>
             </div>
+            <button class="retry-btn" onclick="retryTask({{ task.pk }}, this)" data-task-id="{{ task.pk }}">
+                <i class="bi bi-arrow-clockwise"></i> Retry
+            </button>
             {% endif %}
         </div>
         <div class="msg-time">
