@@ -1,4 +1,6 @@
 import asyncio
+import hashlib
+import hmac
 import json
 import tempfile
 from unittest.mock import patch
@@ -10,6 +12,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 
 from members.models import MemberProfile
+from notifications.models import Notification
 from projects.models import Project
 from tasks.consumers import DashboardConsumer, QueueConsumer, TaskDetailConsumer
 from tasks.models import Task, TaskAttachment
@@ -1182,3 +1185,248 @@ class QueueConsumerTests(TestCase):
             await comm.disconnect()
 
         asyncio.run(_run())
+
+
+# ---------------------------------------------------------------------------
+# POST /api/webhooks/github/
+# ---------------------------------------------------------------------------
+
+_WEBHOOK_SECRET = "test-webhook-secret"
+_WEBHOOK_URL = "/api/webhooks/github/"
+
+
+def _sign(body: bytes, secret: str = _WEBHOOK_SECRET) -> str:
+    """Compute the GitHub-style HMAC-SHA256 signature header value."""
+    digest = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+    return f"sha256={digest}"
+
+
+def _pr_payload(action="opened", merged=False, pr_url="https://github.com/owner/repo/pull/1", pr_body=""):
+    return json.dumps({
+        "action": action,
+        "pull_request": {
+            "html_url": pr_url,
+            "body": pr_body,
+            "merged": merged,
+        },
+    }).encode()
+
+
+@override_settings(GITHUB_WEBHOOK_SECRET=_WEBHOOK_SECRET)
+class GitHubWebhookTests(TestCase):
+    def setUp(self):
+        self.client = Client(enforce_csrf_checks=True)
+        self.user = make_user(email="ghuser@example.com", username="ghuser")
+        self.project = make_project(self.user, github_repo="owner/repo")
+        self.task = make_task(
+            self.project,
+            self.user,
+            status="reviewing",
+            pr_url="https://github.com/owner/repo/pull/1",
+        )
+
+    def _post(self, body: bytes, event="pull_request", sig=None):
+        if sig is None:
+            sig = _sign(body)
+        return self.client.post(
+            _WEBHOOK_URL,
+            data=body,
+            content_type="application/json",
+            HTTP_X_GITHUB_EVENT=event,
+            HTTP_X_HUB_SIGNATURE_256=sig,
+        )
+
+    # -- signature validation ------------------------------------------------
+
+    def test_missing_signature_returns_400(self):
+        body = _pr_payload()
+        resp = self.client.post(
+            _WEBHOOK_URL,
+            data=body,
+            content_type="application/json",
+            HTTP_X_GITHUB_EVENT="pull_request",
+        )
+        self.assertEqual(resp.status_code, 400)
+
+    def test_invalid_signature_returns_400(self):
+        body = _pr_payload()
+        resp = self._post(body, sig="sha256=deadbeef")
+        self.assertEqual(resp.status_code, 400)
+
+    def test_valid_signature_returns_200(self):
+        body = _pr_payload()
+        resp = self._post(body)
+        self.assertEqual(resp.status_code, 200)
+
+    def test_csrf_exempt(self):
+        body = _pr_payload()
+        sig = _sign(body)
+        resp = self.client.post(
+            _WEBHOOK_URL,
+            data=body,
+            content_type="application/json",
+            HTTP_X_GITHUB_EVENT="pull_request",
+            HTTP_X_HUB_SIGNATURE_256=sig,
+        )
+        self.assertEqual(resp.status_code, 200)
+
+    # -- event filtering -----------------------------------------------------
+
+    def test_non_pull_request_event_ignored(self):
+        body = json.dumps({"action": "push"}).encode()
+        resp = self._post(body, event="push")
+        self.assertEqual(resp.status_code, 200)
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.status, "reviewing")
+
+    def test_unrecognised_pr_action_ignored(self):
+        body = _pr_payload(action="labeled")
+        resp = self._post(body)
+        self.assertEqual(resp.status_code, 200)
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.status, "reviewing")
+
+    def test_invalid_json_returns_400(self):
+        body = b"not valid json {"
+        resp = self._post(body)
+        self.assertEqual(resp.status_code, 400)
+
+    # -- PR opened -----------------------------------------------------------
+
+    @patch("tasks.views._broadcast_task_update")
+    def test_pr_opened_sets_reviewing_status(self, mock_bcast):
+        self.task.status = "in_progress"
+        self.task.pr_url = ""
+        self.task.save()
+
+        # Task has no pr_url yet; use PR body fallback to find it
+        pr_body = f"tars-task-id: {self.task.pk}"
+        body = _pr_payload(action="opened", pr_body=pr_body)
+        resp = self._post(body)
+        self.assertEqual(resp.status_code, 200)
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.status, "reviewing")
+
+    @patch("tasks.views._broadcast_task_update")
+    def test_pr_opened_sets_pr_url(self, mock_bcast):
+        self.task.pr_url = ""
+        self.task.save()
+
+        pr_body = f"tars-task-id: {self.task.pk}"
+        body = _pr_payload(action="opened", pr_url="https://github.com/owner/repo/pull/1", pr_body=pr_body)
+        self._post(body)
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.pr_url, "https://github.com/owner/repo/pull/1")
+
+    @patch("tasks.views._broadcast_task_update")
+    def test_pr_opened_broadcasts_update(self, mock_bcast):
+        self.task.status = "in_progress"
+        self.task.pr_url = ""
+        self.task.save()
+
+        pr_body = f"tars-task-id: {self.task.pk}"
+        body = _pr_payload(action="opened", pr_body=pr_body)
+        self._post(body)
+        mock_bcast.assert_called_once()
+
+    @patch("tasks.views._broadcast_task_update")
+    def test_pr_opened_does_not_overwrite_existing_pr_url(self, mock_bcast):
+        existing = "https://github.com/owner/repo/pull/99"
+        self.task.pr_url = existing
+        self.task.status = "reviewing"
+        self.task.save()
+
+        # New PR opened for same task (found via body); should not replace existing pr_url
+        pr_body = f"tars-task-id: {self.task.pk}"
+        body = _pr_payload(action="opened", pr_url="https://github.com/owner/repo/pull/1", pr_body=pr_body)
+        self._post(body)
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.pr_url, existing)
+
+    # -- PR merged -----------------------------------------------------------
+
+    @patch("tasks.views._broadcast_task_update")
+    def test_pr_merged_sets_completed_status(self, mock_bcast):
+        body = _pr_payload(action="closed", merged=True)
+        resp = self._post(body)
+        self.assertEqual(resp.status_code, 200)
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.status, "completed")
+
+    @patch("tasks.views._broadcast_task_update")
+    def test_pr_merged_sets_completed_at(self, mock_bcast):
+        self.assertIsNone(self.task.completed_at)
+        body = _pr_payload(action="closed", merged=True)
+        self._post(body)
+        self.task.refresh_from_db()
+        self.assertIsNotNone(self.task.completed_at)
+
+    @patch("tasks.views._broadcast_task_update")
+    def test_pr_merged_creates_notification(self, mock_bcast):
+        body = _pr_payload(action="closed", merged=True)
+        self._post(body)
+        notif = Notification.objects.filter(user=self.user).first()
+        self.assertIsNotNone(notif)
+        self.assertIn("merged", notif.title.lower())
+        self.assertEqual(notif.message, "PR merged! Your changes are live.")
+
+    @patch("tasks.views._broadcast_task_update")
+    def test_pr_merged_broadcasts_update(self, mock_bcast):
+        body = _pr_payload(action="closed", merged=True)
+        self._post(body)
+        mock_bcast.assert_called_once()
+
+    # -- PR closed without merge ---------------------------------------------
+
+    @patch("tasks.views._broadcast_task_update")
+    def test_pr_closed_without_merge_leaves_status_unchanged(self, mock_bcast):
+        body = _pr_payload(action="closed", merged=False)
+        resp = self._post(body)
+        self.assertEqual(resp.status_code, 200)
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.status, "reviewing")
+        mock_bcast.assert_not_called()
+
+    # -- unknown PR ----------------------------------------------------------
+
+    def test_unknown_pr_url_returns_200_and_no_changes(self):
+        body = _pr_payload(pr_url="https://github.com/other/repo/pull/999", action="closed", merged=True)
+        resp = self._post(body)
+        self.assertEqual(resp.status_code, 200)
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.status, "reviewing")
+
+    # -- fallback task lookup via PR body ------------------------------------
+
+    @patch("tasks.views._broadcast_task_update")
+    def test_finds_task_by_id_in_pr_body(self, mock_bcast):
+        self.task.pr_url = ""
+        self.task.save()
+
+        pr_body = f"Fixes the issue.\n\ntars-task-id: {self.task.pk}"
+        body = _pr_payload(
+            action="closed",
+            merged=True,
+            pr_url="https://github.com/owner/repo/pull/42",
+            pr_body=pr_body,
+        )
+        resp = self._post(body)
+        self.assertEqual(resp.status_code, 200)
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.status, "completed")
+
+    # -- no secret configured ------------------------------------------------
+
+    @override_settings(GITHUB_WEBHOOK_SECRET="")
+    @patch("tasks.views._broadcast_task_update")
+    def test_no_secret_skips_signature_check(self, mock_bcast):
+        body = _pr_payload(action="closed", merged=True)
+        resp = self.client.post(
+            _WEBHOOK_URL,
+            data=body,
+            content_type="application/json",
+            HTTP_X_GITHUB_EVENT="pull_request",
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.task.refresh_from_db()
+        self.assertEqual(self.task.status, "completed")
