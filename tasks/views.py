@@ -46,6 +46,7 @@ def _broadcast_task_update(task):
         return
 
     queue_positions = _get_queue_positions(task.created_by_id)
+    project_name = task.project.name if task.project_id else ""
 
     data = {
         "task_id": task.pk,
@@ -60,6 +61,13 @@ def _broadcast_task_update(task):
     send = async_to_sync(channel_layer.group_send)
     send(f"task_{task.pk}", {"type": "task_update", "data": data})
     send(f"dashboard_{task.created_by_id}", {"type": "task_update", "data": data})
+    send(
+        f"queue_{task.created_by_id}",
+        {
+            "type": "queue_update",
+            "data": {**data, "project_name": project_name, "kind": "status_update"},
+        },
+    )
 
     # When the queue shifts, broadcast updated positions to other pending/queued tasks.
     other_pks = [pk for pk in queue_positions if pk != task.pk]
@@ -70,18 +78,44 @@ def _broadcast_task_update(task):
         )
         for pk in other_pks:
             st = other_statuses.get(pk, "pending")
+            pos_data = {
+                "task_id": pk,
+                "status": st,
+                "status_display": status_display_map.get(st, st),
+                "queue_position": queue_positions[pk],
+            }
+            send(f"dashboard_{task.created_by_id}", {"type": "task_update", "data": pos_data})
             send(
-                f"dashboard_{task.created_by_id}",
+                f"queue_{task.created_by_id}",
                 {
-                    "type": "task_update",
-                    "data": {
-                        "task_id": pk,
-                        "status": st,
-                        "status_display": status_display_map.get(st, st),
-                        "queue_position": queue_positions[pk],
-                    },
+                    "type": "queue_update",
+                    "data": {**pos_data, "project_name": "", "kind": "status_update"},
                 },
             )
+
+
+def _broadcast_queue_task_added(task):
+    """Notify queue WS clients that a new task has entered the queue."""
+    channel_layer = get_channel_layer()
+    if channel_layer is None:
+        return
+
+    queue_positions = _get_queue_positions(task.created_by_id)
+    project_name = task.project.name if task.project_id else ""
+
+    data = {
+        "kind": "task_added",
+        "task_id": task.pk,
+        "title": task.title,
+        "status": task.status,
+        "status_display": task.get_status_display(),
+        "queue_position": queue_positions.get(task.pk),
+        "project_name": project_name,
+    }
+    async_to_sync(channel_layer.group_send)(
+        f"queue_{task.created_by_id}",
+        {"type": "queue_update", "data": data},
+    )
 
 
 @login_required
@@ -177,6 +211,7 @@ def task_add(request):
 
             # Forward task to TARS controller on the Mac Mini
             _forward_to_controller(task)
+            _broadcast_queue_task_added(task)
 
             fire_event(
                 "task_submitted",
@@ -317,7 +352,7 @@ def api_task_status(request, pk):
         )
 
     try:
-        task = Task.objects.get(pk=pk)
+        task = Task.objects.select_related("project").get(pk=pk)
     except Task.DoesNotExist:
         return JsonResponse({"error": "Task not found"}, status=404)
 

@@ -56,3 +56,29 @@ class DashboardConsumer(AsyncWebsocketConsumer):
     # Receive message from the channel group (sent by workers/views.py)
     async def task_update(self, event):
         await self.send(text_data=json.dumps(event["data"]))
+
+
+class QueueConsumer(AsyncWebsocketConsumer):
+    """
+    WebSocket consumer for the task queue view.
+    Clients connect to ws/queue/ and receive position/status updates for all
+    active tasks belonging to the authenticated user.
+    """
+
+    async def connect(self):
+        user = self.scope.get("user")
+        if not user or not user.is_authenticated:
+            await self.close()
+            return
+
+        self.group_name = f"queue_{user.pk}"
+
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        if hasattr(self, "group_name"):
+            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+
+    async def queue_update(self, event):
+        await self.send(text_data=json.dumps(event["data"]))
