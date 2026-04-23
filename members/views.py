@@ -1,7 +1,9 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Case, IntegerField, Value, When
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
+from django.template.loader import render_to_string
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -99,8 +101,45 @@ def dashboard(request):
         "pending_pct": pending_pct,
         "queue_widget_tasks": queue_widget_tasks,
         "in_progress_count": in_progress_count,
+        "has_more": total_tasks > 50,
+        "oldest_task_id": all_tasks[-1].pk if all_tasks else None,
     }
     return render(request, "members/dashboard.html", ctx)
+
+
+_LOAD_MORE_BATCH = 20
+
+
+@login_required
+def load_more_messages(request):
+    before_id = request.GET.get("before_id")
+    if not before_id:
+        return JsonResponse({"html": "", "has_more": False, "oldest_id": None})
+    try:
+        before_id = int(before_id)
+    except (ValueError, TypeError):
+        return JsonResponse({"html": "", "has_more": False, "oldest_id": None})
+
+    qs = (
+        Task.objects.filter(created_by=request.user, pk__lt=before_id)
+        .select_related("project", "created_by")
+        .order_by("-created_at")
+    )
+    tasks = list(qs[: _LOAD_MORE_BATCH + 1])
+    has_more = len(tasks) > _LOAD_MORE_BATCH
+    tasks = tasks[:_LOAD_MORE_BATCH]
+
+    queue_positions = _get_queue_positions(request.user.pk)
+    for task in tasks:
+        task.queue_position = queue_positions.get(task.pk)
+
+    html = render_to_string(
+        "members/_task_messages.html",
+        {"tasks": tasks},
+        request=request,
+    )
+    oldest_id = tasks[-1].pk if tasks else None
+    return JsonResponse({"html": html, "has_more": has_more, "oldest_id": oldest_id})
 
 
 @login_required
