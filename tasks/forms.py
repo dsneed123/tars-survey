@@ -9,36 +9,20 @@ from .models import Task
 class TaskForm(forms.ModelForm):
     def clean(self):
         cleaned = super().clean()
-        for field in ("title", "description"):
-            value = cleaned.get(field)
-            if isinstance(value, str):
-                cleaned[field] = bleach.clean(value, tags=[], strip=True)
+        value = cleaned.get("title")
+        if isinstance(value, str):
+            cleaned["title"] = bleach.clean(value, tags=[], strip=True)
         return cleaned
 
     class Meta:
         model = Task
-        fields = ["project", "title", "description", "priority"]
+        fields = ["project", "title"]
         widgets = {
             "project": forms.Select(attrs={"class": "form-select"}),
             "title": forms.TextInput(
                 attrs={
                     "class": "form-control",
-                    "placeholder": "e.g. Fix login bug, Add dark mode, Refactor auth module",
-                }
-            ),
-            "description": forms.Textarea(
-                attrs={
-                    "class": "form-control",
-                    "rows": 8,
-                    "placeholder": "Describe what you want TARS to build or fix. Be specific — include context, acceptance criteria, and any relevant file paths.",
-                    "id": "id_description",
-                }
-            ),
-            "priority": forms.NumberInput(
-                attrs={
-                    "class": "form-control",
-                    "min": 1,
-                    "max": 100,
+                    "placeholder": "e.g. Fix login bug, add dark mode, refactor auth module",
                 }
             ),
         }
@@ -51,5 +35,3 @@ class TaskForm(forms.ModelForm):
             is_active=True,
         ).distinct()
         self.fields["project"].empty_label = "Select a project…"
-        self.fields["priority"].initial = 50
-        self.fields["priority"].help_text = "1 (low) – 100 (urgent). Default is 50."

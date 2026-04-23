@@ -198,6 +198,8 @@ def task_add(request):
         if form.is_valid():
             task = form.save(commit=False)
             task.created_by = request.user
+            task.description = task.title
+            task.priority = 50
             task.save()
 
             # Handle multiple file uploads
