@@ -119,6 +119,24 @@ def _broadcast_task_update(task):
         },
     )
 
+    # Broadcast updated queue stats to the dashboard welcome message.
+    active_count = Task.objects.filter(
+        created_by_id=task.created_by_id,
+        status__in=("pending", "queued", "assigned", "in_progress", "reviewing"),
+    ).count()
+    completed_today = Task.objects.filter(
+        created_by_id=task.created_by_id,
+        status="completed",
+        completed_at__date=timezone.now().date(),
+    ).count()
+    send(
+        f"dashboard_{task.created_by_id}",
+        {
+            "type": "queue_stats",
+            "data": {"type": "queue_stats", "active_count": active_count, "completed_today": completed_today},
+        },
+    )
+
     # When the queue shifts, broadcast updated positions to other pending/queued tasks.
     other_pks = [pk for pk in queue_positions if pk != task.pk]
     if other_pks:
