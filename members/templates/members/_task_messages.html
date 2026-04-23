@@ -1,0 +1,93 @@
+{% load tz %}
+{% for task in tasks reversed %}
+
+<div class="chat-message">
+    <div class="msg-avatar user-avatar-sm">{{ task.created_by.email|first|upper }}</div>
+    <div class="msg-body">
+        <div class="msg-sender">You</div>
+        <div class="msg-content">
+            <p>{{ task.title }}</p>
+            {% if task.description and task.description != task.title %}
+            <p style="color:#888;font-size:13px;">{{ task.description|truncatewords:40 }}</p>
+            {% endif %}
+        </div>
+        <div class="msg-time">{{ task.created_at|timesince }} ago &middot; {{ task.project.name }}</div>
+    </div>
+</div>
+
+<div class="chat-message tars-msg" data-task-id="{{ task.pk }}">
+    <div class="msg-avatar tars-avatar">T</div>
+    <div class="msg-body">
+        <div class="msg-sender">TARS</div>
+        <div class="msg-content" id="tars-content-{{ task.pk }}">
+            {% if task.status == 'pending' or task.status == 'queued' %}
+            <p>Got it. This is in the queue.</p>
+            {% if task.queue_position %}
+            <div class="queue-pos-label">Position #{{ task.queue_position }} in queue</div>
+            {% endif %}
+            <div class="status-card">
+                <span class="status-badge badge-{{ task.status }}">{{ task.get_status_display }}</span>
+            </div>
+
+            {% elif task.status == 'assigned' %}
+            <p>Picked this up. Starting soon.</p>
+            <div class="status-card">
+                <span class="status-badge badge-assigned">Assigned</span>
+            </div>
+
+            {% elif task.status == 'in_progress' %}
+            <p>Working on this now...</p>
+            <div class="typing-indicator">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+            <div class="status-card">
+                <span class="status-badge badge-in_progress">In Progress</span>
+            </div>
+
+            {% elif task.status == 'reviewing' %}
+            <p>Code is written. Reviewing changes now...</p>
+            <div class="status-card">
+                <span class="status-badge badge-reviewing">Reviewing</span>
+            </div>
+
+            {% elif task.status == 'completed' %}
+            <p>Done! Changes have been pushed.</p>
+            {% if task.pr_url %}
+            <a href="{{ task.pr_url }}" target="_blank" rel="noopener" class="pr-link">
+                <i class="bi bi-git"></i> View Pull Request
+            </a>
+            {% endif %}
+            {% if task.branch_name %}
+            <div style="font-size:12px;color:#555;margin-top:6px;">Branch: <code style="color:#888;">{{ task.branch_name }}</code></div>
+            {% endif %}
+            <div class="status-card" style="border-color:rgba(34,197,94,0.2);">
+                <span class="status-badge badge-completed">Completed</span>
+                {% if task.completed_at and task.started_at %}
+                <span style="font-size:11px;color:#555;margin-left:8px;">
+                    {{ task.completed_at|timesince:task.started_at }}
+                </span>
+                {% endif %}
+            </div>
+
+            {% elif task.status == 'failed' %}
+            <p>Something went wrong with this one.</p>
+            {% if task.error_message %}
+            <div class="error-text">{{ task.error_message }}</div>
+            {% endif %}
+            <div class="status-card" style="border-color:rgba(239,68,68,0.2);">
+                <span class="status-badge badge-failed">Failed</span>
+            </div>
+            {% endif %}
+        </div>
+        <div class="msg-time">
+            {% if task.completed_at %}{{ task.completed_at|timesince }} ago
+            {% elif task.started_at %}Started {{ task.started_at|timesince }} ago
+            {% else %}{{ task.created_at|timesince }} ago
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% endfor %}

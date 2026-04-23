@@ -41,11 +41,52 @@ body { overflow: hidden; height: 100vh; }
     color: #888;
 }
 
-/* ── Chat messages feed ────────────────────────────────── */
-.chat-feed {
+/* ── Chat feed wrapper + messages feed ─────────────────── */
+.chat-feed-wrapper {
     flex: 1;
+    position: relative;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.chat-feed {
+    height: 100%;
     overflow-y: auto;
     padding: 24px 0;
+}
+
+/* ── New messages pill ─────────────────────────────────── */
+.new-msg-pill {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #6366f1;
+    color: #fff;
+    padding: 7px 16px 7px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 4px 16px rgba(99,102,241,0.35);
+    border: none;
+    white-space: nowrap;
+    z-index: 10;
+    transition: background 0.15s;
+}
+.new-msg-pill.visible { display: flex; }
+.new-msg-pill:hover { background: #4f46e5; }
+
+/* ── Load older indicator ──────────────────────────────── */
+.load-older-indicator {
+    text-align: center;
+    padding: 12px 0 4px;
+    color: #444;
+    font-size: 12px;
+    display: none;
 }
 
 .chat-feed::-webkit-scrollbar { width: 6px; }
@@ -618,8 +659,10 @@ body { overflow: hidden; height: 100vh; }
     </div>
 
     <!-- Chat feed -->
+    <div class="chat-feed-wrapper">
     <div class="chat-feed" id="chatFeed">
         <div class="chat-container">
+            <div id="loadOlderIndicator" class="load-older-indicator">Loading older messages…</div>
 
             {% if not all_tasks %}
             <!-- Empty state -->
@@ -738,6 +781,10 @@ body { overflow: hidden; height: 100vh; }
 
         </div>
     </div>
+    <button type="button" class="new-msg-pill" id="newMsgPill">
+        <i class="bi bi-arrow-down"></i> New messages
+    </button>
+    </div>
 
     <!-- Chat input bar -->
     <div class="chat-input-area">
@@ -805,11 +852,119 @@ body { overflow: hidden; height: 100vh; }
 
 {% block extra_scripts %}
 <script>
-// Auto-scroll to bottom of chat
+// ── Scroll management ──────────────────────────────────────
 var feed = document.getElementById('chatFeed');
-if (feed) feed.scrollTop = feed.scrollHeight;
+var newMsgPill = document.getElementById('newMsgPill');
+var _NEAR_BOTTOM = 120;
+var _SCROLL_KEY = 'tars_feed_scroll';
+var _hasMoreOlder = {{ has_more|yesno:"true,false" }};
+var _oldestTaskId = {{ oldest_task_id|default:"null" }};
+var _isLoadingOlder = false;
+var _loadMoreUrl = "{% url 'members:load_more_messages' %}";
 
-// Auto-grow textarea
+function isNearBottom() {
+    if (!feed) return true;
+    return (feed.scrollHeight - feed.scrollTop - feed.clientHeight) < _NEAR_BOTTOM;
+}
+
+function scrollToBottom(smooth) {
+    if (!feed) return;
+    if (smooth) {
+        feed.scrollTo({ top: feed.scrollHeight, behavior: 'smooth' });
+    } else {
+        feed.scrollTop = feed.scrollHeight;
+    }
+}
+
+function showNewMsgPill() {
+    if (newMsgPill) newMsgPill.classList.add('visible');
+}
+
+function hideNewMsgPill() {
+    if (newMsgPill) newMsgPill.classList.remove('visible');
+}
+
+// Restore scroll position or go to bottom
+(function () {
+    if (!feed) return;
+    var saved = null;
+    try { saved = JSON.parse(sessionStorage.getItem(_SCROLL_KEY)); } catch (_) {}
+    if (saved && typeof saved.scrollTop === 'number' && typeof saved.scrollHeight === 'number') {
+        if (saved.scrollHeight - saved.scrollTop < _NEAR_BOTTOM) {
+            scrollToBottom(false);
+        } else {
+            feed.scrollTop = saved.scrollTop;
+        }
+    } else {
+        scrollToBottom(false);
+    }
+}());
+
+// Pill click → smooth scroll to bottom
+if (newMsgPill) {
+    newMsgPill.addEventListener('click', function () {
+        scrollToBottom(true);
+        hideNewMsgPill();
+    });
+}
+
+// Scroll event: save position, hide pill near bottom, load older near top
+var _scrollSaveTimer = null;
+if (feed) {
+    feed.addEventListener('scroll', function () {
+        clearTimeout(_scrollSaveTimer);
+        _scrollSaveTimer = setTimeout(function () {
+            try {
+                sessionStorage.setItem(_SCROLL_KEY, JSON.stringify({
+                    scrollTop: feed.scrollTop,
+                    scrollHeight: feed.scrollHeight
+                }));
+            } catch (_) {}
+        }, 100);
+
+        if (isNearBottom()) hideNewMsgPill();
+
+        if (feed.scrollTop < 80 && _hasMoreOlder && !_isLoadingOlder) {
+            loadOlderMessages();
+        }
+    }, { passive: true });
+}
+
+// Load older messages via pagination
+function loadOlderMessages() {
+    if (!_hasMoreOlder || _isLoadingOlder || !_oldestTaskId) return;
+    _isLoadingOlder = true;
+    var indicator = document.getElementById('loadOlderIndicator');
+    if (indicator) indicator.style.display = 'block';
+
+    fetch(_loadMoreUrl + '?before_id=' + _oldestTaskId, { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            var container = document.querySelector('.chat-container');
+            if (container && data.html && data.html.trim()) {
+                var prevHeight = feed.scrollHeight;
+                var prevScrollTop = feed.scrollTop;
+                var tempDiv = document.createElement('div');
+                tempDiv.innerHTML = data.html;
+                var refNode = indicator ? indicator.nextSibling : container.firstChild;
+                while (tempDiv.firstChild) {
+                    container.insertBefore(tempDiv.firstChild, refNode);
+                }
+                // Preserve visual position after prepend
+                feed.scrollTop = prevScrollTop + (feed.scrollHeight - prevHeight);
+            }
+            _hasMoreOlder = data.has_more;
+            if (data.oldest_id) _oldestTaskId = data.oldest_id;
+            if (indicator) indicator.style.display = 'none';
+            _isLoadingOlder = false;
+        })
+        .catch(function () {
+            if (indicator) indicator.style.display = 'none';
+            _isLoadingOlder = false;
+        });
+}
+
+// ── Auto-grow textarea ─────────────────────────────────────
 function autoGrow(el) {
     el.style.height = 'auto';
     el.style.height = Math.min(el.scrollHeight, 120) + 'px';
@@ -941,6 +1096,12 @@ document.addEventListener('keydown', function(e) {
             if (tarsMsg) {
                 var timeEl = tarsMsg.querySelector('.msg-time');
                 if (timeEl) timeEl.textContent = 'just now';
+            }
+            // Scroll if near bottom; otherwise notify user
+            if (isNearBottom()) {
+                scrollToBottom(true);
+            } else {
+                showNewMsgPill();
             }
         }
 
@@ -1158,8 +1319,8 @@ function appendUserBubble(text) {
             '<div class="msg-time">just now</div>' +
         '</div>';
     container.appendChild(div);
-    var feed = document.getElementById('chatFeed');
-    if (feed) feed.scrollTop = feed.scrollHeight;
+    scrollToBottom(true);
+    hideNewMsgPill();
 }
 
 function appendTarsDetectBubble() {
@@ -1184,8 +1345,8 @@ function appendTarsDetectBubble() {
             '<div class="msg-time">just now</div>' +
         '</div>';
     container.appendChild(div);
-    var feed = document.getElementById('chatFeed');
-    if (feed) feed.scrollTop = feed.scrollHeight;
+    scrollToBottom(true);
+    hideNewMsgPill();
     return document.getElementById('tars-detect-content');
 }
 
@@ -1220,8 +1381,8 @@ function renderDetectCard(contentEl, data) {
         '</form>' +
         '</div>';
     contentEl.innerHTML = html;
-    var feed = document.getElementById('chatFeed');
-    if (feed) feed.scrollTop = feed.scrollHeight;
+    scrollToBottom(true);
+    hideNewMsgPill();
 }
 
 function renderDetectError(contentEl, errorMsg) {
