@@ -690,6 +690,32 @@ def api_task_retry(request, pk):
 
 
 # ---------------------------------------------------------------------------
+# POST /api/tasks/<pk>/cancel
+#
+# Cancel a pending or queued task by marking it failed with a user message.
+# Protected by Django's standard session auth + CSRF.
+# ---------------------------------------------------------------------------
+
+
+@login_required
+@require_POST
+def api_task_cancel(request, pk):
+    task = get_object_or_404(Task.objects.select_related("project"), pk=pk, created_by=request.user)
+
+    if task.status not in ("pending", "queued"):
+        return JsonResponse({"error": "Only pending or queued tasks can be cancelled"}, status=400)
+
+    task.status = "failed"
+    task.error_message = "Cancelled by user"
+    task.completed_at = timezone.now()
+    task.save(update_fields=["status", "error_message", "completed_at"])
+    _broadcast_task_update(task)
+
+    logger.info("Task %s cancelled by user %s", task.pk, request.user.id)
+    return JsonResponse({"ok": True, "task_id": task.pk})
+
+
+# ---------------------------------------------------------------------------
 # POST /api/webhooks/github/
 #
 # Receives GitHub pull_request webhook events.  Validates the HMAC-SHA256
