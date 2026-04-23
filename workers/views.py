@@ -241,7 +241,7 @@ def task_update(request, task_id):
         return err
 
     try:
-        task = Task.objects.get(pk=task_id)
+        task = Task.objects.select_related("project", "created_by").get(pk=task_id)
     except Task.DoesNotExist:
         return JsonResponse({"error": "Task not found"}, status=404)
 

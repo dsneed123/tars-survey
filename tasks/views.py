@@ -590,7 +590,7 @@ def api_task_status(request, pk):
 @login_required
 @require_POST
 def api_task_retry(request, pk):
-    task = get_object_or_404(Task, pk=pk, created_by=request.user)
+    task = get_object_or_404(Task.objects.select_related("project"), pk=pk, created_by=request.user)
 
     if task.status != "failed":
         return JsonResponse({"error": "Only failed tasks can be retried"}, status=400)

@@ -11,8 +11,8 @@ class Notification(models.Model):
     title = models.CharField(max_length=200)
     message = models.TextField()
     link = models.CharField(max_length=500, blank=True)
-    is_read = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:
         ordering = ["-created_at"]
