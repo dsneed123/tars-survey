@@ -341,19 +341,12 @@ body { overflow: hidden; height: 100vh; }
     background: #141414;
     border: 1px solid #272727;
     border-radius: 20px;
-    padding: 10px 14px 12px;
+    padding: 10px 14px;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 .input-container:focus-within {
     border-color: #363636;
     box-shadow: 0 0 0 3px rgba(99,102,241,0.07);
-}
-
-.input-top-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
 }
 
 .project-pill {
@@ -369,9 +362,13 @@ body { overflow: hidden; height: 100vh; }
     align-items: center;
     gap: 4px;
     position: relative;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 .project-pill:hover { border-color: #333; color: #aaa; }
 .project-pill i { font-size: 10px; }
+.project-pill-text { color: #aaa; }
+.project-pill-text.no-project { color: #444; }
 
 .project-dropdown {
     display: none;
@@ -497,7 +494,7 @@ body { overflow: hidden; height: 100vh; }
     .msg-body { max-width: 90%; }
 
     /* Touch-friendly tap targets (min 44px) */
-    .project-pill { min-height: 44px; padding: 0 14px; }
+    .project-pill { min-height: 36px; padding: 0 10px; }
     .project-option { min-height: 44px; display: flex; align-items: center; }
     .attach-btn { width: 44px; height: 44px; font-size: 17px; }
     .send-btn { width: 40px; height: 40px; font-size: 15px; }
@@ -877,29 +874,28 @@ body { overflow: hidden; height: 100vh; }
             <form method="post" action="{% url 'members:quick_task' %}" id="taskForm" data-no-loading-state onsubmit="return interceptTaskSubmit(event)">
                 {% csrf_token %}
                 <div class="input-container">
-                    <div class="input-top-row">
+                    <div class="input-row">
                         <div class="project-pill" id="projectPill" onclick="toggleProjectDropdown()">
                             <i class="bi bi-folder2"></i>
-                            <span id="selectedProjectName">{{ projects.0.name }}</span>
+                            <span id="selectedProjectName" class="project-pill-text no-project">Select project</span>
                             <i class="bi bi-chevron-down" style="font-size:9px;margin-left:2px;"></i>
                             <div class="project-dropdown" id="projectDropdown">
                                 {% for project in projects %}
-                                <button type="button" class="project-option {% if forloop.first %}selected{% endif %}"
+                                <button type="button" class="project-option"
+                                        data-project-id="{{ project.pk }}"
                                         onclick="selectProject({{ project.pk }}, '{{ project.name }}', this, event)">
                                     {{ project.name }}
                                 </button>
                                 {% endfor %}
                             </div>
                         </div>
-                    </div>
-                    <div class="input-row">
-                        <input type="hidden" name="project_id" id="projectIdInput" value="{{ projects.0.pk }}">
-                        <button type="button" class="attach-btn" title="Attach file">
-                            <i class="bi bi-paperclip"></i>
-                        </button>
+                        <input type="hidden" name="project_id" id="projectIdInput" value="">
                         <textarea name="title" class="chat-textarea" id="chatInput"
                                   placeholder="Ask TARS to code something..." rows="1"
                                   onkeydown="handleKey(event)" oninput="autoGrow(this); updateSend()"></textarea>
+                        <button type="button" class="attach-btn" title="Attach file">
+                            <i class="bi bi-paperclip"></i>
+                        </button>
                         <button type="submit" class="send-btn" id="sendBtn" disabled>
                             <i class="bi bi-arrow-up"></i>
                         </button>
@@ -1115,14 +1111,28 @@ function toggleProjectDropdown() {
 function selectProject(id, name, el, e) {
     if (e) e.stopPropagation();
     document.getElementById('projectIdInput').value = id;
-    document.getElementById('selectedProjectName').textContent = name;
+    var span = document.getElementById('selectedProjectName');
+    span.textContent = name;
+    span.classList.remove('no-project');
     document.querySelectorAll('.project-option').forEach(function(o) { o.classList.remove('selected'); });
     el.classList.add('selected');
     document.getElementById('projectDropdown').classList.remove('show');
     var overlay = document.getElementById('projectSheetOverlay');
     if (overlay) overlay.classList.remove('show');
+    try { localStorage.setItem('tars_last_project_id', id); localStorage.setItem('tars_last_project_name', name); } catch(e) {}
     updateSend();
 }
+
+// Auto-select most recently used project from localStorage
+(function() {
+    try {
+        var lastId = localStorage.getItem('tars_last_project_id');
+        if (lastId) {
+            var opt = document.querySelector('.project-option[data-project-id="' + lastId + '"]');
+            if (opt) { selectProject(parseInt(lastId, 10), opt.textContent.trim(), opt, null); return; }
+        }
+    } catch(e) {}
+}());
 
 // Close dropdown on outside click or overlay tap
 document.addEventListener('click', function(e) {
