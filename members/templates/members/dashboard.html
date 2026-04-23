@@ -122,6 +122,36 @@ body { overflow: hidden; height: 100vh; }
     animation: greeting-in 0.55s ease-out forwards;
 }
 
+.suggestion-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 20px;
+    opacity: 0;
+    animation: greeting-in 0.55s ease-out 0.2s forwards;
+}
+
+.suggestion-chip {
+    background: transparent;
+    border: 1px solid #2a2a3d;
+    color: #888;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.suggestion-chip:hover {
+    border-color: #6366f1;
+    color: #c7c8ff;
+}
+
 /* ── Chat message bubbles ──────────────────────────────── */
 .chat-message {
     display: flex;
@@ -712,10 +742,21 @@ body { overflow: hidden; height: 100vh; }
                 <p style="color:#555; font-size:13px; margin-top:16px; max-width:300px;">
                     Connect a GitHub repo to get started.
                 </p>
-                <button type="button" onclick="triggerGithubInput()" style="display:inline-flex;align-items:center;gap:8px;background:#6366f1;color:#fff;padding:10px 20px;border-radius:10px;border:none;font-size:14px;font-weight:500;margin-top:8px;cursor:pointer;">
-                    <i class="bi bi-plus-lg"></i> Add a Project
-                </button>
                 {% endif %}
+                <div class="suggestion-chips">
+                    <button type="button" class="suggestion-chip" onclick="triggerGithubInput()">
+                        <i class="bi bi-github"></i> Add a GitHub project
+                    </button>
+                    <button type="button" class="suggestion-chip" onclick="fillSuggestion('Fix a bug: ')">
+                        Fix a bug
+                    </button>
+                    <button type="button" class="suggestion-chip" onclick="fillSuggestion('Add a feature: ')">
+                        Add a feature
+                    </button>
+                    <button type="button" class="suggestion-chip" onclick="fillSuggestion('Write tests for ')">
+                        Run tests
+                    </button>
+                </div>
             </div>
 
             {% else %}
@@ -1051,6 +1092,17 @@ function handleKey(e) {
 // Focus input
 function focusInput() {
     document.getElementById('chatInput').focus();
+}
+
+// Pre-fill chat input from a suggestion chip
+function fillSuggestion(text) {
+    var input = document.getElementById('chatInput');
+    if (!input) return;
+    input.value = text;
+    input.focus();
+    autoGrow(input);
+    updateSend();
+    input.setSelectionRange(input.value.length, input.value.length);
 }
 
 // Project dropdown
