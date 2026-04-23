@@ -2,6 +2,7 @@ import json
 import logging
 import os
 
+import bleach
 import requests as http_requests
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -378,6 +379,94 @@ def api_task_list(request):
         "has_more": has_more,
         "next_page": page_obj.next_page_number() if has_more else None,
     })
+
+
+# ---------------------------------------------------------------------------
+# POST /api/tasks/
+#
+# Create a task via AJAX from the chat input.  Accepts JSON body:
+#   {project_id, title, description}
+# Returns the new task as JSON (201).  Protected by Django's standard CSRF
+# middleware — callers must include the X-CSRFToken header.
+# ---------------------------------------------------------------------------
+
+
+@require_POST
+def api_task_create(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "Authentication required"}, status=401)
+
+    try:
+        data = json.loads(request.body or b"{}")
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    project_id = data.get("project_id")
+    title = (data.get("title") or "").strip()
+    description = (data.get("description") or "").strip()
+
+    if not project_id:
+        return JsonResponse({"error": "project_id is required"}, status=400)
+    if not title:
+        return JsonResponse({"error": "title is required"}, status=400)
+
+    from django.db.models import Q
+
+    project = (
+        Project.objects.filter(
+            Q(owner=request.user)
+            | Q(team__owner=request.user)
+            | Q(team__memberships__user=request.user),
+            pk=project_id,
+            is_active=True,
+        )
+        .distinct()
+        .first()
+    )
+    if project is None:
+        return JsonResponse({"error": "Project not found"}, status=404)
+
+    title = bleach.clean(title, tags=[], strip=True)
+    if not title:
+        return JsonResponse({"error": "title is required"}, status=400)
+
+    task = Task.objects.create(
+        project=project,
+        created_by=request.user,
+        title=title,
+        description=description or title,
+        priority=50,
+    )
+
+    _forward_to_controller(task)
+    _broadcast_queue_task_added(task)
+
+    fire_event(
+        "task_submitted",
+        user=request.user,
+        metadata={"task_id": task.pk, "project": task.project.github_repo},
+    )
+
+    logger.info("Task %s created via API by user %s", task.pk, request.user.id)
+    return JsonResponse(
+        {
+            "id": task.pk,
+            "title": task.title,
+            "description": task.description,
+            "status": task.status,
+            "status_display": task.get_status_display(),
+            "project": task.project.name,
+            "created_at": task.created_at.isoformat(),
+        },
+        status=201,
+    )
+
+
+def api_tasks(request):
+    """Dispatcher for GET /api/tasks/ (list) and POST /api/tasks/ (create)."""
+    if request.method == "POST":
+        return api_task_create(request)
+    return api_task_list(request)
 
 
 # ---------------------------------------------------------------------------
