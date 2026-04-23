@@ -273,6 +273,77 @@
         border-radius: 50%;
         flex-shrink: 0;
     }
+
+    /* Cancel button */
+    .cancel-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        border: 1px solid rgba(239,68,68,0.25);
+        background: rgba(239,68,68,0.07);
+        color: rgba(239,68,68,0.55);
+        font-size: 0.7rem;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s, border-color 0.15s;
+        flex-shrink: 0;
+        padding: 0;
+        line-height: 1;
+    }
+
+    .cancel-btn:hover {
+        background: rgba(239,68,68,0.15);
+        color: #f87171;
+        border-color: rgba(239,68,68,0.5);
+    }
+
+    /* Inline cancel confirmation */
+    .cancel-confirm {
+        display: none;
+        align-items: center;
+        gap: 0.4rem;
+        flex-shrink: 0;
+    }
+
+    .cancel-confirm-text {
+        font-size: 0.72rem;
+        color: var(--tars-muted);
+        white-space: nowrap;
+    }
+
+    .cancel-confirm-yes {
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 0.15rem 0.45rem;
+        border-radius: 5px;
+        border: 1px solid rgba(239,68,68,0.35);
+        background: rgba(239,68,68,0.1);
+        color: #f87171;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.15s;
+    }
+
+    .cancel-confirm-yes:hover { background: rgba(239,68,68,0.2); }
+    .cancel-confirm-yes:disabled { opacity: 0.5; cursor: default; }
+
+    .cancel-confirm-no {
+        font-size: 0.7rem;
+        font-weight: 600;
+        padding: 0.15rem 0.45rem;
+        border-radius: 5px;
+        border: 1px solid var(--tars-border);
+        background: transparent;
+        color: var(--tars-muted);
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.15s;
+    }
+
+    .cancel-confirm-no:hover { background: rgba(156,163,175,0.1); }
+    .cancel-confirm-no:disabled { opacity: 0.5; cursor: default; }
 </style>
 {% endblock %}
 
@@ -397,7 +468,7 @@
                     </div>
                 </div>
 
-                <!-- Status badge -->
+                <!-- Status badge + cancel action -->
                 <div class="d-flex align-items-center gap-2 flex-shrink-0">
                     <span class="status-badge status-{{ task.status }}">
                         {% if task.status == 'in_progress' %}
@@ -411,7 +482,18 @@
                         {% endif %}
                         {{ task.get_status_display }}
                     </span>
+                    {% if task.filter_group == 'pending' %}
+                    <button class="cancel-btn" type="button" title="Cancel task" aria-label="Cancel task">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                    <div class="cancel-confirm">
+                        <span class="cancel-confirm-text">Cancel this task?</span>
+                        <button class="cancel-confirm-yes" type="button">Yes</button>
+                        <button class="cancel-confirm-no" type="button">Keep it</button>
+                    </div>
+                    {% else %}
                     <i class="bi bi-chevron-right" style="color:var(--tars-border);"></i>
+                    {% endif %}
                 </div>
 
             </a>
@@ -576,7 +658,7 @@
         var card = document.querySelector('[data-task-id="' + data.task_id + '"]');
 
         if (data.status === 'completed' || data.status === 'failed') {
-            if (card) {
+            if (card && !card.dataset.cancelledLocally) {
                 if (data.status === 'completed') completedTodayCount++;
                 removeCard(card);
             }
@@ -695,6 +777,7 @@
 
     function buildCard(data) {
         var filterGroup = statusToFilterGroup(data.status);
+        var cancellable = CANCELLABLE_STATUSES.indexOf(data.status) !== -1;
         var positionCards = document.querySelectorAll('#queue-list .queue-card[data-has-position]');
         var posNum = positionCards.length + 1;
 
@@ -705,6 +788,25 @@
         a.dataset.filterGroup = filterGroup;
         a.dataset.hasPosition = 'true';
         a.className = 'queue-card';
+
+        var rightSection = cancellable
+            ? '<span class="status-badge status-' + data.status + '">' +
+                  '<i class="bi bi-circle-fill" style="font-size:0.35rem;"></i> ' +
+                  escHtml(data.status_display) +
+              '</span>' +
+              '<button class="cancel-btn" type="button" title="Cancel task" aria-label="Cancel task">' +
+                  '<i class="bi bi-x-lg"></i>' +
+              '</button>' +
+              '<div class="cancel-confirm">' +
+                  '<span class="cancel-confirm-text">Cancel this task?</span>' +
+                  '<button class="cancel-confirm-yes" type="button">Yes</button>' +
+                  '<button class="cancel-confirm-no" type="button">Keep it</button>' +
+              '</div>'
+            : '<span class="status-badge status-' + data.status + '">' +
+                  '<i class="bi bi-circle-fill" style="font-size:0.35rem;"></i> ' +
+                  escHtml(data.status_display) +
+              '</span>' +
+              '<i class="bi bi-chevron-right" style="color:var(--tars-border);"></i>';
 
         a.innerHTML =
             '<div class="queue-pos">#' + posNum + '</div>' +
@@ -722,11 +824,7 @@
                 '</div>' +
             '</div>' +
             '<div class="d-flex align-items-center gap-2 flex-shrink-0">' +
-                '<span class="status-badge status-' + data.status + '">' +
-                    '<i class="bi bi-circle-fill" style="font-size:0.35rem;"></i> ' +
-                    escHtml(data.status_display) +
-                '</span>' +
-                '<i class="bi bi-chevron-right" style="color:var(--tars-border);"></i>' +
+                rightSection +
             '</div>';
 
         return a;
@@ -805,6 +903,81 @@
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;');
     }
+
+    // ── Cancel task ───────────────────────────────────────────────────────────
+
+    var CANCELLABLE_STATUSES = ['pending', 'queued'];
+
+    function getCsrfToken() {
+        var match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+        return match ? decodeURIComponent(match[1]) : '';
+    }
+
+    function showCancelConfirm(card) {
+        var badge     = card.querySelector('.status-badge');
+        var cancelBtn = card.querySelector('.cancel-btn');
+        var confirm   = card.querySelector('.cancel-confirm');
+        if (badge)     badge.style.display     = 'none';
+        if (cancelBtn) cancelBtn.style.display = 'none';
+        if (confirm)   confirm.style.display   = 'flex';
+    }
+
+    function hideCancelConfirm(card) {
+        var badge     = card.querySelector('.status-badge');
+        var cancelBtn = card.querySelector('.cancel-btn');
+        var confirm   = card.querySelector('.cancel-confirm');
+        if (badge)     badge.style.display     = '';
+        if (cancelBtn) cancelBtn.style.display = '';
+        if (confirm)   confirm.style.display   = 'none';
+    }
+
+    function submitCancel(card) {
+        var yesBtn = card.querySelector('.cancel-confirm-yes');
+        var noBtn  = card.querySelector('.cancel-confirm-no');
+        if (yesBtn) yesBtn.disabled = true;
+        if (noBtn)  noBtn.disabled  = true;
+
+        fetch('/api/tasks/' + card.dataset.taskId + '/cancel', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCsrfToken() },
+            credentials: 'same-origin',
+        })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (body) {
+            if (body && body.ok) {
+                card.dataset.cancelledLocally = 'true';
+                removeCard(card);
+            } else {
+                if (yesBtn) yesBtn.disabled = false;
+                if (noBtn)  noBtn.disabled  = false;
+                hideCancelConfirm(card);
+            }
+        })
+        .catch(function () {
+            if (yesBtn) yesBtn.disabled = false;
+            if (noBtn)  noBtn.disabled  = false;
+            hideCancelConfirm(card);
+        });
+    }
+
+    document.getElementById('queue-list').addEventListener('click', function (e) {
+        var cancelBtn  = e.target.closest('.cancel-btn');
+        var confirmYes = e.target.closest('.cancel-confirm-yes');
+        var confirmNo  = e.target.closest('.cancel-confirm-no');
+        var confirmArea = e.target.closest('.cancel-confirm');
+
+        if (!cancelBtn && !confirmYes && !confirmNo && !confirmArea) { return; }
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        var card = e.target.closest('[data-task-id]');
+        if (!card) { return; }
+
+        if (cancelBtn)      { showCancelConfirm(card); }
+        else if (confirmYes) { submitCancel(card); }
+        else if (confirmNo)  { hideCancelConfirm(card); }
+    });
 
     connect();
 })();

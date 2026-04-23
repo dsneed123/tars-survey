@@ -17,6 +17,8 @@ urlpatterns = [
     path("api/tasks/<int:pk>/status", views.api_task_status, name="api_status"),
     # Retry a failed task (session auth + CSRF)
     path("api/tasks/<int:pk>/retry", views.api_task_retry, name="api_retry"),
+    # Cancel a pending/queued task (session auth + CSRF)
+    path("api/tasks/<int:pk>/cancel", views.api_task_cancel, name="api_cancel"),
     # GitHub webhook receiver (HMAC-SHA256 signature validation)
     path("api/webhooks/github/", views.github_webhook, name="github_webhook"),
 ]
