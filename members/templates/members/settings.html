@@ -1,0 +1,527 @@
+{% extends "base.html" %}
+
+{% block title %}Settings — TARS{% endblock %}
+
+{% block meta_description %}<meta name="description" content="Manage your TARS account settings.">{% endblock %}
+
+{% block extra_head %}
+<style>
+.dash-main {
+    background: var(--tars-bg);
+}
+
+.dash-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid var(--tars-border);
+    position: sticky;
+    top: 60px;
+    background: var(--tars-bg);
+    z-index: 100;
+}
+
+.breadcrumb {
+    margin: 0;
+    padding: 0;
+    background: none;
+    font-size: 0.82rem;
+}
+
+.breadcrumb-item a {
+    color: var(--tars-muted);
+    text-decoration: none;
+    transition: color 0.15s;
+}
+
+.breadcrumb-item a:hover { color: var(--tars-text); }
+.breadcrumb-item.active  { color: var(--tars-text); }
+
+.breadcrumb-item + .breadcrumb-item::before {
+    color: var(--tars-border);
+    content: "/";
+}
+
+.dash-inner {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 2rem 2rem 6rem;
+}
+
+.section-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(156,163,175,0.5);
+    margin-bottom: 0.75rem;
+}
+
+.section-label.danger-label {
+    color: rgba(239,68,68,0.5);
+}
+
+/* ── Card ────────────────────────────────────────────────── */
+.settings-card {
+    background: var(--tars-surface);
+    border: 1px solid var(--tars-border);
+    border-radius: 16px;
+    overflow: hidden;
+    animation: fadeUpIn 0.4s ease backwards;
+}
+
+/* ── Avatar initials ─────────────────────────────────────── */
+.avatar-circle {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--tars-accent), #6366f1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+    font-family: "Space Grotesk", system-ui, sans-serif;
+}
+
+/* ── Profile form ────────────────────────────────────────── */
+.profile-form-inner {
+    padding: 1.5rem;
+}
+
+.settings-label {
+    font-weight: 600;
+    font-size: 0.82rem;
+    color: var(--tars-text);
+    margin-bottom: 0.35rem;
+    display: block;
+}
+
+.settings-input {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--tars-border);
+    border-radius: 8px;
+    color: var(--tars-text);
+    padding: 0.55rem 0.85rem;
+    font-size: 0.9rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+}
+
+.settings-input:focus {
+    border-color: var(--tars-accent);
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+}
+
+/* ── Toggle rows ─────────────────────────────────────────── */
+.pref-card {
+    background: var(--tars-surface);
+    border: 1px solid var(--tars-border);
+    border-radius: 16px;
+    overflow: hidden;
+    animation: fadeUpIn 0.4s ease backwards;
+}
+
+.pref-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.1rem 1.5rem;
+    border-bottom: 1px solid rgba(31,41,55,0.7);
+    gap: 1rem;
+}
+
+.pref-row:last-child {
+    border-bottom: none;
+}
+
+.pref-info { flex: 1; min-width: 0; }
+
+.pref-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--tars-text);
+    margin-bottom: 2px;
+}
+
+.pref-desc {
+    font-size: 0.8rem;
+    color: var(--tars-muted);
+    line-height: 1.4;
+}
+
+/* Toggle switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(255,255,255,0.1);
+    border-radius: 24px;
+    transition: background-color 0.2s;
+}
+
+.toggle-slider::before {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+}
+
+.toggle-switch input:checked + .toggle-slider { background-color: var(--tars-accent); }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+/* ── Project rows ────────────────────────────────────────── */
+.project-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid rgba(31,41,55,0.7);
+    gap: 1rem;
+}
+
+.project-row:last-child { border-bottom: none; }
+
+.project-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--tars-accent);
+    font-size: 0.9rem;
+    flex-shrink: 0;
+}
+
+.project-info { flex: 1; min-width: 0; }
+
+.project-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--tars-text);
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.project-repo {
+    font-size: 0.78rem;
+    color: var(--tars-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.project-status {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.project-status.active   { background: var(--tars-green); }
+.project-status.inactive { background: var(--tars-muted); }
+
+/* ── Danger zone ─────────────────────────────────────────── */
+.danger-zone {
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 16px;
+    overflow: hidden;
+    background: rgba(239,68,68,0.04);
+}
+
+@keyframes fadeUpIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="dash-main">
+
+    <div class="dash-topbar">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'members:dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item active">Settings</li>
+            </ol>
+        </nav>
+    </div>
+
+    <div class="dash-inner">
+
+        <div class="mb-4">
+            <h1 style="font-size:1.4rem;font-weight:800;margin-bottom:0.25rem;">Settings</h1>
+            <p style="color:var(--tars-muted);font-size:0.875rem;margin:0;">
+                Manage your profile, notifications, and account.
+            </p>
+        </div>
+
+        <!-- ── Profile ──────────────────────────────────────── -->
+        <p class="section-label">Profile</p>
+        <div class="settings-card mb-5">
+            <div class="profile-form-inner">
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <div class="avatar-circle">
+                        {{ user.first_name|first|upper|default:user.email|first|upper }}
+                    </div>
+                    <div>
+                        <div style="font-weight:700;font-size:1rem;color:var(--tars-text);">
+                            {{ user.get_full_name|default:user.email }}
+                        </div>
+                        <div style="font-size:0.8rem;color:var(--tars-muted);">
+                            {{ user.plan|capfirst }} plan
+                            &middot; Member since {{ user.created_at|date:"M Y" }}
+                        </div>
+                    </div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="profile">
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-sm-6">
+                            <label class="settings-label" for="id_first_name">First name</label>
+                            <input class="settings-input" type="text" id="id_first_name"
+                                   name="first_name" value="{{ user.first_name }}" maxlength="150">
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="settings-label" for="id_last_name">Last name</label>
+                            <input class="settings-input" type="text" id="id_last_name"
+                                   name="last_name" value="{{ user.last_name }}" maxlength="150">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="settings-label" for="id_email">Email</label>
+                        <input class="settings-input" type="email" id="id_email"
+                               name="email" value="{{ user.email }}" maxlength="254" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="settings-label" for="id_company">Company <span style="font-weight:400;color:var(--tars-muted)">(optional)</span></label>
+                        <input class="settings-input" type="text" id="id_company"
+                               name="company_name" value="{{ user.company_name }}" maxlength="200">
+                    </div>
+
+                    <button type="submit" class="btn btn-accent" data-loading-label="Saving…">
+                        Save profile
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ── Notifications ────────────────────────────────── -->
+        <p class="section-label">Notifications</p>
+        <form method="post" id="notifForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="notifications">
+            <div class="pref-card mb-5">
+
+                <div class="pref-row">
+                    <div class="pref-info">
+                        <div class="pref-title">Welcome &amp; onboarding</div>
+                        <div class="pref-desc">Welcome email on signup + a getting-started email 24 hours later.</div>
+                    </div>
+                    <label class="toggle-switch" aria-label="Toggle welcome emails">
+                        <input type="checkbox" name="email_welcome"
+                               {% if prefs.email_welcome %}checked{% endif %}
+                               onchange="this.form.requestSubmit()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="pref-row">
+                    <div class="pref-info">
+                        <div class="pref-title">Task started</div>
+                        <div class="pref-desc">Notified when TARS picks up a task and begins working on it.</div>
+                    </div>
+                    <label class="toggle-switch" aria-label="Toggle task started emails">
+                        <input type="checkbox" name="email_task_started"
+                               {% if prefs.email_task_started %}checked{% endif %}
+                               onchange="this.form.requestSubmit()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="pref-row">
+                    <div class="pref-info">
+                        <div class="pref-title">Pull request ready</div>
+                        <div class="pref-desc">Notified when TARS opens a PR and it's ready for your review.</div>
+                    </div>
+                    <label class="toggle-switch" aria-label="Toggle PR ready emails">
+                        <input type="checkbox" name="email_pr_ready"
+                               {% if prefs.email_pr_ready %}checked{% endif %}
+                               onchange="this.form.requestSubmit()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="pref-row">
+                    <div class="pref-info">
+                        <div class="pref-title">Task failed</div>
+                        <div class="pref-desc">Notified when a task encounters an error and cannot be completed.</div>
+                    </div>
+                    <label class="toggle-switch" aria-label="Toggle task failed emails">
+                        <input type="checkbox" name="email_task_failed"
+                               {% if prefs.email_task_failed %}checked{% endif %}
+                               onchange="this.form.requestSubmit()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+                <div class="pref-row">
+                    <div class="pref-info">
+                        <div class="pref-title">Weekly digest</div>
+                        <div class="pref-desc">A weekly summary of tasks completed, PRs opened, and project status. Sent every Monday.</div>
+                    </div>
+                    <label class="toggle-switch" aria-label="Toggle weekly digest emails">
+                        <input type="checkbox" name="email_weekly_digest"
+                               {% if prefs.email_weekly_digest %}checked{% endif %}
+                               onchange="this.form.requestSubmit()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+
+            </div>
+        </form>
+
+        <!-- ── Projects ─────────────────────────────────────── -->
+        <p class="section-label">Projects</p>
+        <div class="settings-card mb-5">
+            {% if projects %}
+                {% for project in projects %}
+                <div class="project-row">
+                    <div class="project-icon">
+                        <i class="bi bi-folder2"></i>
+                    </div>
+                    <div class="project-info">
+                        <div class="project-name">{{ project.name }}</div>
+                        <div class="project-repo">
+                            <i class="bi bi-github me-1"></i>{{ project.github_repo }}
+                        </div>
+                    </div>
+                    <div class="project-status {% if project.is_active %}active{% else %}inactive{% endif %}"
+                         title="{% if project.is_active %}Active{% else %}Paused{% endif %}"></div>
+                    <a href="{% url 'projects:settings' pk=project.pk %}"
+                       class="btn btn-sm"
+                       style="border:1px solid var(--tars-border);color:var(--tars-muted);background:transparent;font-size:0.78rem;">
+                        <i class="bi bi-gear me-1"></i>Settings
+                    </a>
+                    <form method="post" class="d-inline"
+                          onsubmit="return confirm('Remove {{ project.name|escapejs }} from TARS? Your GitHub repo is not affected.')">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="remove_project">
+                        <input type="hidden" name="project_id" value="{{ project.pk }}">
+                        <button type="submit" class="btn btn-sm"
+                                style="border:1px solid rgba(239,68,68,0.4);color:#f87171;background:transparent;font-size:0.78rem;">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </form>
+                </div>
+                {% endfor %}
+                <div class="d-flex align-items-center gap-2 p-3" style="border-top:1px solid rgba(31,41,55,0.7)">
+                    <a href="{% url 'projects:add' %}" class="btn btn-sm"
+                       style="border:1px solid var(--tars-accent);color:var(--tars-accent);background:transparent;font-size:0.82rem;">
+                        <i class="bi bi-plus-lg me-1"></i>Add project
+                    </a>
+                </div>
+            {% else %}
+                <div class="p-5 text-center">
+                    <i class="bi bi-folder2-open" style="font-size:2rem;color:var(--tars-muted);opacity:0.4;"></i>
+                    <p class="mt-3 mb-3" style="color:var(--tars-muted);font-size:0.875rem;">No projects yet.</p>
+                    <a href="{% url 'projects:add' %}" class="btn btn-accent btn-sm">Add your first project</a>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- ── Danger zone ───────────────────────────────────── -->
+        <p class="section-label danger-label">Danger Zone</p>
+        <div class="danger-zone">
+            <div class="pref-row" style="border-bottom:none">
+                <div class="pref-info">
+                    <div class="pref-title" style="color:#f87171;">Delete account</div>
+                    <div class="pref-desc">Permanently delete your TARS account and all associated data. This cannot be undone.</div>
+                </div>
+                <button type="button" class="btn btn-sm flex-shrink-0"
+                        style="border:1px solid rgba(239,68,68,0.5);color:#f87171;background:transparent;"
+                        data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                    Delete account
+                </button>
+            </div>
+        </div>
+
+    </div><!-- /.dash-inner -->
+</main>
+
+<!-- Delete account modal -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background:var(--tars-surface);border:1px solid var(--tars-border);">
+            <div class="modal-header" style="border-color:var(--tars-border)">
+                <h5 class="modal-title fw-bold" id="deleteAccountModalLabel" style="color:var(--tars-text);">
+                    Delete account
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p style="color:var(--tars-muted);">
+                    This will permanently delete your account, all projects, tasks, and data.
+                    Your GitHub repositories are <strong style="color:var(--tars-text)">not affected</strong>.
+                </p>
+                <div class="p-3 rounded-3 mb-3"
+                     style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);">
+                    <p class="small mb-0" style="color:#f87171;">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        This action cannot be undone.
+                    </p>
+                </div>
+                <form method="post" id="deleteAccountForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete_account">
+                    <label class="settings-label mb-1" for="id_confirm_text">
+                        Type <strong style="color:var(--tars-text)">DELETE</strong> to confirm
+                    </label>
+                    <input class="settings-input" type="text" id="id_confirm_text"
+                           name="confirm_text" placeholder="DELETE" autocomplete="off">
+                </form>
+            </div>
+            <div class="modal-footer" style="border-color:var(--tars-border)">
+                <button type="button" class="btn btn-sm" data-bs-dismiss="modal"
+                        style="border:1px solid var(--tars-border);color:var(--tars-muted);">
+                    Cancel
+                </button>
+                <button type="submit" form="deleteAccountForm" class="btn btn-sm"
+                        style="background:rgba(239,68,68,0.85);color:#fff;border:none;">
+                    <i class="bi bi-trash me-1"></i>Delete my account
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -554,11 +554,14 @@
         {% if user.is_authenticated %}
         <div class="app-icon-nav d-none d-md-flex">
             <a href="{% url 'members:dashboard' %}"
-               class="app-icon-nav-item{% if '/dashboard/queue' not in request.path %} active{% endif %}"
+               class="app-icon-nav-item{% if '/dashboard/queue' not in request.path and '/dashboard/settings' not in request.path %} active{% endif %}"
                title="Chat"><i class="bi bi-house-fill"></i></a>
             <a href="{% url 'tasks:queue' %}"
                class="app-icon-nav-item{% if '/dashboard/queue' in request.path %} active{% endif %}"
                title="Queue"><i class="bi bi-list-ul"></i></a>
+            <a href="{% url 'members:settings' %}"
+               class="app-icon-nav-item{% if '/dashboard/settings' in request.path %} active{% endif %}"
+               title="Settings"><i class="bi bi-gear"></i></a>
         </div>
         {% else %}
         <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
@@ -724,7 +727,7 @@
 {% if user.is_authenticated %}
 <nav class="app-bottom-nav" aria-label="Main navigation">
     <a href="{% url 'members:dashboard' %}"
-       class="app-bottom-nav-item{% if '/dashboard/queue' not in request.path %} active{% endif %}">
+       class="app-bottom-nav-item{% if '/dashboard/queue' not in request.path and '/dashboard/settings' not in request.path %} active{% endif %}">
         <i class="bi bi-house-fill"></i>
         <span>Chat</span>
     </a>
@@ -732,6 +735,11 @@
        class="app-bottom-nav-item{% if '/dashboard/queue' in request.path %} active{% endif %}">
         <i class="bi bi-list-ul"></i>
         <span>Queue</span>
+    </a>
+    <a href="{% url 'members:settings' %}"
+       class="app-bottom-nav-item{% if '/dashboard/settings' in request.path %} active{% endif %}">
+        <i class="bi bi-gear"></i>
+        <span>Settings</span>
     </a>
 </nav>
 {% endif %}
