@@ -42,6 +42,11 @@ STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")
 STRIPE_PUBLISHABLE_KEY = os.environ.get("STRIPE_PUBLISHABLE_KEY", "")
 STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
 
+# ---------------------------------------------------------------------------
+# GitHub
+# ---------------------------------------------------------------------------
+GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET", "")
+
 AUTH_USER_MODEL = "accounts.CustomUser"
 
 LOGIN_URL = "/login/"

@@ -1,6 +1,9 @@
+import hashlib
+import hmac
 import json
 import logging
 import os
+import re
 
 import bleach
 import requests as http_requests
@@ -9,7 +12,7 @@ from channels.layers import get_channel_layer
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
@@ -17,6 +20,7 @@ from django.core.paginator import EmptyPage, Paginator
 from django.views.decorators.http import require_GET, require_POST
 
 from analytics.utils import fire_event
+from notifications.utils import create_notification
 from projects.models import Project
 
 from .forms import TaskForm
@@ -612,3 +616,139 @@ def api_task_retry(request, pk):
         },
         status=201,
     )
+
+
+# ---------------------------------------------------------------------------
+# POST /api/webhooks/github/
+#
+# Receives GitHub pull_request webhook events.  Validates the HMAC-SHA256
+# signature using GITHUB_WEBHOOK_SECRET.  On a merged PR, updates the
+# associated task to "completed" and posts an in-app notification.
+# ---------------------------------------------------------------------------
+
+_GITHUB_PR_TASK_RE = re.compile(r"tars[_-]task[_-]id:\s*(\d+)", re.IGNORECASE)
+
+
+def _verify_github_signature(payload_body, secret, sig_header):
+    """Return True if sig_header matches the HMAC-SHA256 of payload_body."""
+    if not sig_header:
+        return False
+    computed = hmac.new(secret.encode(), payload_body, hashlib.sha256).hexdigest()
+    expected = f"sha256={computed}"
+    return hmac.compare_digest(expected, sig_header)
+
+
+def _find_task_for_pr(pr_url, pr_body):
+    """Look up a Task associated with a GitHub PR.
+
+    Primary strategy: match stored pr_url.
+    Fallback: parse 'tars-task-id: <N>' from the PR body.
+    """
+    if pr_url:
+        task = (
+            Task.objects.filter(pr_url=pr_url)
+            .select_related("project", "created_by")
+            .first()
+        )
+        if task:
+            return task
+
+    if pr_body:
+        m = _GITHUB_PR_TASK_RE.search(pr_body)
+        if m:
+            try:
+                return (
+                    Task.objects.select_related("project", "created_by")
+                    .get(pk=int(m.group(1)))
+                )
+            except Task.DoesNotExist:
+                pass
+
+    return None
+
+
+def _handle_pr_opened(task, pr_url):
+    """Update task when a PR is opened: set pr_url and move to 'reviewing'."""
+    update_fields = []
+
+    if pr_url and not task.pr_url:
+        task.pr_url = pr_url
+        update_fields.append("pr_url")
+
+    if task.status not in ("completed", "failed", "reviewing"):
+        task.status = "reviewing"
+        update_fields.append("status")
+
+    if update_fields:
+        task.save(update_fields=update_fields)
+        _broadcast_task_update(task)
+
+    logger.info("GitHub webhook: PR opened for task %s", task.pk)
+
+
+def _handle_pr_merged(task, pr_url):
+    """Update task when a PR is merged: set completed and post notification."""
+    update_fields = ["status"]
+    task.status = "completed"
+
+    if pr_url and not task.pr_url:
+        task.pr_url = pr_url
+        update_fields.append("pr_url")
+
+    if task.completed_at is None:
+        task.completed_at = timezone.now()
+        update_fields.append("completed_at")
+
+    task.save(update_fields=update_fields)
+    _broadcast_task_update(task)
+
+    create_notification(
+        task.created_by,
+        "PR merged!",
+        "PR merged! Your changes are live.",
+        link=task.pr_url or pr_url,
+    )
+
+    logger.info("GitHub webhook: PR merged for task %s → completed", task.pk)
+
+
+@csrf_exempt
+@require_POST
+def github_webhook(request):
+    secret = getattr(settings, "GITHUB_WEBHOOK_SECRET", "")
+    if secret:
+        sig_header = request.META.get("HTTP_X_HUB_SIGNATURE_256", "")
+        if not _verify_github_signature(request.body, secret, sig_header):
+            return HttpResponse(status=400)
+
+    event_type = request.META.get("HTTP_X_GITHUB_EVENT", "")
+    if event_type != "pull_request":
+        return HttpResponse(status=200)
+
+    try:
+        payload = json.loads(request.body or b"{}")
+    except (json.JSONDecodeError, ValueError):
+        return HttpResponse(status=400)
+
+    action = payload.get("action", "")
+    if action not in ("opened", "closed", "reopened"):
+        return HttpResponse(status=200)
+
+    pr = payload.get("pull_request", {})
+    pr_url = pr.get("html_url", "")
+    pr_body = pr.get("body") or ""
+    merged = pr.get("merged", False)
+
+    task = _find_task_for_pr(pr_url, pr_body)
+    if task is None:
+        logger.debug("GitHub webhook: no task found for PR %s", pr_url)
+        return HttpResponse(status=200)
+
+    if action == "opened":
+        _handle_pr_opened(task, pr_url)
+    elif action == "closed" and merged:
+        _handle_pr_merged(task, pr_url)
+    else:
+        logger.debug("GitHub webhook: unhandled action %r (merged=%s) for task %s", action, merged, task.pk)
+
+    return HttpResponse(status=200)
