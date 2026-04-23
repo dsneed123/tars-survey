@@ -470,6 +470,48 @@ def api_tasks(request):
 
 
 # ---------------------------------------------------------------------------
+# GET /api/tasks/updates/?since=<iso_timestamp>
+#
+# Returns tasks updated since the given timestamp (used by WS clients to
+# re-fetch missed status changes after a reconnect).  The `since` param must
+# be an ISO-8601 datetime string; if omitted or invalid, returns all active
+# tasks for the user.
+# ---------------------------------------------------------------------------
+
+
+@login_required
+@require_GET
+def api_task_updates(request):
+    from django.utils.dateparse import parse_datetime
+
+    since_str = request.GET.get("since", "").strip()
+    since = parse_datetime(since_str) if since_str else None
+
+    qs = Task.objects.filter(created_by=request.user).select_related("project")
+    if since:
+        qs = qs.filter(updated_at__gt=since)
+    else:
+        qs = qs.exclude(status__in=("completed", "failed"))
+
+    queue_positions = _get_queue_positions(request.user.pk)
+    tasks = [
+        {
+            "task_id": task.pk,
+            "title": task.title,
+            "status": task.status,
+            "status_display": task.get_status_display(),
+            "branch_name": task.branch_name,
+            "pr_url": task.pr_url,
+            "error_message": task.error_message,
+            "queue_position": queue_positions.get(task.pk),
+            "project_name": task.project.name if task.project_id else "",
+        }
+        for task in qs
+    ]
+    return JsonResponse({"tasks": tasks})
+
+
+# ---------------------------------------------------------------------------
 # POST /api/tasks/<pk>/status
 #
 # Authenticated callback from the TARS controller / worker.

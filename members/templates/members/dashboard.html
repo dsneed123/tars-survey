@@ -1062,11 +1062,89 @@ document.addEventListener('keydown', function(e) {
 // Dashboard WebSocket — real-time task status updates
 (function () {
     var scheme = location.protocol === 'https:' ? 'wss' : 'ws';
-    var ws = new WebSocket(scheme + '://' + location.host + '/ws/dashboard/');
+    var WS_URL = scheme + '://' + location.host + '/ws/dashboard/';
+    var RECONNECT_DELAYS = [1000, 2000, 4000, 8000, 16000, 30000];
+    var reconnectAttempt = 0;
+    var ws = null;
+    var heartbeatTimer = null;
+    var lastMsgTime = null;
+    var reconnectingBanner = null;
 
-    ws.onmessage = function (e) {
-        var data;
-        try { data = JSON.parse(e.data); } catch (_) { return; }
+    function connect() {
+        ws = new WebSocket(WS_URL);
+
+        ws.onopen = function () {
+            reconnectAttempt = 0;
+            removeReconnectingBanner();
+            startHeartbeat();
+            if (lastMsgTime) { fetchMissedUpdates(lastMsgTime); }
+        };
+
+        ws.onmessage = function (e) {
+            lastMsgTime = new Date().toISOString();
+            var data;
+            try { data = JSON.parse(e.data); } catch (_) { return; }
+            if (data.type === 'pong') { return; }
+            handleMessage(data);
+        };
+
+        ws.onclose = function () {
+            stopHeartbeat();
+            showReconnectingBanner();
+            var delay = RECONNECT_DELAYS[Math.min(reconnectAttempt, RECONNECT_DELAYS.length - 1)];
+            reconnectAttempt++;
+            setTimeout(connect, delay);
+        };
+
+        ws.onerror = function () {};
+    }
+
+    function startHeartbeat() {
+        stopHeartbeat();
+        heartbeatTimer = setInterval(function () {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({type: 'ping'}));
+            }
+        }, 30000);
+    }
+
+    function stopHeartbeat() {
+        if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
+    }
+
+    function showReconnectingBanner() {
+        if (reconnectingBanner) { return; }
+        var feed = document.getElementById('chat-feed');
+        if (!feed) { return; }
+        reconnectingBanner = document.createElement('div');
+        reconnectingBanner.className = 'tars-msg';
+        reconnectingBanner.innerHTML =
+            '<div class="msg-avatar"><i class="bi bi-wifi-off"></i></div>' +
+            '<div class="msg-body">' +
+            '<div class="msg-sender">System</div>' +
+            '<div class="tars-content"><p style="color:var(--tars-muted,#888);font-style:italic;margin:0;">Reconnecting…</p></div>' +
+            '</div>';
+        feed.appendChild(reconnectingBanner);
+        if (typeof isNearBottom === 'function' && isNearBottom()) {
+            if (typeof scrollToBottom === 'function') { scrollToBottom(true); }
+        }
+    }
+
+    function removeReconnectingBanner() {
+        if (reconnectingBanner) { reconnectingBanner.remove(); reconnectingBanner = null; }
+    }
+
+    function fetchMissedUpdates(since) {
+        fetch('/api/tasks/updates/?since=' + encodeURIComponent(since))
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (body) {
+                if (!body) { return; }
+                (body.tasks || []).forEach(function (data) { handleMessage(data); });
+            })
+            .catch(function () {});
+    }
+
+    function handleMessage(data) {
         if (!data.task_id || !data.status) return;
 
         var id = String(data.task_id);
@@ -1116,9 +1194,9 @@ document.addEventListener('keydown', function(e) {
         if (typeof window._queueWidgetUpdate === 'function') {
             window._queueWidgetUpdate(data);
         }
-    };
+    }
 
-    ws.onerror = function () {};
+    connect();
 
     function escHtml(str) {
         return String(str)

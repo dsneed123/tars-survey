@@ -11,6 +11,8 @@ urlpatterns = [
     path("dashboard/tasks/<int:pk>/", views.task_detail, name="detail"),
     # GET: paginated task history; POST: create task via AJAX (session auth + CSRF)
     path("api/tasks/", views.api_tasks, name="api_list"),
+    # GET: tasks updated since ?since=<iso_timestamp> (WS reconnect re-fetch)
+    path("api/tasks/updates/", views.api_task_updates, name="api_updates"),
     # Callback from TARS controller/worker (X-API-Key auth via TARS_API_KEY)
     path("api/tasks/<int:pk>/status", views.api_task_status, name="api_status"),
 ]
