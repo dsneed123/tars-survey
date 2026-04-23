@@ -150,6 +150,43 @@
         color: var(--tars-muted);
         margin-bottom: 1rem;
     }
+
+    /* Queue health bar */
+    .queue-health-strip {
+        background: var(--tars-surface);
+        border-bottom: 1px solid var(--tars-border);
+        padding: 0.75rem 0;
+    }
+
+    .queue-health-track {
+        height: 4px;
+        border-radius: 999px;
+        background: rgba(156,163,175,0.1);
+        overflow: hidden;
+        display: flex;
+    }
+
+    .queue-health-legend {
+        display: flex;
+        gap: 1.25rem;
+        margin-top: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .queue-health-label {
+        font-size: 0.67rem;
+        color: var(--tars-muted);
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+    }
+
+    .queue-health-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
 </style>
 {% endblock %}
 
@@ -178,6 +215,33 @@
             <a href="{% url 'tasks:add' %}" class="btn btn-accent">
                 <i class="bi bi-plus-lg me-1"></i> New Task
             </a>
+        </div>
+    </div>
+</div>
+
+<!-- Queue health bar -->
+<div class="queue-health-strip">
+    <div class="container" style="max-width: 780px;">
+        <div class="queue-health-track">
+            {% if total_count > 0 %}
+            <div style="flex: {{ completed_today }}; background: var(--tars-green);"></div>
+            <div style="flex: {{ in_progress_count }}; background: #60a5fa;"></div>
+            <div style="flex: {{ pending_count }}; background: rgba(156,163,175,0.3);"></div>
+            {% endif %}
+        </div>
+        <div class="queue-health-legend">
+            <span class="queue-health-label">
+                <span class="queue-health-dot" style="background: var(--tars-green);"></span>
+                {{ completed_today }} completed today
+            </span>
+            <span class="queue-health-label">
+                <span class="queue-health-dot" style="background: #60a5fa;"></span>
+                {{ in_progress_count }} in progress
+            </span>
+            <span class="queue-health-label">
+                <span class="queue-health-dot" style="background: rgba(156,163,175,0.4);"></span>
+                {{ pending_count }} queued
+            </span>
         </div>
     </div>
 </div>

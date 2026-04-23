@@ -97,14 +97,32 @@ def task_queue(request):
         default=Value(5),
         output_field=IntegerField(),
     )
-    tasks = (
+    tasks = list(
         Task.objects.filter(created_by=request.user)
         .exclude(status__in=("completed", "failed"))
         .select_related("project")
         .annotate(status_order=status_order)
         .order_by("status_order", "created_at")
     )
-    return render(request, "tasks/task_queue.html", {"tasks": list(tasks)})
+
+    today = timezone.now().date()
+    completed_today = Task.objects.filter(
+        created_by=request.user,
+        status="completed",
+        completed_at__date=today,
+    ).count()
+
+    in_progress_count = sum(1 for t in tasks if t.status == "in_progress")
+    pending_count = len(tasks) - in_progress_count
+    total_count = in_progress_count + pending_count + completed_today
+
+    return render(request, "tasks/task_queue.html", {
+        "tasks": tasks,
+        "completed_today": completed_today,
+        "in_progress_count": in_progress_count,
+        "pending_count": pending_count,
+        "total_count": total_count,
+    })
 
 
 @login_required
