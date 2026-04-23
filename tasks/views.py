@@ -178,9 +178,9 @@ def _build_timeline(task):
 
     # Map status to an ordered index
     order = {s: i for i, (s, _, _) in enumerate(steps)}
-    # failed is special — shown as completed but red
+    # failed is special — all regular steps show as pending, Failed appended at end
     failed = task.status == "failed"
-    current_index = order.get(task.status, 0)
+    current_index = order.get(task.status, -1)
 
     result = []
     for i, (status, label, icon) in enumerate(steps):

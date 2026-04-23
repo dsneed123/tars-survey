@@ -363,7 +363,7 @@
 
             <!-- Attachments -->
             {% if attachments %}
-            <p class="section-label">Attachments ({{ attachments.count }})</p>
+            <p class="section-label">Attachments ({{ attachments|length }})</p>
             <div class="d-flex flex-column gap-2 mb-5">
                 {% for attachment in attachments %}
                 <a href="{{ attachment.file.url }}" target="_blank" rel="noopener noreferrer" class="attachment-card">
@@ -429,14 +429,14 @@
                             <i class="bi {{ step.icon }} me-1" style="font-size:0.8rem"></i>
                             {{ step.label }}
                         </div>
-                        {% if step.state == "current" and task.started_at %}
+                        {% if step.state == "current" and task.started_at and task.status != "completed" %}
                         <div style="font-size:0.72rem; color:var(--tars-muted); margin-top:0.15rem">
                             Started {{ task.started_at|date:"M j, Y g:i A" }}
                         </div>
                         {% endif %}
-                        {% if step.state == "done" and step.status == "completed" and task.completed_at %}
+                        {% if step.status == "completed" and task.completed_at and task.status == "completed" %}
                         <div style="font-size:0.72rem; color:var(--tars-muted); margin-top:0.15rem">
-                            {{ task.completed_at|date:"M j, Y g:i A" }}
+                            Completed {{ task.completed_at|date:"M j, Y g:i A" }}
                         </div>
                         {% endif %}
                     </div>
@@ -542,7 +542,7 @@
     function updateTimeline(newStatus) {
         var failed = newStatus === "failed";
         var currentIndex = TIMELINE_ORDER.indexOf(newStatus);
-        if (currentIndex < 0) currentIndex = 0;
+        // Keep -1 for 'failed' — no regular step gets marked as failed; Failed is appended in HTML
 
         var items = document.querySelectorAll('#task-timeline .timeline-item');
         items.forEach(function (item, i) {
