@@ -12,7 +12,8 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
+from django.core.paginator import EmptyPage, Paginator
+from django.views.decorators.http import require_GET, require_POST
 
 from analytics.utils import fire_event
 from projects.models import Project
@@ -322,6 +323,61 @@ def _forward_to_controller(task):
             logger.warning("Controller rejected task %s: %s", task.pk, resp.text)
     except Exception as e:
         logger.warning("Failed to forward task %s to controller: %s", task.pk, e)
+
+
+# ---------------------------------------------------------------------------
+# GET /api/tasks/?page=X&per_page=20
+#
+# Paginated task history for the authenticated user, newest first.
+# Intended for infinite-scroll in the chat feed.
+# ---------------------------------------------------------------------------
+
+
+@require_GET
+def api_task_list(request):
+    if not request.user.is_authenticated:
+        return JsonResponse({"error": "Authentication required"}, status=401)
+
+    try:
+        page = max(int(request.GET.get("page", 1)), 1)
+        per_page = min(max(int(request.GET.get("per_page", 20)), 1), 100)
+    except (ValueError, TypeError):
+        return JsonResponse({"error": "Invalid page or per_page parameter"}, status=400)
+
+    qs = (
+        Task.objects.filter(created_by=request.user)
+        .select_related("project")
+        .order_by("-created_at")
+    )
+
+    paginator = Paginator(qs, per_page)
+    try:
+        page_obj = paginator.page(page)
+    except EmptyPage:
+        return JsonResponse({"tasks": [], "has_more": False, "next_page": None})
+
+    tasks = [
+        {
+            "id": t.pk,
+            "title": t.title,
+            "status": t.status,
+            "status_display": t.get_status_display(),
+            "project": t.project.name if t.project_id else None,
+            "branch_name": t.branch_name,
+            "pr_url": t.pr_url,
+            "error_message": t.error_message,
+            "created_at": t.created_at.isoformat(),
+            "completed_at": t.completed_at.isoformat() if t.completed_at else None,
+        }
+        for t in page_obj
+    ]
+
+    has_more = page_obj.has_next()
+    return JsonResponse({
+        "tasks": tasks,
+        "has_more": has_more,
+        "next_page": page_obj.next_page_number() if has_more else None,
+    })
 
 
 # ---------------------------------------------------------------------------
