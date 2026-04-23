@@ -9,7 +9,7 @@ from django.views.decorators.http import require_POST
 
 from projects.models import Project
 from tasks.models import Task
-from tasks.views import _forward_to_controller, _get_queue_positions
+from tasks.views import _forward_to_controller, _get_queue_positions, _get_wait_times
 
 from .models import MemberProfile
 
@@ -27,10 +27,12 @@ def dashboard(request):
         .order_by("-created_at")[:50]
     )
 
-    # Annotate each task with its queue position (pending/queued only)
+    # Annotate each task with its queue position and estimated wait (pending/queued only)
     queue_positions = _get_queue_positions(request.user.pk)
+    wait_times = _get_wait_times(request.user.pk, queue_positions)
     for task in all_tasks:
         task.queue_position = queue_positions.get(task.pk)
+        task.wait_time = wait_times.get(task.pk)
 
     completed_count = Task.objects.filter(created_by=request.user, status="completed").count()
     active_count = Task.objects.filter(
@@ -130,8 +132,10 @@ def load_more_messages(request):
     tasks = tasks[:_LOAD_MORE_BATCH]
 
     queue_positions = _get_queue_positions(request.user.pk)
+    wait_times = _get_wait_times(request.user.pk, queue_positions)
     for task in tasks:
         task.queue_position = queue_positions.get(task.pk)
+        task.wait_time = wait_times.get(task.pk)
 
     html = render_to_string(
         "members/_task_messages.html",

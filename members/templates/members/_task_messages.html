@@ -23,7 +23,10 @@
             {% if task.status == 'pending' or task.status == 'queued' %}
             <p>Got it. This is in the queue.</p>
             {% if task.queue_position %}
-            <div class="queue-pos-label">Position #{{ task.queue_position }} in queue</div>
+            <div class="queue-pos-label">
+                Position #{{ task.queue_position }} in queue
+                {% if task.wait_time %}&nbsp;<span class="wait-time-label" id="wait-time-{{ task.pk }}">{{ task.wait_time }}</span>{% endif %}
+            </div>
             {% endif %}
             <div class="status-card">
                 <span class="status-badge badge-{{ task.status }}">{{ task.get_status_display }}</span>

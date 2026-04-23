@@ -957,6 +957,7 @@ class ApiTaskUpdatesTests(TestCase):
         self.assertIn("pr_url", t)
         self.assertIn("error_message", t)
         self.assertIn("queue_position", t)
+        self.assertIn("estimated_wait", t)
         self.assertIn("project_name", t)
 
     def test_without_since_excludes_completed_and_failed(self):
@@ -1030,6 +1031,103 @@ class ApiTaskUpdatesTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         titles = [t["title"] for t in resp.json()["tasks"]]
         self.assertIn("Active", titles)
+
+
+# ---------------------------------------------------------------------------
+# Wait time estimation helpers
+# ---------------------------------------------------------------------------
+
+class WaitTimeHelpersTests(TestCase):
+    def setUp(self):
+        self.user = make_user(email="wait@example.com", username="waituser")
+        self.project = make_project(self.user)
+
+    def _make_completed(self, duration_seconds):
+        from django.utils import timezone
+        now = timezone.now()
+        task = make_task(self.project, self.user, status="completed")
+        Task.objects.filter(pk=task.pk).update(
+            started_at=now - timezone.timedelta(seconds=duration_seconds),
+            completed_at=now,
+        )
+        return task
+
+    def test_format_wait_under_90_seconds(self):
+        from tasks.views import _format_wait
+        self.assertEqual(_format_wait(60), "~1m wait")
+        self.assertEqual(_format_wait(89), "~1m wait")
+
+    def test_format_wait_minutes(self):
+        from tasks.views import _format_wait
+        self.assertEqual(_format_wait(120), "~2m wait")
+        self.assertEqual(_format_wait(300), "~5m wait")
+        self.assertEqual(_format_wait(3540), "~59m wait")
+
+    def test_format_wait_hours(self):
+        from tasks.views import _format_wait
+        self.assertEqual(_format_wait(3600), "~1h wait")
+        self.assertEqual(_format_wait(7200), "~2h wait")
+
+    def test_avg_completion_returns_none_for_fewer_than_3_tasks(self):
+        from tasks.views import _get_avg_completion_seconds
+        self._make_completed(300)
+        self._make_completed(600)
+        result = _get_avg_completion_seconds(self.user.pk)
+        self.assertIsNone(result)
+
+    def test_avg_completion_returns_average_for_3_or_more_tasks(self):
+        from tasks.views import _get_avg_completion_seconds
+        self._make_completed(300)
+        self._make_completed(600)
+        self._make_completed(900)
+        result = _get_avg_completion_seconds(self.user.pk)
+        self.assertIsNotNone(result)
+        self.assertAlmostEqual(result, 600.0, delta=5)
+
+    def test_avg_completion_uses_at_most_20_samples(self):
+        from tasks.views import _get_avg_completion_seconds
+        for _ in range(25):
+            self._make_completed(60)
+        result = _get_avg_completion_seconds(self.user.pk)
+        self.assertIsNotNone(result)
+
+    def test_get_wait_times_returns_estimating_with_no_history(self):
+        from tasks.views import _get_wait_times
+        make_task(self.project, self.user, status="pending")
+        wait_times = _get_wait_times(self.user.pk)
+        for val in wait_times.values():
+            self.assertEqual(val, "Estimating...")
+
+    def test_get_wait_times_returns_formatted_string_with_history(self):
+        from tasks.views import _get_wait_times
+        self._make_completed(300)
+        self._make_completed(300)
+        self._make_completed(300)
+        make_task(self.project, self.user, status="pending")
+        wait_times = _get_wait_times(self.user.pk)
+        for val in wait_times.values():
+            self.assertIn("wait", val)
+            self.assertNotEqual(val, "Estimating...")
+
+    def test_get_wait_times_scales_by_position(self):
+        from tasks.views import _get_wait_times
+        self._make_completed(300)
+        self._make_completed(300)
+        self._make_completed(300)
+        task1 = make_task(self.project, self.user, status="pending")
+        task2 = make_task(self.project, self.user, status="pending")
+        wait_times = _get_wait_times(self.user.pk)
+        # task1 is at position 1, task2 at position 2 (older first)
+        self.assertIn(task1.pk, wait_times)
+        self.assertIn(task2.pk, wait_times)
+
+    def test_get_wait_times_only_includes_pending_and_queued(self):
+        from tasks.views import _get_wait_times
+        pending = make_task(self.project, self.user, status="pending")
+        make_task(self.project, self.user, status="in_progress")
+        wait_times = _get_wait_times(self.user.pk)
+        self.assertIn(pending.pk, wait_times)
+        self.assertEqual(len(wait_times), 1)
 
 
 # ---------------------------------------------------------------------------
