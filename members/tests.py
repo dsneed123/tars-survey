@@ -99,20 +99,6 @@ class DashboardViewTests(TestCase):
         self.assertEqual(resp.context["success_rate"], 50)
         self.assertIn("%", resp.context["success_rate_display"])
 
-    def test_onboarding_checklist_shown_when_not_completed(self):
-        self.client.force_login(self.user)
-        resp = self.client.get(self.url)
-        self.assertIsNotNone(resp.context["onboarding_checklist"])
-
-    def test_onboarding_checklist_hidden_after_completion(self):
-        profile = MemberProfile.objects.get(user=self.user)
-        profile.onboarding_completed = True
-        profile.save()
-
-        self.client.force_login(self.user)
-        resp = self.client.get(self.url)
-        self.assertIsNone(resp.context["onboarding_checklist"])
-
     def test_only_shows_own_projects(self):
         make_project(self.user, name="Mine")
         other = make_user(email="other@example.com", username="other")
@@ -220,109 +206,6 @@ class QuickAddTaskViewTests(TestCase):
 
 
 # ---------------------------------------------------------------------------
-# GET/POST /dashboard/onboarding/
-# ---------------------------------------------------------------------------
-
-class OnboardingViewTests(TestCase):
-    def setUp(self):
-        self.client = Client()
-        self.url = "/dashboard/onboarding/"
-        self.user = make_user()
-
-    def test_requires_login(self):
-        resp = self.client.get(self.url)
-        self.assertRedirects(resp, f"/login/?next={self.url}", fetch_redirect_response=False)
-
-    def test_returns_200_on_step_1(self):
-        self.client.force_login(self.user)
-        resp = self.client.get(self.url)
-        self.assertEqual(resp.status_code, 200)
-
-    def test_redirects_to_dashboard_if_completed(self):
-        profile = MemberProfile.objects.get(user=self.user)
-        profile.onboarding_completed = True
-        profile.save()
-
-        self.client.force_login(self.user)
-        resp = self.client.get(self.url)
-        self.assertRedirects(resp, "/dashboard/", fetch_redirect_response=False)
-
-    def test_context_contains_step(self):
-        self.client.force_login(self.user)
-        resp = self.client.get(self.url)
-        self.assertIn("step", resp.context)
-        self.assertEqual(resp.context["step"], 1)
-
-    def test_context_contains_progress_pct(self):
-        self.client.force_login(self.user)
-        resp = self.client.get(self.url)
-        self.assertIn("progress_pct", resp.context)
-
-    def test_skip_action_completes_onboarding(self):
-        self.client.force_login(self.user)
-        resp = self.client.post(self.url, {"action": "skip"})
-        profile = MemberProfile.objects.get(user=self.user)
-        self.assertTrue(profile.onboarding_completed)
-        self.assertRedirects(resp, "/dashboard/", fetch_redirect_response=False)
-
-    def test_complete_action_completes_onboarding(self):
-        self.client.force_login(self.user)
-        resp = self.client.post(self.url, {"action": "complete"})
-        profile = MemberProfile.objects.get(user=self.user)
-        self.assertTrue(profile.onboarding_completed)
-        self.assertRedirects(resp, "/dashboard/", fetch_redirect_response=False)
-
-    @patch("members.views._forward_to_controller")
-    def test_submit_task_action_on_step_2(self, _mock):
-        profile = MemberProfile.objects.get(user=self.user)
-        profile.onboarding_step = 2
-        profile.save()
-        project = make_project(self.user)
-
-        self.client.force_login(self.user)
-        resp = self.client.post(self.url, {
-            "action": "submit_task",
-            "task_title": "First task",
-            "task_description": "Some details.",
-            "project_id": project.pk,
-        })
-        profile.refresh_from_db()
-        self.assertEqual(profile.onboarding_step, 3)
-        self.assertEqual(Task.objects.count(), 1)
-
-
-# ---------------------------------------------------------------------------
-# POST /dashboard/onboarding/skip/
-# ---------------------------------------------------------------------------
-
-class OnboardingSkipViewTests(TestCase):
-    def setUp(self):
-        self.client = Client()
-        self.url = "/dashboard/onboarding/skip/"
-        self.user = make_user()
-
-    def test_requires_login(self):
-        resp = self.client.post(self.url)
-        self.assertRedirects(resp, f"/login/?next={self.url}", fetch_redirect_response=False)
-
-    def test_post_marks_onboarding_complete(self):
-        self.client.force_login(self.user)
-        self.client.post(self.url)
-        profile = MemberProfile.objects.get(user=self.user)
-        self.assertTrue(profile.onboarding_completed)
-
-    def test_post_redirects_to_dashboard(self):
-        self.client.force_login(self.user)
-        resp = self.client.post(self.url)
-        self.assertRedirects(resp, "/dashboard/", fetch_redirect_response=False)
-
-    def test_get_still_redirects(self):
-        self.client.force_login(self.user)
-        resp = self.client.get(self.url)
-        self.assertRedirects(resp, "/dashboard/", fetch_redirect_response=False)
-
-
-# ---------------------------------------------------------------------------
 # MemberProfile model
 # ---------------------------------------------------------------------------
 
@@ -336,13 +219,3 @@ class MemberProfileModelTests(TestCase):
         user = make_user(email="plan@example.com", username="planuser")
         profile = MemberProfile.objects.get(user=user)
         self.assertEqual(profile.plan_tier, "free")
-
-    def test_default_onboarding_not_completed(self):
-        user = make_user(email="onboard@example.com", username="onboarduser")
-        profile = MemberProfile.objects.get(user=user)
-        self.assertFalse(profile.onboarding_completed)
-
-    def test_default_onboarding_step_is_1(self):
-        user = make_user(email="step@example.com", username="stepuser")
-        profile = MemberProfile.objects.get(user=user)
-        self.assertEqual(profile.onboarding_step, 1)
