@@ -484,6 +484,15 @@
         @media (max-width: 768px) {
             body.app-authed { padding-bottom: 60px; }
         }
+
+        /* ── Page transition ─────────────────────────────────────── */
+        #page-content {
+            opacity: 0;
+            transition: opacity 200ms ease;
+        }
+        #page-content.page-visible {
+            opacity: 1;
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -526,7 +535,7 @@
     </div>
 </nav>{% endblock %}
 
-{% block content %}{% endblock %}
+<div id="page-content">{% block content %}{% endblock %}</div>
 
 {% block footer %}<footer class="py-5 mt-5">
     <div class="container">
@@ -740,6 +749,43 @@
 }());
 </script>
 {% endif %}
+
+<!-- Page transition animations -->
+<script>
+(function () {
+    var content = document.getElementById('page-content');
+    if (!content) return;
+
+    // Fade in once the DOM is ready
+    document.addEventListener('DOMContentLoaded', function () {
+        requestAnimationFrame(function () {
+            content.classList.add('page-visible');
+        });
+    });
+
+    // Restore visibility on bfcache restore (browser back/forward)
+    window.addEventListener('pageshow', function (e) {
+        if (e.persisted) content.classList.add('page-visible');
+    });
+
+    // Fade out before navigating to an internal page
+    document.addEventListener('click', function (e) {
+        var link = e.target.closest('a[href]');
+        if (!link) return;
+
+        var href = link.getAttribute('href');
+        // Skip hash links, external URLs, new-tab, Bootstrap toggles, downloads
+        if (!href || href.charAt(0) === '#' ||
+            href.indexOf('://') !== -1 || href.slice(0, 2) === '//' ||
+            href.slice(0, 11) === 'javascript:' || link.target === '_blank' ||
+            link.hasAttribute('data-bs-toggle') || link.hasAttribute('download')) return;
+
+        e.preventDefault();
+        content.classList.remove('page-visible');
+        setTimeout(function () { window.location.href = href; }, 200);
+    }, true);
+}());
+</script>
 
 {% block extra_scripts %}{% endblock %}
 
