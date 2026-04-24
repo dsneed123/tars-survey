@@ -170,13 +170,13 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 }
 
 @keyframes msg-in-user {
-    from { opacity: 0; transform: translateX(18px); }
-    to { opacity: 1; transform: translateX(0); }
+    from { opacity: 0; transform: translateX(18px) scale(0.98); }
+    to { opacity: 1; transform: translateX(0) scale(1); }
 }
 
 @keyframes msg-in-tars {
-    from { opacity: 0; transform: translateX(-18px); }
-    to { opacity: 1; transform: translateX(0); }
+    from { opacity: 0; transform: translateX(-18px) scale(0.98); }
+    to { opacity: 1; transform: translateX(0) scale(1); }
 }
 
 /* ── Status update crossfade ───────────────────────────── */
@@ -755,6 +755,8 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 }
 .send-btn.active { background: #6366f1; color: #fff; }
 .send-btn.active:hover { background: #4f46e5; transform: scale(1.05); }
+.send-btn:active { transform: scale(0.95); }
+.send-btn.active:active { background: #4338ca; transform: scale(0.95); }
 
 .input-hint {
     text-align: center;
