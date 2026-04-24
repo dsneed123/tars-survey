@@ -16,7 +16,7 @@
 </div>
 
 <div class="chat-message tars-msg" data-task-id="{{ task.pk }}" data-timestamp="{{ task.created_at|date:'c' }}">
-    <div class="msg-avatar tars-avatar"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true"><polyline points="2,5 7,8 2,11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="8" y1="11" x2="14" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+    <div class="msg-avatar tars-avatar"><i class="bi bi-robot" aria-hidden="true"></i></div>
     <div class="msg-body">
         <div class="msg-sender">TARS</div>
         <div class="msg-content" id="tars-content-{{ task.pk }}">
@@ -59,7 +59,7 @@
             <p>Done! Changes have been pushed.</p>
             {% if task.pr_url %}
             <a href="{{ task.pr_url }}" target="_blank" rel="noopener" class="pr-link">
-                <i class="bi bi-git"></i> View Pull Request
+                <i class="bi bi-box-arrow-up-right"></i> View Pull Request
             </a>
             {% endif %}
             {% if task.branch_name %}
