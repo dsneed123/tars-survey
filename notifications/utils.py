@@ -135,6 +135,37 @@ def send_task_pr_ready_email(task):
     )
 
 
+def send_task_completed_email(task, notify=True):
+    """Notify user when a task completes successfully.
+
+    Pass notify=False when the caller has already created an in-app notification
+    (e.g. _handle_pr_merged which creates its own "PR merged!" notification).
+    """
+    user = task.created_by
+    prefs = _get_prefs(user)
+    if not prefs.email_pr_ready:
+        return
+    context = {
+        "user": user,
+        "task": task,
+        "site_url": settings.SITE_URL,
+        "task_url": f"{settings.SITE_URL}/dashboard/tasks/{task.pk}/",
+    }
+    send_html_email(
+        subject=f"Task completed: {task.title}",
+        template_name="emails/task_completed.html",
+        context=context,
+        recipient_email=user.email,
+    )
+    if notify:
+        create_notification(
+            user=user,
+            title=f"Task completed: {task.title}",
+            message=f"TARS finished your task in project {task.project.name}.",
+            link=task.pr_url or f"/dashboard/tasks/{task.pk}/",
+        )
+
+
 def send_task_failed_email(task):
     """Notify user when a task fails."""
     user = task.created_by

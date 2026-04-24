@@ -1,0 +1,49 @@
+{% extends "emails/base_email.html" %}
+{% block subject %}Task completed: {{ task.title }}{% endblock %}
+
+{% block body %}
+<p class="email-greeting">Task completed successfully</p>
+
+<p class="email-text">
+  TARS has finished working on your task.
+</p>
+
+<div class="info-box">
+  <div class="info-box-label">Task</div>
+  <div class="info-box-value">{{ task.title }}</div>
+</div>
+
+<div class="info-box">
+  <div class="info-box-label">Project</div>
+  <div class="info-box-value">{{ task.project.name }}</div>
+</div>
+
+{% if task.completed_at %}
+<div class="info-box">
+  <div class="info-box-label">Completed</div>
+  <div class="info-box-value">{{ task.completed_at|date:"N j, Y, g:i a" }} UTC</div>
+</div>
+{% endif %}
+
+{% if task.pr_url %}
+<div class="info-box">
+  <div class="info-box-label">Pull Request</div>
+  <div class="info-box-value"><a href="{{ task.pr_url }}" style="color:#60a5fa;">{{ task.pr_url }}</a></div>
+</div>
+{% endif %}
+
+<div class="info-box">
+  <div class="info-box-label">Status</div>
+  <div class="info-box-value">
+    <span class="status-badge status-completed">Completed</span>
+  </div>
+</div>
+
+<div class="email-cta">
+  {% if task.pr_url %}
+  <a href="{{ task.pr_url }}" class="btn-primary">View pull request</a>
+  {% else %}
+  <a href="{{ task_url }}" class="btn-primary">View task details</a>
+  {% endif %}
+</div>
+{% endblock %}

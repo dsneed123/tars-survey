@@ -13,7 +13,7 @@ from django.views.decorators.http import require_http_methods
 from django_ratelimit.decorators import ratelimit
 
 from analytics.utils import fire_event
-from notifications.utils import send_task_failed_email, send_task_pr_ready_email, send_task_started_email
+from notifications.utils import send_task_completed_email, send_task_failed_email, send_task_pr_ready_email, send_task_started_email
 from tasks.models import Task
 
 from .models import TaskAssignment, Worker
@@ -289,6 +289,8 @@ def task_update(request, task_id):
             send_task_started_email(task)
         elif status == "reviewing" and task.pr_url:
             send_task_pr_ready_email(task)
+        elif status == "completed":
+            send_task_completed_email(task)
         elif status == "failed":
             send_task_failed_email(task)
 

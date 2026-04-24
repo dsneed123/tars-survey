@@ -1,8 +1,10 @@
 from django.contrib.auth import get_user_model
-from django.test import Client, TestCase
+from django.core import mail
+from django.test import Client, TestCase, override_settings
 
 from members.models import MemberProfile
 from notifications.models import Notification, NotificationPreference
+from notifications.utils import send_task_completed_email
 
 User = get_user_model()
 
@@ -243,3 +245,68 @@ class MarkAllReadViewTests(TestCase):
         self.client.post(self.url)
         n.refresh_from_db()
         self.assertTrue(n.is_read)
+
+
+# ---------------------------------------------------------------------------
+# send_task_completed_email
+# ---------------------------------------------------------------------------
+
+def make_project(owner, **kwargs):
+    from projects.models import Project
+    defaults = {"name": "Test Project", "github_repo": "owner/repo", "default_branch": "main"}
+    defaults.update(kwargs)
+    return Project.objects.create(owner=owner, **defaults)
+
+
+def make_task(project, owner, **kwargs):
+    from tasks.models import Task
+    defaults = {"title": "Fix the bug", "description": "Some description.", "status": "completed"}
+    defaults.update(kwargs)
+    return Task.objects.create(project=project, created_by=owner, **defaults)
+
+
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    SITE_URL="https://tarsai.dev",
+)
+class SendTaskCompletedEmailTests(TestCase):
+    def setUp(self):
+        self.user = make_user(email="completed@example.com", username="completeduser")
+        self.project = make_project(self.user)
+        self.task = make_task(self.project, self.user, title="Deploy feature X")
+
+    def test_sends_email_when_pref_enabled(self):
+        NotificationPreference.objects.create(user=self.user, email_pr_ready=True)
+        send_task_completed_email(self.task)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("Deploy feature X", mail.outbox[0].subject)
+        self.assertIn(self.user.email, mail.outbox[0].to)
+
+    def test_no_email_when_pref_disabled(self):
+        NotificationPreference.objects.create(user=self.user, email_pr_ready=False)
+        send_task_completed_email(self.task)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_email_subject_contains_task_title(self):
+        NotificationPreference.objects.create(user=self.user, email_pr_ready=True)
+        send_task_completed_email(self.task)
+        self.assertIn("Deploy feature X", mail.outbox[0].subject)
+
+    def test_creates_in_app_notification(self):
+        NotificationPreference.objects.create(user=self.user, email_pr_ready=True)
+        send_task_completed_email(self.task)
+        self.assertTrue(Notification.objects.filter(user=self.user, title__icontains="completed").exists())
+
+    def test_notification_links_to_pr_when_available(self):
+        NotificationPreference.objects.create(user=self.user, email_pr_ready=True)
+        self.task.pr_url = "https://github.com/owner/repo/pull/42"
+        self.task.save(update_fields=["pr_url"])
+        send_task_completed_email(self.task)
+        notif = Notification.objects.filter(user=self.user).first()
+        self.assertEqual(notif.link, "https://github.com/owner/repo/pull/42")
+
+    def test_creates_prefs_if_missing(self):
+        # No NotificationPreference created — should auto-create with defaults (email_pr_ready=True)
+        send_task_completed_email(self.task)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertTrue(NotificationPreference.objects.filter(user=self.user).exists())
