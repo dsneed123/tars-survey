@@ -13,6 +13,8 @@ urlpatterns = [
     path("api/tasks/", views.api_tasks, name="api_list"),
     # GET: tasks updated since ?since=<iso_timestamp> (WS reconnect re-fetch)
     path("api/tasks/updates/", views.api_task_updates, name="api_updates"),
+    # Reorder pending/queued tasks by updating priority (session auth + CSRF)
+    path("api/tasks/reorder", views.api_task_reorder, name="api_reorder"),
     # Callback from TARS controller/worker (X-API-Key auth via TARS_API_KEY)
     path("api/tasks/<int:pk>/status", views.api_task_status, name="api_status"),
     # Inline detail JSON for expandable bubble panel (session auth)
