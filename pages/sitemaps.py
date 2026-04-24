@@ -9,7 +9,7 @@ _SITE_LAUNCH = datetime.date(2026, 4, 12)
 # (url_name, priority, lastmod)
 _PAGES = [
     ("pages:landing",            1.0, _SITE_LAUNCH),
-    ("pages:inquiry",            0.7, _SITE_LAUNCH),
+    ("inquiries:get_started",    0.7, _SITE_LAUNCH),
     ("pages:services",           0.6, _SITE_LAUNCH),
     ("pages:status",             0.4, _SITE_LAUNCH),
     ("pages:docs_index",         0.6, _SITE_LAUNCH),
