@@ -1,4 +1,5 @@
 import hashlib
+from collections import defaultdict
 import hmac
 import json
 import logging
@@ -266,6 +267,42 @@ def task_queue(request):
     failed_count = sum(1 for t in tasks if t.status == "failed")
     total_count = active_count + pending_count + completed_today
 
+    # Build per-project health from already-fetched tasks (no extra DB hit)
+    _proj_map = defaultdict(lambda: {"name": "", "pending": 0, "completed": 0, "failed": 0})
+    for task in tasks:
+        if task.project_id is None:
+            continue
+        entry = _proj_map[task.project_id]
+        entry["name"] = task.project.name
+        if task.status in (_ACTIVE_STATUSES | _PENDING_STATUSES):
+            entry["pending"] += 1
+        elif task.status == "completed":
+            entry["completed"] += 1
+        elif task.status == "failed":
+            entry["failed"] += 1
+
+    project_health = []
+    for data in _proj_map.values():
+        done = data["completed"] + data["failed"]
+        rate = round(data["completed"] / done * 100) if done > 0 else None
+        if rate is None:
+            color = "neutral"
+        elif rate > 80:
+            color = "green"
+        elif rate >= 50:
+            color = "yellow"
+        else:
+            color = "red"
+        project_health.append({
+            "name": data["name"],
+            "pending": data["pending"],
+            "completed": data["completed"],
+            "failed": data["failed"],
+            "success_rate": rate,
+            "color": color,
+        })
+    project_health.sort(key=lambda x: x["name"])
+
     return render(request, "tasks/task_queue.html", {
         "tasks": tasks,
         "completed_today": completed_today,
@@ -275,6 +312,7 @@ def task_queue(request):
         "active_count": active_count,
         "completed_count": completed_count,
         "failed_count": failed_count,
+        "project_health": project_health,
     })
 
 

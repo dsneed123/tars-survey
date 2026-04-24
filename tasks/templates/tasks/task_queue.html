@@ -344,6 +344,96 @@
     .cancel-confirm-no:hover { background: rgba(156,163,175,0.1); }
     .cancel-confirm-no:disabled { opacity: 0.5; cursor: default; }
 
+    /* ── Project health cards ───────────────────────────────── */
+    .proj-health-row {
+        padding: 1rem 0 0.25rem;
+        border-bottom: 1px solid var(--tars-border);
+        background: var(--tars-bg);
+    }
+
+    .proj-health-scroll {
+        display: flex;
+        gap: 0.65rem;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+        scrollbar-width: none;
+    }
+
+    .proj-health-scroll::-webkit-scrollbar { display: none; }
+
+    .proj-health-card {
+        flex-shrink: 0;
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        min-width: 148px;
+        max-width: 180px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .proj-health-card::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        border-radius: 12px 12px 0 0;
+    }
+
+    .proj-health-card.health-green::before  { background: #22c55e; }
+    .proj-health-card.health-yellow::before { background: #f59e0b; }
+    .proj-health-card.health-red::before    { background: #ef4444; }
+    .proj-health-card.health-neutral::before { background: var(--tars-border); }
+
+    .proj-health-name {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--tars-text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 0.5rem;
+    }
+
+    .proj-health-stats {
+        display: flex;
+        gap: 0.6rem;
+        margin-bottom: 0.4rem;
+    }
+
+    .proj-health-stat {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+    }
+
+    .proj-health-stat-val {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--tars-text);
+        line-height: 1;
+    }
+
+    .proj-health-stat-lbl {
+        font-size: 0.6rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--tars-muted);
+    }
+
+    .proj-health-rate {
+        font-size: 0.68rem;
+        font-weight: 600;
+        margin-top: 0.35rem;
+    }
+
+    .proj-health-rate.rate-green  { color: #4ade80; }
+    .proj-health-rate.rate-yellow { color: #fbbf24; }
+    .proj-health-rate.rate-red    { color: #f87171; }
+    .proj-health-rate.rate-neutral { color: var(--tars-muted); }
+
     /* ── Page-load skeleton → content swap ─────────────────── */
     .skeleton-list {
         display: flex;
@@ -425,6 +515,44 @@
         </div>
     </div>
 </div>
+
+{% if project_health %}
+<div class="proj-health-row">
+    <div class="container" style="max-width: 780px;">
+        <p class="section-label mb-2" style="margin-bottom:0.5rem!important">Project Health</p>
+        <div class="proj-health-scroll">
+            {% for proj in project_health %}
+            <div class="proj-health-card health-{{ proj.color }}">
+                <div class="proj-health-name" title="{{ proj.name }}">{{ proj.name }}</div>
+                <div class="proj-health-stats">
+                    <div class="proj-health-stat">
+                        <span class="proj-health-stat-val">{{ proj.pending }}</span>
+                        <span class="proj-health-stat-lbl">Pending</span>
+                    </div>
+                    <div class="proj-health-stat">
+                        <span class="proj-health-stat-val">{{ proj.completed }}</span>
+                        <span class="proj-health-stat-lbl">Done</span>
+                    </div>
+                    {% if proj.failed %}
+                    <div class="proj-health-stat">
+                        <span class="proj-health-stat-val" style="color:#f87171;">{{ proj.failed }}</span>
+                        <span class="proj-health-stat-lbl">Failed</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="proj-health-rate rate-{{ proj.color }}">
+                    {% if proj.success_rate is not None %}
+                        {{ proj.success_rate }}% success
+                    {% else %}
+                        No results yet
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <div class="container py-5" style="max-width: 780px;">
     <!-- Task list section (hidden when queue is empty) -->
