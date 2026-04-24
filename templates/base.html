@@ -380,16 +380,19 @@
             color: var(--tars-muted);
             text-decoration: none;
             font-size: 1.05rem;
-            transition: color 0.15s, background 0.15s;
+            opacity: 0.65;
+            transition: color 0.15s, background 0.15s, opacity 0.15s;
         }
 
         .app-icon-nav-item:hover {
             color: var(--tars-text);
             background: rgba(255,255,255,0.04);
+            opacity: 1;
         }
 
         .app-icon-nav-item.active {
             color: var(--tars-text);
+            opacity: 1;
         }
 
         .app-icon-nav-item.active::after {
@@ -454,15 +457,21 @@
             color: var(--tars-muted);
             text-decoration: none;
             gap: 3px;
-            transition: color 0.15s;
+            opacity: 0.65;
+            transition: color 0.15s, opacity 0.15s;
         }
 
         .app-bottom-nav-item i {
             font-size: 1.2rem;
         }
 
+        .app-bottom-nav-item:hover {
+            opacity: 1;
+        }
+
         .app-bottom-nav-item.active {
             color: var(--tars-accent);
+            opacity: 1;
         }
 
         .app-bottom-nav-item span {
