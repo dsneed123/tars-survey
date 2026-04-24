@@ -392,6 +392,29 @@
             border-radius: 2px;
         }
 
+        /* ── Queue nav badge ─────────────────────────────────── */
+        .nav-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 8px;
+            height: 8px;
+            background: var(--tars-error);
+            border-radius: 50%;
+            border: 1.5px solid var(--tars-bg);
+            pointer-events: none;
+        }
+
+        .app-bottom-nav-item .nav-badge-wrap {
+            position: relative;
+            display: inline-flex;
+        }
+
+        .app-bottom-nav-item .nav-badge {
+            top: -1px;
+            right: -3px;
+        }
+
         /* ── Mobile bottom tab bar ──────────────────────────────── */
         .app-bottom-nav {
             position: fixed;
@@ -457,7 +480,7 @@
                title="Chat"><i class="bi bi-chat-dots"></i></a>
             <a href="{% url 'tasks:queue' %}"
                class="app-icon-nav-item{% if '/dashboard/queue' in request.path %} active{% endif %}"
-               title="Queue"><i class="bi bi-list-task"></i></a>
+               title="Queue"><i class="bi bi-list-task"></i><span id="queue-nav-badge" class="nav-badge" style="display:none"></span></a>
             <a href="{% url 'members:settings' %}"
                class="app-icon-nav-item{% if '/dashboard/settings' in request.path %} active{% endif %}"
                title="Settings"><i class="bi bi-gear"></i></a>
@@ -632,7 +655,7 @@
     </a>
     <a href="{% url 'tasks:queue' %}"
        class="app-bottom-nav-item{% if '/dashboard/queue' in request.path %} active{% endif %}">
-        <i class="bi bi-list-task"></i>
+        <span class="nav-badge-wrap"><i class="bi bi-list-task"></i><span id="queue-bottom-badge" class="nav-badge" style="display:none"></span></span>
         <span>Queue</span>
     </a>
     <a href="{% url 'members:settings' %}"
@@ -641,6 +664,60 @@
         <span>Settings</span>
     </a>
 </nav>
+{% endif %}
+
+{% if user.is_authenticated %}
+<script>
+(function () {
+    var badges = [
+        document.getElementById('queue-nav-badge'),
+        document.getElementById('queue-bottom-badge')
+    ];
+
+    function setBadge(active) {
+        badges.forEach(function (el) {
+            if (el) el.style.display = active ? '' : 'none';
+        });
+    }
+
+    var proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    var wsUrl = proto + '://' + location.host + '/ws/queue/';
+    var ws, reconnectDelay = 1000, reconnectTimer;
+
+    function connect() {
+        ws = new WebSocket(wsUrl);
+
+        ws.onmessage = function (e) {
+            try {
+                var msg = JSON.parse(e.data);
+                if (msg.type === 'queue_stats') {
+                    setBadge(msg.active_count > 0);
+                } else if (msg.type === 'pong') {
+                    // heartbeat ok
+                }
+            } catch (_) {}
+        };
+
+        ws.onopen = function () {
+            reconnectDelay = 1000;
+        };
+
+        ws.onclose = function () {
+            reconnectTimer = setTimeout(connect, Math.min(reconnectDelay, 30000));
+            reconnectDelay = Math.min(reconnectDelay * 2, 30000);
+        };
+    }
+
+    connect();
+
+    // Heartbeat to keep connection alive
+    setInterval(function () {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: 'ping' }));
+        }
+    }, 30000);
+}());
+</script>
 {% endif %}
 
 {% block extra_scripts %}{% endblock %}

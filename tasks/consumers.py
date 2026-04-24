@@ -1,6 +1,7 @@
 import json
 import logging
 
+from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 
 logger = logging.getLogger(__name__)
@@ -144,6 +145,18 @@ class QueueConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
+        user = self.scope["user"]
+        active_count = await self._get_active_count(user.pk)
+        await self.send(text_data=json.dumps({"type": "queue_stats", "active_count": active_count}))
+
+    @database_sync_to_async
+    def _get_active_count(self, user_id):
+        from .models import Task
+        return Task.objects.filter(
+            created_by_id=user_id,
+            status__in=("pending", "queued", "assigned", "in_progress", "reviewing"),
+        ).count()
+
     async def disconnect(self, close_code):
         if hasattr(self, "group_name"):
             try:
@@ -162,4 +175,7 @@ class QueueConsumer(AsyncWebsocketConsumer):
             await self.send(text_data=json.dumps({"type": "pong"}))
 
     async def queue_update(self, event):
+        await self.send(text_data=json.dumps(event["data"]))
+
+    async def queue_stats(self, event):
         await self.send(text_data=json.dumps(event["data"]))
