@@ -1,5 +1,10 @@
+import logging
+import sys
+
 from django.http import JsonResponse
 from django.shortcuts import render
+
+logger = logging.getLogger(__name__)
 
 
 def handler404(request, exception=None):
@@ -7,6 +12,14 @@ def handler404(request, exception=None):
 
 
 def handler500(request):
+    exc_info = sys.exc_info()
+    logger.error(
+        "Unhandled 500 error [request_id=%s] %s %s",
+        getattr(request, "request_id", "-"),
+        request.method,
+        request.get_full_path(),
+        exc_info=exc_info if exc_info[0] is not None else None,
+    )
     return render(request, "500.html", status=500)
 
 

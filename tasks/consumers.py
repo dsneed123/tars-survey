@@ -1,6 +1,9 @@
 import json
+import logging
 
 from channels.generic.websocket import AsyncWebsocketConsumer
+
+logger = logging.getLogger(__name__)
 
 
 class TaskDetailConsumer(AsyncWebsocketConsumer):
@@ -13,18 +16,35 @@ class TaskDetailConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         user = self.scope.get("user")
         if not user or not user.is_authenticated:
+            logger.warning(
+                "WebSocket connection rejected (unauthenticated) path=%s",
+                self.scope.get("path", ""),
+            )
             await self.close()
             return
 
         self.task_id = self.scope["url_route"]["kwargs"]["task_id"]
         self.group_name = f"task_{self.task_id}"
 
-        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        try:
+            await self.channel_layer.group_add(self.group_name, self.channel_name)
+        except Exception:
+            logger.exception(
+                "WebSocket channel layer failure joining group %s", self.group_name
+            )
+            await self.close()
+            return
+
         await self.accept()
 
     async def disconnect(self, close_code):
         if hasattr(self, "group_name"):
-            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+            try:
+                await self.channel_layer.group_discard(self.group_name, self.channel_name)
+            except Exception:
+                logger.exception(
+                    "WebSocket channel layer failure leaving group %s", self.group_name
+                )
 
     async def receive(self, text_data):
         try:
@@ -49,17 +69,34 @@ class DashboardConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         user = self.scope.get("user")
         if not user or not user.is_authenticated:
+            logger.warning(
+                "WebSocket connection rejected (unauthenticated) path=%s",
+                self.scope.get("path", ""),
+            )
             await self.close()
             return
 
         self.group_name = f"dashboard_{user.pk}"
 
-        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        try:
+            await self.channel_layer.group_add(self.group_name, self.channel_name)
+        except Exception:
+            logger.exception(
+                "WebSocket channel layer failure joining group %s", self.group_name
+            )
+            await self.close()
+            return
+
         await self.accept()
 
     async def disconnect(self, close_code):
         if hasattr(self, "group_name"):
-            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+            try:
+                await self.channel_layer.group_discard(self.group_name, self.channel_name)
+            except Exception:
+                logger.exception(
+                    "WebSocket channel layer failure leaving group %s", self.group_name
+                )
 
     async def receive(self, text_data):
         try:
@@ -87,17 +124,34 @@ class QueueConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         user = self.scope.get("user")
         if not user or not user.is_authenticated:
+            logger.warning(
+                "WebSocket connection rejected (unauthenticated) path=%s",
+                self.scope.get("path", ""),
+            )
             await self.close()
             return
 
         self.group_name = f"queue_{user.pk}"
 
-        await self.channel_layer.group_add(self.group_name, self.channel_name)
+        try:
+            await self.channel_layer.group_add(self.group_name, self.channel_name)
+        except Exception:
+            logger.exception(
+                "WebSocket channel layer failure joining group %s", self.group_name
+            )
+            await self.close()
+            return
+
         await self.accept()
 
     async def disconnect(self, close_code):
         if hasattr(self, "group_name"):
-            await self.channel_layer.group_discard(self.group_name, self.channel_name)
+            try:
+                await self.channel_layer.group_discard(self.group_name, self.channel_name)
+            except Exception:
+                logger.exception(
+                    "WebSocket channel layer failure leaving group %s", self.group_name
+                )
 
     async def receive(self, text_data):
         try:
