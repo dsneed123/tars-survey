@@ -1,18 +1,28 @@
 {% extends "base.html" %}
 
 {% block title %}Create Account — TARS{% endblock %}
-
 {% block meta_description %}<meta name="description" content="Create your TARS account and start automating your development workflow.">{% endblock %}
+
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
 
 {% block extra_head %}
 <style>
-    body { display: flex; align-items: center; min-height: 100vh; }
-
-    .auth-wrap {
-        width: 100%;
-        max-width: 400px;
-        margin: 0 auto;
+    .auth-page {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         padding: 2rem 1rem;
+    }
+
+    .auth-card {
+        background-color: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 20px;
+        padding: 2.5rem 2rem;
+        width: 100%;
+        max-width: 420px;
     }
 
     .auth-logo {
@@ -21,8 +31,6 @@
         letter-spacing: -0.03em;
         color: var(--tars-text);
         text-decoration: none;
-        display: block;
-        margin-bottom: 0.5rem;
     }
 
     .auth-logo span { color: var(--tars-accent); }
@@ -39,7 +47,7 @@
         background-color: rgba(255,255,255,0.06);
         border-color: var(--tars-accent);
         color: var(--tars-text);
-        box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+        box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
         outline: none;
     }
 
@@ -56,55 +64,57 @@
         margin-top: 0.3rem;
     }
 
-    .divider { border-color: var(--tars-border); }
+    .auth-divider { border-color: var(--tars-border); }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="auth-wrap">
-    <div class="text-center mb-4">
-        <a class="auth-logo" href="{% url 'pages:landing' %}">T<span>.</span>ARS</a>
-        <p class="small mb-0" style="color:var(--tars-muted)">Create your account</p>
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="text-center mb-4">
+            <a class="auth-logo" href="{% url 'pages:landing' %}">T<span>.</span>ARS</a>
+            <p class="small mt-2 mb-0" style="color:var(--tars-muted)">Create your account</p>
+        </div>
+
+        {% if form.non_field_errors %}
+        <div class="mb-3 small rounded-3 px-3 py-2" style="background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.25); color:#fca5a5;">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="{{ form.email.id_for_label }}" class="form-label">Email address</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                <div class="field-error">{{ form.email.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-3">
+                <label for="{{ form.password1.id_for_label }}" class="form-label">Password</label>
+                {{ form.password1 }}
+                {% if form.password1.errors %}
+                <div class="field-error">{{ form.password1.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+            <div class="mb-4">
+                <label for="{{ form.password2.id_for_label }}" class="form-label">Confirm password</label>
+                {{ form.password2 }}
+                {% if form.password2.errors %}
+                <div class="field-error">{{ form.password2.errors|join:", " }}</div>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-accent w-100">Get started</button>
+        </form>
+
+        <hr class="auth-divider my-4">
+
+        <p class="text-center small mb-0" style="color:var(--tars-muted)">
+            Already have an account?
+            <a href="{% url 'accounts:login' %}" style="color:var(--tars-accent)">Log in</a>
+        </p>
     </div>
-
-    {% if form.non_field_errors %}
-    <div class="mb-3 small rounded-3 px-3 py-2" style="background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.25); color:#fca5a5;">
-        {{ form.non_field_errors }}
-    </div>
-    {% endif %}
-
-    <form method="post" novalidate>
-        {% csrf_token %}
-        <div class="mb-3">
-            <label for="{{ form.email.id_for_label }}" class="form-label">Email</label>
-            {{ form.email }}
-            {% if form.email.errors %}
-            <div class="field-error">{{ form.email.errors|join:", " }}</div>
-            {% endif %}
-        </div>
-        <div class="mb-3">
-            <label for="{{ form.password1.id_for_label }}" class="form-label">Password</label>
-            {{ form.password1 }}
-            {% if form.password1.errors %}
-            <div class="field-error">{{ form.password1.errors|join:", " }}</div>
-            {% endif %}
-        </div>
-        <div class="mb-4">
-            <label for="{{ form.password2.id_for_label }}" class="form-label">Confirm password</label>
-            {{ form.password2 }}
-            {% if form.password2.errors %}
-            <div class="field-error">{{ form.password2.errors|join:", " }}</div>
-            {% endif %}
-        </div>
-
-        <button type="submit" class="btn btn-accent w-100">Get started</button>
-    </form>
-
-    <hr class="divider my-4">
-
-    <p class="text-center small mb-0" style="color:var(--tars-muted)">
-        Already have an account?
-        <a href="{% url 'accounts:login' %}" style="color:var(--tars-accent)">Sign in</a>
-    </p>
 </div>
 {% endblock %}
