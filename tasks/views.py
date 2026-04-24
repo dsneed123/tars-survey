@@ -12,11 +12,12 @@ from channels.layers import get_channel_layer
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
+from django.core.paginator import EmptyPage, Paginator
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
-from django.core.paginator import EmptyPage, Paginator
 from django.views.decorators.http import require_GET, require_POST
 
 from analytics.utils import fire_event
@@ -30,6 +31,9 @@ logger = logging.getLogger(__name__)
 
 
 _TARS_STATUS_CHOICES = {s for s, _ in Task.STATUS_CHOICES}
+
+# Sentinel used to distinguish "key not in cache" from "cached value is None".
+_CACHE_MISS = object()
 
 
 def _get_queue_positions(user_id):
@@ -47,6 +51,11 @@ def _get_queue_positions(user_id):
 
 def _get_avg_completion_seconds(user_id, sample=20):
     """Return average task duration (started_at→completed_at) in seconds, or None if < 3 samples."""
+    cache_key = f"tars_avg_sec_{user_id}"
+    result = cache.get(cache_key, _CACHE_MISS)
+    if result is not _CACHE_MISS:
+        return result
+
     tasks = list(
         Task.objects.filter(
             created_by_id=user_id,
@@ -62,9 +71,9 @@ def _get_avg_completion_seconds(user_id, sample=20):
         for t in tasks
         if t["completed_at"] > t["started_at"]
     ]
-    if len(durations) < 3:
-        return None
-    return sum(durations) / len(durations)
+    result = None if len(durations) < 3 else sum(durations) / len(durations)
+    cache.set(cache_key, result, timeout=300)
+    return result
 
 
 def _format_wait(seconds):
