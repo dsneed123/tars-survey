@@ -6,12 +6,14 @@ from django.urls import path, include
 from django.views.generic import TemplateView
 
 from pages.sitemaps import StaticViewSitemap
+from tars_site import views as tars_views
 
 sitemaps = {
     "static": StaticViewSitemap,
 }
 
 urlpatterns = [
+    path("api/health/", tars_views.api_health, name="api_health"),
     path("admin/", admin.site.urls),
     path(
         "sitemap.xml",
