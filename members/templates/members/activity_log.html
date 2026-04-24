@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+
+{% block title %}Activity — TARS{% endblock %}
+
+{% block meta_description %}<meta name="description" content="Your TARS activity log.">{% endblock %}
+
+{% block extra_head %}
+<style>
+.dash-main {
+    background: var(--tars-bg);
+}
+
+.dash-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid var(--tars-border);
+    position: sticky;
+    top: 60px;
+    background: var(--tars-bg);
+    z-index: 100;
+}
+
+.breadcrumb {
+    margin: 0;
+    padding: 0;
+    background: none;
+    font-size: 0.82rem;
+}
+
+.breadcrumb-item a {
+    color: var(--tars-muted);
+    text-decoration: none;
+    transition: color 0.15s;
+}
+
+.breadcrumb-item a:hover { color: var(--tars-text); }
+.breadcrumb-item.active  { color: var(--tars-text); }
+
+.breadcrumb-item + .breadcrumb-item::before {
+    color: var(--tars-border);
+    content: "/";
+}
+
+.dash-inner {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 2rem 2rem 6rem;
+}
+
+/* ── Activity feed ───────────────────────────────────────── */
+.activity-feed {
+    background: var(--tars-surface);
+    border: 1px solid var(--tars-border);
+    border-radius: 16px;
+    overflow: hidden;
+    animation: fadeUpIn 0.4s ease backwards;
+}
+
+.activity-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--tars-border);
+    transition: background 0.1s;
+}
+
+.activity-entry:last-child {
+    border-bottom: none;
+}
+
+.activity-entry:hover {
+    background: rgba(255,255,255,0.02);
+}
+
+/* ── Icon bubble ─────────────────────────────────────────── */
+.activity-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.activity-icon--accent {
+    background: rgba(59,130,246,0.12);
+    color: var(--tars-accent);
+    border-color: rgba(59,130,246,0.2);
+}
+
+.activity-icon--green {
+    background: rgba(34,197,94,0.12);
+    color: var(--tars-green);
+    border-color: rgba(34,197,94,0.2);
+}
+
+.activity-icon--red {
+    background: rgba(239,68,68,0.12);
+    color: var(--tars-error);
+    border-color: rgba(239,68,68,0.2);
+}
+
+.activity-icon--amber {
+    background: rgba(245,158,11,0.12);
+    color: var(--tars-warning);
+    border-color: rgba(245,158,11,0.2);
+}
+
+.activity-icon--purple {
+    background: rgba(139,92,246,0.12);
+    color: #8b5cf6;
+    border-color: rgba(139,92,246,0.2);
+}
+
+.activity-icon--muted {
+    background: rgba(115,115,115,0.12);
+    color: var(--tars-muted);
+    border-color: rgba(115,115,115,0.2);
+}
+
+/* ── Entry body ──────────────────────────────────────────── */
+.activity-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.activity-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 2px;
+}
+
+.activity-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--tars-text);
+}
+
+.activity-time {
+    font-size: 0.75rem;
+    color: var(--tars-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.activity-desc {
+    font-size: 0.825rem;
+    color: var(--tars-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    margin-bottom: 4px;
+}
+
+.activity-link {
+    font-size: 0.775rem;
+    color: var(--tars-accent);
+    text-decoration: none;
+    transition: opacity 0.15s;
+}
+
+.activity-link:hover {
+    opacity: 0.75;
+}
+
+/* ── Pagination ──────────────────────────────────────────── */
+.pag-btn {
+    border: 1px solid var(--tars-border);
+    color: var(--tars-muted);
+    background: transparent;
+    font-size: 0.8rem;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.pag-btn:hover {
+    color: var(--tars-text);
+    border-color: var(--tars-muted);
+}
+
+@keyframes fadeUpIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="dash-main">
+
+    <div class="dash-topbar">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'members:dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item active">Activity</li>
+            </ol>
+        </nav>
+    </div>
+
+    <div class="dash-inner">
+
+        <div class="mb-4">
+            <h1 style="font-size:1.4rem;font-weight:800;margin-bottom:0.25rem;">Activity</h1>
+            <p style="color:var(--tars-muted);font-size:0.875rem;margin:0;">
+                A chronological log of your tasks, projects, and PRs.
+            </p>
+        </div>
+
+        {% if entries %}
+        <div class="activity-feed mb-4">
+            {% for entry in entries %}
+            <div class="activity-entry">
+                <div class="activity-icon activity-icon--{{ entry.color }}">
+                    <i class="bi {{ entry.icon }}"></i>
+                </div>
+                <div class="activity-body">
+                    <div class="activity-header">
+                        <span class="activity-label">{{ entry.label }}</span>
+                        <time class="activity-time" datetime="{{ entry.created_at|date:'c' }}"
+                              title="{{ entry.created_at|date:'Y-m-d H:i:s' }} UTC">
+                            {{ entry.created_at|date:"M j, Y" }} &middot; {{ entry.created_at|time:"g:i A" }}
+                        </time>
+                    </div>
+                    {% if entry.description %}
+                    <div class="activity-desc">{{ entry.description }}</div>
+                    {% endif %}
+                    {% if entry.link %}
+                    <a href="{{ entry.link }}" class="activity-link">
+                        {{ entry.link_label }} <i class="bi bi-arrow-right ms-1" style="font-size:0.7rem;"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if page_obj.has_other_pages %}
+        <nav class="d-flex justify-content-between align-items-center">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-sm pag-btn">
+                <i class="bi bi-chevron-left me-1"></i>Newer
+            </a>
+            {% else %}
+            <span></span>
+            {% endif %}
+            <span style="color:var(--tars-muted);font-size:0.8rem;">
+                Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            </span>
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="btn btn-sm pag-btn">
+                Older <i class="bi bi-chevron-right ms-1"></i>
+            </a>
+            {% else %}
+            <span></span>
+            {% endif %}
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-activity" style="font-size:2.5rem;color:var(--tars-muted);opacity:0.4;display:block;margin-bottom:1rem;"></i>
+            <p style="color:var(--tars-muted);font-size:0.9rem;margin-bottom:0.5rem;">No activity yet.</p>
+            <p style="color:var(--tars-muted);font-size:0.8rem;max-width:300px;margin:0 auto 1.5rem;">
+                Events will appear here as you create tasks and projects.
+            </p>
+            <a href="{% url 'members:dashboard' %}" class="btn btn-sm"
+               style="border:1px solid var(--tars-accent);color:var(--tars-accent);background:transparent;font-size:0.82rem;">
+                Go to dashboard
+            </a>
+        </div>
+        {% endif %}
+
+    </div><!-- /.dash-inner -->
+</main>
+{% endblock %}
