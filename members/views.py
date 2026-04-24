@@ -1,3 +1,5 @@
+import json
+
 from django.contrib import messages
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
@@ -11,6 +13,7 @@ from django.views.decorators.http import require_POST
 from notifications.models import NotificationPreference
 from projects.models import Project
 from tasks.models import Task
+from tasks.templates import TASK_TEMPLATES
 from tasks.views import _forward_to_controller, _get_queue_positions, _get_wait_times
 
 from .models import MemberProfile
@@ -88,6 +91,8 @@ def dashboard(request):
         "projects": projects,
         "all_tasks": all_tasks,
         "recent_tasks": all_tasks,
+        "task_templates": TASK_TEMPLATES,
+        "task_templates_json": json.dumps(TASK_TEMPLATES),
         "completed_count": completed_count,
         "active_count": active_count,
         "pending_count": pending_count,
