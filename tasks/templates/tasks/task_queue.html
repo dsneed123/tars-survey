@@ -547,6 +547,9 @@
                         No results yet
                     {% endif %}
                 </div>
+                {% if proj.avg_completion %}
+                <div style="font-size:10px;color:var(--tars-muted);margin-top:3px;">Avg {{ proj.avg_completion }}</div>
+                {% endif %}
             </div>
             {% endfor %}
         </div>

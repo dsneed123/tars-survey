@@ -67,10 +67,8 @@
             {% endif %}
             <div class="status-card" style="border-color:rgba(34,197,94,0.2);">
                 <span class="status-badge badge-completed">Completed</span>
-                {% if task.completed_at and task.started_at %}
-                <span style="font-size:11px;color:#555;margin-left:8px;">
-                    {{ task.completed_at|timesince:task.started_at }}
-                </span>
+                {% if task.duration_display %}
+                <span style="font-size:11px;color:#555;margin-left:8px;">Completed in {{ task.duration_display }}</span>
                 {% endif %}
             </div>
 
