@@ -1,3 +1,4 @@
+import csv
 import hashlib
 from collections import defaultdict
 import hmac
@@ -16,9 +17,10 @@ from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.core.paginator import EmptyPage, Paginator
 from django.db.models import Q
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
@@ -418,6 +420,16 @@ def task_queue(request):
         })
     project_health.sort(key=lambda x: x["name"])
 
+    user_projects = list(
+        Project.objects.filter(
+            Q(owner=request.user) | Q(team__owner=request.user) | Q(team__memberships__user=request.user),
+            is_active=True,
+        )
+        .distinct()
+        .only("pk", "name")
+        .order_by("name")
+    )
+
     return render(request, "tasks/task_queue.html", {
         "tasks": tasks,
         "completed_today": completed_today,
@@ -433,6 +445,7 @@ def task_queue(request):
         "q": q,
         "sort": sort,
         "status_choices": Task.STATUS_CHOICES,
+        "user_projects": user_projects,
     })
 
 
@@ -1290,3 +1303,62 @@ def github_webhook(request):
         logger.debug("GitHub webhook: unhandled action %r (merged=%s) for task %s", action, merged, task.pk)
 
     return HttpResponse(status=200)
+
+
+@login_required
+@require_GET
+def export_tasks_csv(request):
+    """Stream task history as CSV. Filters: date_from, date_to, project."""
+    qs = (
+        Task.objects.filter(created_by=request.user)
+        .select_related("project")
+        .order_by("-created_at")
+    )
+
+    date_from = request.GET.get("date_from", "").strip()
+    date_to = request.GET.get("date_to", "").strip()
+    project_id = request.GET.get("project", "").strip()
+
+    if date_from:
+        d = parse_date(date_from)
+        if d:
+            qs = qs.filter(created_at__date__gte=d)
+
+    if date_to:
+        d = parse_date(date_to)
+        if d:
+            qs = qs.filter(created_at__date__lte=d)
+
+    if project_id:
+        qs = qs.filter(project_id=project_id)
+
+    def _duration_seconds(task):
+        if task.started_at and task.completed_at and task.completed_at > task.started_at:
+            return int((task.completed_at - task.started_at).total_seconds())
+        return ""
+
+    class _Echo:
+        def write(self, value):
+            return value
+
+    def _rows():
+        yield ["task_id", "title", "project", "status", "created_at", "completed_at", "duration", "pr_url"]
+        for task in qs.iterator():
+            yield [
+                task.pk,
+                task.title,
+                task.project.name if task.project_id else "",
+                task.status,
+                task.created_at.isoformat() if task.created_at else "",
+                task.completed_at.isoformat() if task.completed_at else "",
+                _duration_seconds(task),
+                task.pr_url or "",
+            ]
+
+    writer = csv.writer(_Echo())
+    response = StreamingHttpResponse(
+        (writer.writerow(row) for row in _rows()),
+        content_type="text/csv",
+    )
+    response["Content-Disposition"] = 'attachment; filename="task-history.csv"'
+    return response
