@@ -3,13 +3,16 @@ import json
 from django.contrib import messages
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
+from analytics.utils import fire_event
 from notifications.models import NotificationPreference
 from projects.models import Project
 from tasks.models import Task
@@ -187,6 +190,11 @@ def quick_add_task(request):
             priority=50,
         )
         _forward_to_controller(task)
+        fire_event(
+            "task_submitted",
+            user=request.user,
+            metadata={"task_id": task.pk, "project": project.github_repo},
+        )
         if is_ajax:
             return JsonResponse({"ok": True, "task_id": task.pk, "title": task.title, "status": task.status})
         messages.success(request, f'Task "{title}" submitted — TARS is on it.')
@@ -233,9 +241,109 @@ def bulk_add_tasks(request):
             priority=50,
         )
         _forward_to_controller(task)
+        fire_event(
+            "task_submitted",
+            user=request.user,
+            metadata={"task_id": task.pk, "project": project.github_repo},
+        )
         created.append({"task_id": task.pk, "title": task.title, "status": task.status})
 
     return JsonResponse({"ok": True, "tasks": created})
+
+
+_ACTIVITY_CONFIGS = {
+    "task_submitted":  ("bi-send",              "accent", "Task submitted"),
+    "task_completed":  ("bi-check-circle-fill", "green",  "Task completed"),
+    "task_failed":     ("bi-x-circle",          "red",    "Task failed"),
+    "project_added":   ("bi-folder-plus",       "amber",  "Project added"),
+    "pr_merged":       ("bi-git",               "purple", "PR merged"),
+    "signup_completed":("bi-person-check",      "accent", "Account created"),
+}
+
+
+def _build_activity_entry(event, task_map, project_map):
+    name = event.name
+    meta = event.metadata or {}
+    task_id = meta.get("task_id")
+    project_id = meta.get("project_id")
+
+    icon, color, label = _ACTIVITY_CONFIGS.get(
+        name,
+        ("bi-activity", "muted", name.replace("_", " ").title()),
+    )
+
+    task = task_map.get(task_id) if task_id else None
+    project = project_map.get(project_id) if project_id else None
+    link = None
+    link_label = "View"
+
+    if name in ("task_submitted", "task_completed", "task_failed"):
+        description = task.title if task else (meta.get("title") or meta.get("project", ""))
+        if task_id:
+            link = reverse("tasks:detail", args=[task_id])
+            link_label = "View task"
+    elif name == "project_added":
+        description = project.github_repo if project else meta.get("repo", "")
+        if project_id:
+            link = reverse("projects:detail", args=[project_id])
+            link_label = "View project"
+    elif name == "pr_merged":
+        description = meta.get("title", "")
+        pr_url = meta.get("pr_url")
+        if pr_url:
+            link = pr_url
+            link_label = "View PR"
+        elif task_id:
+            link = reverse("tasks:detail", args=[task_id])
+            link_label = "View task"
+    elif name == "signup_completed":
+        description = "You joined TARS"
+    else:
+        description = ""
+
+    return {
+        "name": name,
+        "icon": icon,
+        "color": color,
+        "label": label,
+        "description": description,
+        "link": link,
+        "link_label": link_label,
+        "created_at": event.created_at,
+    }
+
+
+@login_required
+def activity_log(request):
+    from analytics.models import Event
+
+    qs = Event.objects.filter(user=request.user).order_by("-created_at")
+    paginator = Paginator(qs, 30)
+    try:
+        page_obj = paginator.page(request.GET.get("page", 1))
+    except (EmptyPage, PageNotAnInteger):
+        page_obj = paginator.page(1)
+
+    events = list(page_obj)
+
+    task_ids = {e.metadata.get("task_id") for e in events if e.metadata.get("task_id")}
+    project_ids = {e.metadata.get("project_id") for e in events if e.metadata.get("project_id")}
+
+    task_map = (
+        {t.pk: t for t in Task.objects.filter(pk__in=task_ids).only("pk", "title")}
+        if task_ids else {}
+    )
+    project_map = (
+        {p.pk: p for p in Project.objects.filter(pk__in=project_ids).only("pk", "name", "github_repo")}
+        if project_ids else {}
+    )
+
+    entries = [_build_activity_entry(e, task_map, project_map) for e in events]
+
+    return render(request, "members/activity_log.html", {
+        "entries": entries,
+        "page_obj": page_obj,
+    })
 
 
 @login_required

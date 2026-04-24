@@ -953,7 +953,7 @@ def api_task_status(request, pk):
             return JsonResponse(cached)
 
     try:
-        task = Task.objects.select_related("project").get(pk=pk)
+        task = Task.objects.select_related("project", "created_by").get(pk=pk)
     except Task.DoesNotExist:
         return JsonResponse({"error": "Task not found"}, status=404)
 
@@ -995,6 +995,17 @@ def api_task_status(request, pk):
 
     task.save(update_fields=update_fields)
     _broadcast_task_update(task)
+
+    if new_status in ("completed", "failed"):
+        fire_event(
+            f"task_{new_status}",
+            user=task.created_by,
+            metadata={
+                "task_id": task.pk,
+                "title": task.title,
+                "project": task.project.github_repo if task.project_id else "",
+            },
+        )
 
     if new_status == "completed":
         send_task_completed_email(task)
@@ -1252,6 +1263,15 @@ def _handle_pr_merged(task, pr_url):
     task.save(update_fields=update_fields)
     _broadcast_task_update(task)
 
+    fire_event(
+        "pr_merged",
+        user=task.created_by,
+        metadata={
+            "task_id": task.pk,
+            "title": task.title,
+            "pr_url": pr_url or task.pr_url or "",
+        },
+    )
     create_notification(
         task.created_by,
         "PR merged!",
