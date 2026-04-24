@@ -33,6 +33,7 @@ class Task(models.Model):
     branch_name = models.CharField(max_length=200, blank=True, null=True)
     pr_url = models.URLField(blank=True, null=True)
     error_message = models.TextField(blank=True, null=True)
+    is_pinned = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True, db_index=True)
     started_at = models.DateTimeField(blank=True, null=True)

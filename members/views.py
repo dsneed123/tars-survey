@@ -34,10 +34,20 @@ def dashboard(request):
         .order_by("-created_at")[:50]
     )
 
+    # Pinned tasks, newest first (separate query so they always appear even outside the 50-task window)
+    pinned_tasks = list(
+        Task.objects.filter(created_by=request.user, is_pinned=True)
+        .select_related("project", "created_by")
+        .order_by("-created_at")
+    )
+
     # Annotate each task with its queue position and estimated wait (pending/queued only)
     queue_positions = _get_queue_positions(request.user.pk)
     wait_times = _get_wait_times(request.user.pk, queue_positions)
     for task in all_tasks:
+        task.queue_position = queue_positions.get(task.pk)
+        task.wait_time = wait_times.get(task.pk)
+    for task in pinned_tasks:
         task.queue_position = queue_positions.get(task.pk)
         task.wait_time = wait_times.get(task.pk)
 
@@ -91,6 +101,7 @@ def dashboard(request):
         "projects": projects,
         "all_tasks": all_tasks,
         "recent_tasks": all_tasks,
+        "pinned_tasks": pinned_tasks,
         "task_templates": TASK_TEMPLATES,
         "task_templates_json": json.dumps(TASK_TEMPLATES),
         "completed_count": completed_count,

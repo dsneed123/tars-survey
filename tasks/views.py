@@ -1073,6 +1073,39 @@ def api_task_cancel(request, pk):
 
 
 # ---------------------------------------------------------------------------
+# POST /api/tasks/<pk>/pin
+#
+# Toggle the pinned state of a task.  At most 5 tasks can be pinned per user;
+# attempting to pin a 6th returns HTTP 409.  Protected by session auth + CSRF.
+# ---------------------------------------------------------------------------
+
+_MAX_PINS = 5
+
+
+@login_required
+@require_POST
+def api_task_pin(request, pk):
+    task = get_object_or_404(Task, pk=pk, created_by=request.user)
+
+    if task.is_pinned:
+        task.is_pinned = False
+        task.save(update_fields=["is_pinned"])
+        return JsonResponse({"ok": True, "is_pinned": False, "task_id": task.pk})
+
+    pinned_count = Task.objects.filter(created_by=request.user, is_pinned=True).count()
+    if pinned_count >= _MAX_PINS:
+        return JsonResponse(
+            {"error": f"You can pin at most {_MAX_PINS} tasks. Unpin one first."},
+            status=409,
+        )
+
+    task.is_pinned = True
+    task.save(update_fields=["is_pinned"])
+    logger.info("Task %s pinned by user %s", task.pk, request.user.id)
+    return JsonResponse({"ok": True, "is_pinned": True, "task_id": task.pk})
+
+
+# ---------------------------------------------------------------------------
 # POST /api/tasks/reorder
 #
 # Reorder pending/queued tasks by updating their priority field.
