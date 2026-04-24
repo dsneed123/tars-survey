@@ -35,6 +35,21 @@ _TARS_STATUS_CHOICES = {s for s, _ in Task.STATUS_CHOICES}
 # Sentinel used to distinguish "key not in cache" from "cached value is None".
 _CACHE_MISS = object()
 
+# Valid status transitions for the task state machine.
+# Non-terminal states accept any valid status; only terminal states (completed, failed)
+# are locked — the controller cannot walk a task back from a terminal state.
+_VALID_TRANSITIONS = {
+    "pending": {"queued", "assigned", "in_progress", "reviewing", "failed", "completed"},
+    "queued": {"pending", "assigned", "in_progress", "reviewing", "failed", "completed"},
+    "assigned": {"queued", "in_progress", "reviewing", "failed", "completed"},
+    "in_progress": {"assigned", "reviewing", "completed", "failed"},
+    "reviewing": {"in_progress", "completed", "failed"},
+    "completed": set(),
+    "failed": set(),
+}
+
+_IDEMPOTENCY_TTL = 86_400  # 24 hours
+
 
 def _get_queue_positions(user_id):
     """Return {task_pk: position} (1-indexed, oldest first) for pending/queued tasks."""
@@ -673,20 +688,60 @@ def api_task_status(request, pk):
     except (json.JSONDecodeError, ValueError):
         return JsonResponse({"error": "Invalid JSON"}, status=400)
 
-    status = (data.get("status") or "").strip()
-    if status not in _TARS_STATUS_CHOICES:
+    new_status = (data.get("status") or "").strip()
+    if new_status not in _TARS_STATUS_CHOICES:
         return JsonResponse(
             {"error": f"Invalid status. Must be one of: {sorted(_TARS_STATUS_CHOICES)}"},
             status=400,
         )
+
+    idempotency_key = (
+        request.META.get("HTTP_IDEMPOTENCY_KEY", "") or data.get("idempotency_key", "")
+    ).strip()
+
+    logger.info(
+        "Task %s status update request: status=%r idempotency_key=%r ip=%s",
+        pk,
+        new_status,
+        idempotency_key or None,
+        request.META.get("REMOTE_ADDR"),
+    )
+
+    idempotency_cache_key = None
+    if idempotency_key:
+        idempotency_cache_key = f"task_status_idempotency:{pk}:{idempotency_key}"
+        cached = cache.get(idempotency_cache_key, _CACHE_MISS)
+        if cached is not _CACHE_MISS:
+            logger.info("Task %s idempotency hit for key %r", pk, idempotency_key)
+            return JsonResponse(cached)
 
     try:
         task = Task.objects.select_related("project").get(pk=pk)
     except Task.DoesNotExist:
         return JsonResponse({"error": "Task not found"}, status=404)
 
+    current_status = task.status
+    if new_status != current_status:
+        allowed = _VALID_TRANSITIONS.get(current_status, set())
+        if new_status not in allowed:
+            logger.warning(
+                "Task %s invalid transition %r -> %r",
+                pk,
+                current_status,
+                new_status,
+            )
+            return JsonResponse(
+                {
+                    "error": (
+                        f"Invalid status transition: {current_status!r} -> {new_status!r}. "
+                        f"Allowed: {sorted(allowed) or 'none (terminal state)'}"
+                    )
+                },
+                status=409,
+            )
+
     update_fields = ["status"]
-    task.status = status
+    task.status = new_status
 
     for field in ("branch_name", "pr_url", "error_message", "worker_id"):
         if field in data and data[field] is not None:
@@ -694,25 +749,35 @@ def api_task_status(request, pk):
             update_fields.append(field)
 
     now = timezone.now()
-    if status in ("assigned", "in_progress") and task.started_at is None:
+    if new_status in ("assigned", "in_progress") and task.started_at is None:
         task.started_at = now
         update_fields.append("started_at")
-    if status in ("completed", "failed") and task.completed_at is None:
+    if new_status in ("completed", "failed") and task.completed_at is None:
         task.completed_at = now
         update_fields.append("completed_at")
 
     task.save(update_fields=update_fields)
     _broadcast_task_update(task)
 
-    logger.info("Task %s status -> %s", task.pk, status)
-    return JsonResponse(
-        {
-            "ok": True,
-            "task_id": task.pk,
-            "status": task.status,
-            "status_display": task.get_status_display(),
-        }
-    )
+    logger.info("Task %s status %r -> %r", task.pk, current_status, new_status)
+
+    response_data = {
+        "ok": True,
+        "task_id": task.pk,
+        "status": task.status,
+        "status_display": task.get_status_display(),
+        "branch_name": task.branch_name,
+        "pr_url": task.pr_url,
+        "worker_id": task.worker_id,
+        "started_at": task.started_at.isoformat() if task.started_at else None,
+        "completed_at": task.completed_at.isoformat() if task.completed_at else None,
+        "updated_at": task.updated_at.isoformat() if task.updated_at else None,
+    }
+
+    if idempotency_cache_key:
+        cache.set(idempotency_cache_key, response_data, _IDEMPOTENCY_TTL)
+
+    return JsonResponse(response_data)
 
 
 # ---------------------------------------------------------------------------
