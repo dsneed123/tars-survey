@@ -83,6 +83,18 @@
             text-size-adjust: 100%;
         }
 
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+            background: linear-gradient(180deg, rgba(99,102,241,0.05) 0%, transparent 100%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
         h1, h2, h3, h4, h5, h6,
         .h1, .h2, .h3, .h4, .h5, .h6 {
             font-family: "Inter", system-ui, -apple-system, sans-serif;
