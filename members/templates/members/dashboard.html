@@ -761,6 +761,78 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
     font-size: 11px;
     color: #333;
     margin-top: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.shortcut-help {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+.shortcut-btn {
+    background: none;
+    border: 1px solid #2a2a2a;
+    color: #444;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    font-size: 10px;
+    line-height: 1;
+    cursor: default;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-family: inherit;
+    flex-shrink: 0;
+}
+.shortcut-btn:hover,
+.shortcut-btn:focus { color: #999; border-color: #555; outline: none; }
+.shortcut-tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    padding: 10px 14px;
+    white-space: nowrap;
+    z-index: 100;
+    color: #aaa;
+    font-size: 12px;
+    min-width: 210px;
+    pointer-events: none;
+}
+.shortcut-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #2a2a2a;
+}
+.shortcut-help:hover .shortcut-tooltip,
+.shortcut-help:focus-within .shortcut-tooltip { display: block; }
+.shortcut-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 3px 0;
+}
+.shortcut-row kbd {
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 11px;
+    font-family: inherit;
+    color: #ccc;
+    white-space: nowrap;
 }
 
 /* ── Mobile responsive ─────────────────────────────────── */
@@ -1390,7 +1462,18 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
                     </div>
                 </div>
             </form>
-            <div class="input-hint">Enter to send &middot; Shift+Enter for new line</div>
+            <div class="input-hint">
+                <span class="shortcut-help">
+                    <button type="button" class="shortcut-btn" tabindex="0" aria-label="Keyboard shortcuts">?</button>
+                    <div class="shortcut-tooltip" role="tooltip">
+                        <div class="shortcut-row"><kbd>Enter</kbd><span>Send message</span></div>
+                        <div class="shortcut-row"><kbd>Shift+Enter</kbd><span>New line</span></div>
+                        <div class="shortcut-row"><kbd>⌘K / Ctrl+K</kbd><span>Focus input</span></div>
+                        <div class="shortcut-row"><kbd>Esc</kbd><span>Clear input</span></div>
+                        <div class="shortcut-row"><kbd>↑</kbd><span>Recall last message</span></div>
+                    </div>
+                </span>
+            </div>
             {% else %}
             <form id="githubUrlForm" onsubmit="submitGithubInput(); return false;" style="margin:0;">
                 {% csrf_token %}
@@ -1606,12 +1689,38 @@ function updateSend() {
     }
 }
 
-// Enter to send, Shift+Enter for newline
+// Tracks the last manually submitted task title for ↑ recall
+var _lastSubmittedTitle = '';
+
+// Enter to send, Shift+Enter for newline, Escape to clear, ↑ to recall last
 function handleKey(e) {
+    var input = document.getElementById('chatInput');
+    if (!input) return;
+
+    if (e.key === 'Escape') {
+        if (input.value) {
+            e.preventDefault();
+            input.value = '';
+            autoGrow(input);
+            updateSend();
+        }
+        return;
+    }
+
+    if (e.key === 'ArrowUp' && !input.value) {
+        if (_lastSubmittedTitle) {
+            e.preventDefault();
+            input.value = _lastSubmittedTitle;
+            autoGrow(input);
+            updateSend();
+            input.setSelectionRange(input.value.length, input.value.length);
+        }
+        return;
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        var input = document.getElementById('chatInput');
-        if (!input || !input.value.trim()) return;
+        if (!input.value.trim()) return;
         if (isGithubUrl(input.value.trim())) {
             var url = input.value.trim();
             input.value = '';
@@ -1623,6 +1732,7 @@ function handleKey(e) {
         var hasProject = document.getElementById('projectIdInput').value;
         if (input.value.trim() && hasProject) {
             var text = input.value.trim();
+            _lastSubmittedTitle = text;
             input.value = '';
             autoGrow(input);
             updateSend();
