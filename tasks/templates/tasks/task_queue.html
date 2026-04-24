@@ -434,6 +434,34 @@
     .proj-health-rate.rate-red    { color: #f87171; }
     .proj-health-rate.rate-neutral { color: var(--tars-muted); }
 
+    /* Drag handle */
+    .drag-handle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 14px;
+        cursor: grab;
+        color: var(--tars-muted);
+        opacity: 0.35;
+        flex-shrink: 0;
+        font-size: 0.85rem;
+        margin-left: -0.2rem;
+        touch-action: none;
+    }
+    .drag-handle:hover { opacity: 0.75; }
+    .drag-handle:active { cursor: grabbing; }
+
+    .queue-card.dragging {
+        opacity: 0.35;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+    }
+
+    .queue-card.drag-over {
+        border-color: rgba(99,102,241,0.55);
+        background: rgba(99,102,241,0.04);
+        transform: none !important;
+    }
+
     /* ── Page-load skeleton → content swap ─────────────────── */
     .skeleton-list {
         display: flex;
@@ -602,7 +630,15 @@
                data-task-status="{{ task.status }}"
                data-filter-group="{{ task.filter_group }}"
                {% if task.filter_group == 'active' or task.filter_group == 'pending' %}data-has-position="true"{% endif %}
+               {% if task.filter_group == 'pending' %}draggable="true"{% endif %}
                class="queue-card{% if task.status == 'in_progress' %} is-active is-in-progress{% elif task.status == 'assigned' or task.status == 'reviewing' or task.status == 'queued' %} is-active{% elif task.filter_group == 'completed' %} is-done{% elif task.filter_group == 'failed' %} is-failed{% endif %}">
+
+                <!-- Drag handle (pending/queued only) -->
+                {% if task.filter_group == 'pending' %}
+                <span class="drag-handle" title="Drag to reorder" aria-hidden="true">
+                    <i class="bi bi-grip-vertical"></i>
+                </span>
+                {% endif %}
 
                 <!-- Position / status icon -->
                 <div class="queue-pos{% if task.status == 'in_progress' %} pos-in-progress{% elif task.filter_group == 'completed' %} pos-completed{% elif task.filter_group == 'failed' %} pos-failed{% endif %}">
@@ -690,6 +726,7 @@
 
     var ACTIVE_STATUSES = ['in_progress', 'assigned', 'reviewing'];
     var PENDING_STATUSES = ['pending', 'queued'];
+    var DRAGGABLE_STATUSES = ['pending', 'queued'];
 
     function statusToFilterGroup(status) {
         if (ACTIVE_STATUSES.indexOf(status) !== -1) return 'active';
@@ -951,6 +988,7 @@
     function buildCard(data) {
         var filterGroup = statusToFilterGroup(data.status);
         var cancellable = CANCELLABLE_STATUSES.indexOf(data.status) !== -1;
+        var draggable = DRAGGABLE_STATUSES.indexOf(data.status) !== -1;
         var positionCards = document.querySelectorAll('#queue-list .queue-card[data-has-position]');
         var posNum = positionCards.length + 1;
 
@@ -961,6 +999,7 @@
         a.dataset.filterGroup = filterGroup;
         a.dataset.hasPosition = 'true';
         a.className = 'queue-card';
+        if (draggable) { a.setAttribute('draggable', 'true'); }
 
         var buildIconMap = {
             'in_progress': '<i class="bi bi-play-circle"></i>',
@@ -989,7 +1028,12 @@
               '</span>' +
               '<i class="bi bi-chevron-right" style="color:var(--tars-border);"></i>';
 
+        var dragHandleHtml = draggable
+            ? '<span class="drag-handle" title="Drag to reorder" aria-hidden="true"><i class="bi bi-grip-vertical"></i></span>'
+            : '';
+
         a.innerHTML =
+            dragHandleHtml +
             '<div class="queue-pos">#' + posNum + '</div>' +
             '<div class="flex-grow-1" style="min-width:0;">' +
                 '<div class="text-truncate mb-1" style="color:var(--tars-text);font-size:16px;font-weight:500;">' +
@@ -1159,6 +1203,93 @@
         else if (confirmYes) { submitCancel(card); }
         else if (confirmNo)  { hideCancelConfirm(card); }
     });
+
+    // ── Drag-and-drop reorder ─────────────────────────────────────────────────
+
+    var dragSrcCard = null;
+
+    function isDraggableCard(card) {
+        return card && DRAGGABLE_STATUSES.indexOf(card.dataset.taskStatus) !== -1;
+    }
+
+    (function initDragDrop() {
+        var list = document.getElementById('queue-list');
+        if (!list) return;
+
+        list.addEventListener('dragstart', function (e) {
+            var card = e.target.closest('[data-task-id]');
+            if (!card || !isDraggableCard(card)) { e.preventDefault(); return; }
+            dragSrcCard = card;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', card.dataset.taskId);
+            requestAnimationFrame(function () { card.classList.add('dragging'); });
+        });
+
+        list.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            var card = e.target.closest('[data-task-id]');
+            if (!card || !isDraggableCard(card) || card === dragSrcCard) return;
+            e.dataTransfer.dropEffect = 'move';
+            document.querySelectorAll('#queue-list .drag-over').forEach(function (c) {
+                c.classList.remove('drag-over');
+            });
+            card.classList.add('drag-over');
+        });
+
+        list.addEventListener('dragleave', function (e) {
+            var card = e.target.closest('[data-task-id]');
+            if (card && !card.contains(e.relatedTarget)) {
+                card.classList.remove('drag-over');
+            }
+        });
+
+        list.addEventListener('drop', function (e) {
+            e.preventDefault();
+            var targetCard = e.target.closest('[data-task-id]');
+            if (!targetCard || targetCard === dragSrcCard || !isDraggableCard(targetCard)) {
+                cleanupDrag();
+                return;
+            }
+            var rect = targetCard.getBoundingClientRect();
+            if (e.clientY < rect.top + rect.height / 2) {
+                list.insertBefore(dragSrcCard, targetCard);
+            } else {
+                list.insertBefore(dragSrcCard, targetCard.nextSibling);
+            }
+            cleanupDrag();
+            renumberPositions();
+            saveReorder();
+        });
+
+        list.addEventListener('dragend', function () {
+            cleanupDrag();
+        });
+    })();
+
+    function cleanupDrag() {
+        document.querySelectorAll('#queue-list .drag-over').forEach(function (c) {
+            c.classList.remove('drag-over');
+        });
+        if (dragSrcCard) {
+            dragSrcCard.classList.remove('dragging');
+            dragSrcCard = null;
+        }
+    }
+
+    function saveReorder() {
+        var order = Array.from(document.querySelectorAll('#queue-list [data-task-id]'))
+            .filter(function (c) { return DRAGGABLE_STATUSES.indexOf(c.dataset.taskStatus) !== -1; })
+            .map(function (c) { return parseInt(c.dataset.taskId, 10); });
+
+        if (!order.length) return;
+
+        fetch('/api/tasks/reorder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCsrfToken() },
+            credentials: 'same-origin',
+            body: JSON.stringify({ order: order }),
+        }).catch(function () {});
+    }
 
     connect();
 })();

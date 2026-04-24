@@ -108,13 +108,13 @@ def _fetch_pr_diff_summary(pr_url):
 
 
 def _get_queue_positions(user_id):
-    """Return {task_pk: position} (1-indexed, oldest first) for pending/queued tasks."""
+    """Return {task_pk: position} (1-indexed, by priority then created_at) for pending/queued tasks."""
     pks = list(
         Task.objects.filter(
             created_by_id=user_id,
             status__in=("pending", "queued"),
         )
-        .order_by("created_at")
+        .order_by("priority", "created_at")
         .values_list("pk", flat=True)
     )
     return {pk: i + 1 for i, pk in enumerate(pks)}
@@ -308,7 +308,7 @@ def task_queue(request):
         Task.objects.filter(created_by=request.user)
         .select_related("project")
         .annotate(status_order=status_order)
-        .order_by("status_order", "created_at")
+        .order_by("status_order", "priority", "created_at")
     )
 
     today = timezone.now().date()
@@ -1032,6 +1032,56 @@ def api_task_cancel(request, pk):
 
     logger.info("Task %s cancelled by user %s", task.pk, request.user.id)
     return JsonResponse({"ok": True, "task_id": task.pk})
+
+
+# ---------------------------------------------------------------------------
+# POST /api/tasks/reorder
+#
+# Reorder pending/queued tasks by updating their priority field.
+# Accepts JSON: {"order": [task_id, task_id, ...]}
+# Only updates tasks owned by the user with pending/queued status.
+# Protected by Django's standard session auth + CSRF.
+# ---------------------------------------------------------------------------
+
+
+@login_required
+@require_POST
+def api_task_reorder(request):
+    try:
+        data = json.loads(request.body or b"{}")
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    order = data.get("order")
+    if not isinstance(order, list):
+        return JsonResponse({"error": "order must be a list"}, status=400)
+
+    try:
+        task_ids = [int(pk) for pk in order]
+    except (ValueError, TypeError):
+        return JsonResponse({"error": "Invalid task IDs"}, status=400)
+
+    if not task_ids:
+        return JsonResponse({"ok": True})
+
+    tasks_qs = Task.objects.filter(
+        pk__in=task_ids,
+        created_by=request.user,
+        status__in=("pending", "queued"),
+    )
+    task_map = {t.pk: t for t in tasks_qs}
+
+    to_update = []
+    for i, pk in enumerate(task_ids):
+        task = task_map.get(pk)
+        if task:
+            task.priority = (i + 1) * 10
+            to_update.append(task)
+
+    if to_update:
+        Task.objects.bulk_update(to_update, ["priority"])
+
+    return JsonResponse({"ok": True})
 
 
 # ---------------------------------------------------------------------------
