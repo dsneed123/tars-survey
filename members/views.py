@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
-from django.db.models import Case, IntegerField, Value, When
+from django.db.models import Count, Q
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.template.loader import render_to_string
@@ -15,6 +15,8 @@ from tasks.views import _forward_to_controller, _get_queue_positions, _get_wait_
 
 from .models import MemberProfile
 
+_WIDGET_STATUS_ORDER = {"in_progress": 0, "assigned": 1, "reviewing": 2, "queued": 3, "pending": 4}
+
 
 @login_required
 def dashboard(request):
@@ -22,7 +24,7 @@ def dashboard(request):
 
     projects = Project.objects.filter(owner=request.user)
 
-    # All tasks for the chat feed, newest last
+    # Latest 50 tasks for the chat feed, newest first
     all_tasks = list(
         Task.objects.filter(created_by=request.user)
         .select_related("project", "created_by")
@@ -36,57 +38,45 @@ def dashboard(request):
         task.queue_position = queue_positions.get(task.pk)
         task.wait_time = wait_times.get(task.pk)
 
-    completed_today = Task.objects.filter(
-        created_by=request.user,
-        status="completed",
-        completed_at__date=timezone.now().date(),
-    ).count()
-    completed_count = Task.objects.filter(created_by=request.user, status="completed").count()
-    active_count = Task.objects.filter(
-        created_by=request.user,
-        status__in=["pending", "queued", "assigned", "in_progress", "reviewing"],
-    ).count()
-    pending_count = Task.objects.filter(
-        created_by=request.user,
-        status__in=["pending", "queued"],
-    ).count()
-    failed_count = Task.objects.filter(created_by=request.user, status="failed").count()
-    in_progress_count = Task.objects.filter(
-        created_by=request.user, status="in_progress"
-    ).count()
+    # All status counts in a single aggregate query instead of 8 separate COUNTs
+    now = timezone.now()
+    today = now.date()
+    stats = Task.objects.filter(created_by=request.user).aggregate(
+        total_tasks=Count("pk"),
+        completed_count=Count("pk", filter=Q(status="completed")),
+        failed_count=Count("pk", filter=Q(status="failed")),
+        active_count=Count(
+            "pk",
+            filter=Q(status__in=["pending", "queued", "assigned", "in_progress", "reviewing"]),
+        ),
+        pending_count=Count("pk", filter=Q(status__in=["pending", "queued"])),
+        in_progress_count=Count("pk", filter=Q(status="in_progress")),
+        completed_today=Count("pk", filter=Q(status="completed", completed_at__date=today)),
+        tasks_this_month=Count(
+            "pk", filter=Q(created_at__year=now.year, created_at__month=now.month)
+        ),
+    )
 
-    _widget_status_order = Case(
-        When(status="in_progress", then=Value(0)),
-        When(status="assigned", then=Value(1)),
-        When(status="reviewing", then=Value(2)),
-        When(status="queued", then=Value(3)),
-        When(status="pending", then=Value(4)),
-        default=Value(5),
-        output_field=IntegerField(),
-    )
-    queue_widget_tasks = list(
-        Task.objects.filter(
-            created_by=request.user,
-            status__in=["pending", "queued", "assigned", "in_progress", "reviewing"],
-        )
-        .select_related("project")
-        .annotate(_widget_order=_widget_status_order)
-        .order_by("_widget_order", "created_at")[:3]
-    )
-    total_tasks = Task.objects.filter(created_by=request.user).count()
+    completed_count = stats["completed_count"]
+    failed_count = stats["failed_count"]
+    active_count = stats["active_count"]
+    pending_count = stats["pending_count"]
+    in_progress_count = stats["in_progress_count"]
+    completed_today = stats["completed_today"]
+    tasks_this_month = stats["tasks_this_month"]
+    total_tasks = stats["total_tasks"]
+
+    # Derive widget tasks from already-loaded all_tasks (no extra query).
+    # Active tasks are almost always recent, so the latest-50 window covers them.
+    queue_widget_tasks = sorted(
+        (t for t in all_tasks if t.status in _WIDGET_STATUS_ORDER),
+        key=lambda t: (_WIDGET_STATUS_ORDER[t.status], t.created_at),
+    )[:3]
 
     # Success rate
     total_done = completed_count + failed_count
     success_rate = round((completed_count / total_done * 100) if total_done > 0 else 0)
     success_rate_display = f"{success_rate}%" if total_done > 0 else "—"
-
-    # Tasks this month
-    now = timezone.now()
-    tasks_this_month = Task.objects.filter(
-        created_by=request.user,
-        created_at__year=now.year,
-        created_at__month=now.month,
-    ).count()
 
     # Queue bar percentages
     completed_pct = round((completed_count / total_tasks * 100) if total_tasks > 0 else 0)
