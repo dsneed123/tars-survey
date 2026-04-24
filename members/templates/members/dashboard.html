@@ -1879,6 +1879,29 @@ function renderDetectCard(contentEl, data) {
         go:'Go', rust:'Rust', java:'Java', swift:'Swift', other:'Other'
     };
     var langLabel = langLabels[data.language] || data.language;
+
+    var privacyBadge = data.is_private
+        ? '<span><i class="bi bi-lock"></i> Private</span>'
+        : '<span><i class="bi bi-globe2"></i> Public</span>';
+
+    var accessBadge = '';
+    if (data.tars_has_access) {
+        accessBadge = '<div style="margin-top:8px;">' +
+            '<span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:4px;' +
+            'background:rgba(34,197,94,0.12);color:#22c55e;">' +
+            '<i class="bi bi-check-circle"></i> TARS has access</span></div>';
+    } else if (!data.token_configured) {
+        accessBadge = '<div style="margin-top:8px;">' +
+            '<span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:4px;' +
+            'background:rgba(245,158,11,0.12);color:#f59e0b;">' +
+            '<i class="bi bi-exclamation-triangle"></i> No GitHub token — TARS may not be able to push</span></div>';
+    } else {
+        accessBadge = '<div style="margin-top:8px;">' +
+            '<span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:4px;' +
+            'background:rgba(239,68,68,0.1);color:#ef4444;">' +
+            '<i class="bi bi-x-circle"></i> TARS cannot access this repo</span></div>';
+    }
+
     var html = '<p>Found it! Here\'s what I detected:</p>' +
         '<div class="project-detect-card">' +
             '<div class="detect-repo-slug"><i class="bi bi-github"></i> github.com/' + _esc(data.slug) + '</div>' +
@@ -1886,23 +1909,40 @@ function renderDetectCard(contentEl, data) {
             '<div class="detect-meta">' +
                 '<span><i class="bi bi-code-slash"></i> ' + _esc(langLabel) + '</span>' +
                 '<span><i class="bi bi-git"></i> ' + _esc(data.default_branch) + '</span>' +
-            '</div>';
+                privacyBadge +
+            '</div>' +
+            accessBadge;
+
     if (data.description) {
         html += '<div class="detect-desc">' + _esc(data.description) + '</div>';
     }
-    html +=
-        '<form method="post" action="' + _addChatUrl + '">' +
-            '<input type="hidden" name="csrfmiddlewaretoken" value="' + _esc(getCsrfToken()) + '">' +
-            '<input type="hidden" name="github_repo" value="' + _esc(data.slug) + '">' +
-            '<input type="hidden" name="name" value="' + _esc(data.name) + '">' +
-            '<input type="hidden" name="language" value="' + _esc(data.language) + '">' +
-            '<input type="hidden" name="default_branch" value="' + _esc(data.default_branch) + '">' +
-            '<input type="hidden" name="description" value="' + _esc(data.description) + '">' +
-            '<button type="submit" class="detect-add-btn">' +
-                '<i class="bi bi-plus-lg"></i> Add Project' +
-            '</button>' +
-        '</form>' +
-        '</div>';
+
+    if (data.already_connected) {
+        html +=
+            '<div style="margin-top:10px;padding:8px 12px;background:rgba(99,102,241,0.08);' +
+            'border:1px solid rgba(99,102,241,0.18);border-radius:6px;font-size:13px;color:#818cf8;">' +
+            '<i class="bi bi-check2-circle"></i> Already connected to your workspace.' +
+            '</div>' +
+            '<a href="/dashboard/projects/' + parseInt(data.existing_project_id, 10) + '/" ' +
+            'class="detect-add-btn" style="display:inline-flex;text-decoration:none;margin-top:12px;">' +
+                '<i class="bi bi-arrow-right"></i> View Project' +
+            '</a>';
+    } else {
+        html +=
+            '<form method="post" action="' + _addChatUrl + '">' +
+                '<input type="hidden" name="csrfmiddlewaretoken" value="' + _esc(getCsrfToken()) + '">' +
+                '<input type="hidden" name="github_repo" value="' + _esc(data.slug) + '">' +
+                '<input type="hidden" name="name" value="' + _esc(data.name) + '">' +
+                '<input type="hidden" name="language" value="' + _esc(data.language) + '">' +
+                '<input type="hidden" name="default_branch" value="' + _esc(data.default_branch) + '">' +
+                '<input type="hidden" name="description" value="' + _esc(data.description) + '">' +
+                '<button type="submit" class="detect-add-btn">' +
+                    '<i class="bi bi-plus-lg"></i> Add Project' +
+                '</button>' +
+            '</form>';
+    }
+
+    html += '</div>';
     contentEl.classList.remove('msg-content-updating');
     void contentEl.offsetWidth;
     contentEl.innerHTML = html;
