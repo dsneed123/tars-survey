@@ -587,8 +587,6 @@ body { overflow: hidden; height: 100vh; }
 .queue-widget-btn:hover { border-color: #333; color: #aaa; }
 .queue-widget-btn.open { border-color: #333; color: #aaa; }
 
-.queue-ring-fill { transition: stroke-dashoffset 0.4s ease; }
-
 #queueChevron { transition: transform 0.2s ease; }
 
 .queue-panel {
@@ -819,14 +817,7 @@ body { overflow: hidden; height: 100vh; }
             <div class="queue-widget" id="queueWidget">
                 <button class="queue-widget-btn" id="queueWidgetBtn" type="button"
                         onclick="toggleQueueWidget(event)">
-                    <svg width="18" height="18" viewBox="0 0 18 18" id="queueRingSvg"
-                         data-active="{{ active_count }}" data-in-progress="{{ in_progress_count }}">
-                        <circle cx="9" cy="9" r="6.5" fill="none" stroke="#252525" stroke-width="2"/>
-                        <circle class="queue-ring-fill" cx="9" cy="9" r="6.5"
-                                fill="none" stroke="#6366f1" stroke-width="2"
-                                stroke-dasharray="40.84" stroke-dashoffset="40.84"
-                                stroke-linecap="round" transform="rotate(-90 9 9)"/>
-                    </svg>
+                    <i class="bi bi-list-task" style="font-size:1rem;color:var(--tars-accent);"></i>
                     <span class="queue-widget-label" id="queueWidgetLabel">
                         {{ active_count }} task{{ active_count|pluralize }} in queue
                     </span>
@@ -856,10 +847,10 @@ body { overflow: hidden; height: 100vh; }
 
             <div class="app-icon-nav d-none d-md-flex">
                 <a href="{% url 'members:dashboard' %}" class="app-icon-nav-item active" title="Chat">
-                    <i class="bi bi-house-fill"></i>
+                    <i class="bi bi-chat-dots"></i>
                 </a>
                 <a href="{% url 'tasks:queue' %}" class="app-icon-nav-item" title="Queue">
-                    <i class="bi bi-list-ul"></i>
+                    <i class="bi bi-list-task"></i>
                 </a>
             </div>
 
@@ -975,7 +966,7 @@ body { overflow: hidden; height: 100vh; }
             <!-- Queue stats welcome message -->
             {% if active_count > 0 %}
             <div class="chat-message tars-msg" id="tars-welcome-msg">
-                <div class="msg-avatar tars-avatar"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true"><polyline points="2,5 7,8 2,11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="8" y1="11" x2="14" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                <div class="msg-avatar tars-avatar"><i class="bi bi-robot" aria-hidden="true"></i></div>
                 <div class="msg-body">
                     <div class="msg-sender">TARS</div>
                     <div class="msg-content" id="tars-welcome-stats-content">
@@ -1006,7 +997,7 @@ body { overflow: hidden; height: 100vh; }
 
             <!-- TARS response -->
             <div class="chat-message tars-msg" data-task-id="{{ task.pk }}" data-timestamp="{{ task.created_at|date:'c' }}">
-                <div class="msg-avatar tars-avatar"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true"><polyline points="2,5 7,8 2,11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="8" y1="11" x2="14" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+                <div class="msg-avatar tars-avatar"><i class="bi bi-robot" aria-hidden="true"></i></div>
                 <div class="msg-body">
                     <div class="msg-sender">TARS</div>
                     <div class="msg-content" id="tars-content-{{ task.pk }}">
@@ -1102,7 +1093,7 @@ body { overflow: hidden; height: 100vh; }
                 <div class="input-container">
                     <div class="input-row">
                         <div class="project-pill" id="projectPill" onclick="toggleProjectDropdown()">
-                            <i class="bi bi-folder2"></i>
+                            <i class="bi bi-folder"></i>
                             <span id="selectedProjectName" class="project-pill-text no-project">Select project</span>
                             <i class="bi bi-chevron-down" style="font-size:9px;margin-left:2px;"></i>
                             <div class="project-dropdown" id="projectDropdown">
@@ -1682,9 +1673,8 @@ document.addEventListener('keydown', function(e) {
 </script>
 
 <script>
-// Queue mini widget — toggle, ring fill, real-time count updates
+// Queue mini widget — toggle, real-time count updates
 (function () {
-    var CIRCUMFERENCE = 40.84; // 2π × r6.5
     var ACTIVE_STATUSES = ['pending', 'queued', 'assigned', 'in_progress', 'reviewing'];
 
     // Seed task-state map from server-rendered data
@@ -1697,13 +1687,6 @@ document.addEventListener('keydown', function(e) {
     var _activeCount = {{ active_count|default:0 }};
     var _inProgressCount = {{ in_progress_count|default:0 }};
 
-    function setRingFill(fraction) {
-        var fill = document.querySelector('.queue-ring-fill');
-        if (fill) {
-            fill.style.strokeDashoffset = CIRCUMFERENCE * (1 - Math.max(0, Math.min(1, fraction)));
-        }
-    }
-
     function refreshWidget() {
         var labelEl = document.getElementById('queueWidgetLabel');
         if (labelEl) {
@@ -1711,13 +1694,6 @@ document.addEventListener('keydown', function(e) {
         }
         var metaEl = document.getElementById('queuePanelMeta');
         if (metaEl) metaEl.textContent = _activeCount + ' active';
-
-        var svg = document.getElementById('queueRingSvg');
-        if (svg) {
-            svg.dataset.active = _activeCount;
-            svg.dataset.inProgress = _inProgressCount;
-        }
-        setRingFill(_activeCount > 0 ? _inProgressCount / _activeCount : 0);
 
         var widget = document.getElementById('queueWidget');
         if (widget) widget.style.display = _activeCount > 0 ? '' : 'none';
@@ -1789,15 +1765,13 @@ document.addEventListener('keydown', function(e) {
         }
     });
 
-    // Initialise ring on load
-    setRingFill(_activeCount > 0 ? _inProgressCount / _activeCount : 0);
 }());
 </script>
 
 <script>
 // ── Project-add chat flow ──────────────────────────────────
 var _userInitial = "{{ request.user.email|first|upper|escapejs }}";
-var _tarsAvatarHtml = '<div class="msg-avatar tars-avatar"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true"><polyline points="2,5 7,8 2,11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><line x1="8" y1="11" x2="14" y2="11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>';
+var _tarsAvatarHtml = '<div class="msg-avatar tars-avatar"><i class="bi bi-robot" aria-hidden="true"></i></div>';
 var _detectUrl = "{% url 'projects:detect' %}";
 var _addChatUrl = "{% url 'projects:add_chat' %}";
 var _quickTaskUrl = "{% url 'members:quick_task' %}";

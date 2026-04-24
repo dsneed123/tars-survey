@@ -555,10 +555,10 @@
         <div class="app-icon-nav d-none d-md-flex">
             <a href="{% url 'members:dashboard' %}"
                class="app-icon-nav-item{% if '/dashboard/queue' not in request.path and '/dashboard/settings' not in request.path %} active{% endif %}"
-               title="Chat"><i class="bi bi-house-fill"></i></a>
+               title="Chat"><i class="bi bi-chat-dots"></i></a>
             <a href="{% url 'tasks:queue' %}"
                class="app-icon-nav-item{% if '/dashboard/queue' in request.path %} active{% endif %}"
-               title="Queue"><i class="bi bi-list-ul"></i></a>
+               title="Queue"><i class="bi bi-list-task"></i></a>
             <a href="{% url 'members:settings' %}"
                class="app-icon-nav-item{% if '/dashboard/settings' in request.path %} active{% endif %}"
                title="Settings"><i class="bi bi-gear"></i></a>
@@ -728,12 +728,12 @@
 <nav class="app-bottom-nav" aria-label="Main navigation">
     <a href="{% url 'members:dashboard' %}"
        class="app-bottom-nav-item{% if '/dashboard/queue' not in request.path and '/dashboard/settings' not in request.path %} active{% endif %}">
-        <i class="bi bi-house-fill"></i>
+        <i class="bi bi-chat-dots"></i>
         <span>Chat</span>
     </a>
     <a href="{% url 'tasks:queue' %}"
        class="app-bottom-nav-item{% if '/dashboard/queue' in request.path %} active{% endif %}">
-        <i class="bi bi-list-ul"></i>
+        <i class="bi bi-list-task"></i>
         <span>Queue</span>
     </a>
     <a href="{% url 'members:settings' %}"

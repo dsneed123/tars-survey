@@ -418,7 +418,7 @@
                 {% for project in projects %}
                 <div class="project-row">
                     <div class="project-icon">
-                        <i class="bi bi-folder2"></i>
+                        <i class="bi bi-folder"></i>
                     </div>
                     <div class="project-info">
                         <div class="project-name">{{ project.name }}</div>
@@ -453,7 +453,7 @@
                 </div>
             {% else %}
                 <div class="p-5 text-center">
-                    <i class="bi bi-folder2-open" style="font-size:2rem;color:var(--tars-muted);opacity:0.4;"></i>
+                    <i class="bi bi-folder" style="font-size:2rem;color:var(--tars-muted);opacity:0.4;"></i>
                     <p class="mt-3 mb-3" style="color:var(--tars-muted);font-size:0.875rem;">No projects yet.</p>
                     <a href="{% url 'projects:add' %}" class="btn btn-accent btn-sm">Add your first project</a>
                 </div>

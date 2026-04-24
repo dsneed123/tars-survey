@@ -325,13 +325,13 @@
             <div>
                 <div class="mb-1">
                     <span id="task-status-badge" class="status-badge status-{{ task.status }}">
-                        {% if task.status == "in_progress" %}<span class="status-live-dot"></span>{% else %}<i class="bi bi-circle-fill" style="font-size:0.4rem"></i>{% endif %}
+                        {% if task.status == "in_progress" %}<i class="bi bi-play-circle"></i>{% elif task.status == "reviewing" %}<i class="bi bi-eye"></i>{% elif task.status == "completed" %}<i class="bi bi-check-circle"></i>{% elif task.status == "failed" %}<i class="bi bi-x-circle"></i>{% else %}<i class="bi bi-clock"></i>{% endif %}
                         <span id="task-status-label">{{ task.get_status_display }}</span>
                     </span>
                 </div>
                 <h1 class="h3 fw-bold mb-1" style="color:var(--tars-text)">{{ task.title }}</h1>
                 <div class="d-flex flex-wrap align-items-center gap-2">
-                    <i class="bi bi-folder2-open" style="color:var(--tars-muted); font-size:0.85rem"></i>
+                    <i class="bi bi-folder" style="color:var(--tars-muted); font-size:0.85rem"></i>
                     <a href="{% url 'projects:detail' pk=task.project.pk %}"
                        class="small" style="color:var(--tars-muted); text-decoration:none; transition:color 0.2s"
                        onmouseover="this.style.color='var(--tars-text)'" onmouseout="this.style.color='var(--tars-muted)'">
@@ -345,9 +345,9 @@
             {% if task.pr_url %}
             <a href="{{ task.pr_url }}" target="_blank" rel="noopener noreferrer"
                class="btn btn-outline-accent btn-sm">
-                <i class="bi bi-git me-1"></i> View Pull Request
+                <i class="bi bi-box-arrow-up-right me-1"></i> View Pull Request
             </a>
-            {% endif %}
+{% endif %}
             </div>
         </div>
     </div>
@@ -392,8 +392,8 @@
                             {% elif task.status == "completed" %}
                             {% if task.pr_url %}Done!<div class="pr-card">
                                 <div class="pr-card-title">{{ task.title }}</div>
-                                <div class="pr-card-repo"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" style="flex-shrink:0"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> {{ task.project.github_repo }}</div>
-                                <a href="{{ task.pr_url }}" target="_blank" rel="noopener noreferrer" class="pr-card-btn"><svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" style="flex-shrink:0"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg> View Pull Request</a>
+                                <div class="pr-card-repo"><i class="bi bi-github" style="flex-shrink:0"></i> {{ task.project.github_repo }}</div>
+                                <a href="{{ task.pr_url }}" target="_blank" rel="noopener noreferrer" class="pr-card-btn"><i class="bi bi-box-arrow-up-right" style="flex-shrink:0"></i> View Pull Request</a>
                             </div>{% else %}Done!{% endif %}
                             {% elif task.status == "failed" %}
                             Something went wrong{% if task.error_message %}: {{ task.error_message }}{% endif %}
@@ -436,7 +436,7 @@
             <p class="section-label">Pull Request</p>
             <div class="card-surface p-4 mb-5 d-flex align-items-center gap-3">
                 <div style="width:42px;height:42px;border-radius:10px;background:rgba(16,185,129,0.1);display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                    <i class="bi bi-git" style="color:var(--tars-green);font-size:1.2rem"></i>
+                    <i class="bi bi-box-arrow-up-right" style="color:var(--tars-green);font-size:1.2rem"></i>
                 </div>
                 <div class="flex-grow-1" style="min-width:0">
                     <div class="small fw-semibold" style="color:var(--tars-text)">Pull Request Opened</div>
@@ -465,11 +465,11 @@
                     <div class="timeline-item" data-status="{{ step.status }}" data-icon="{{ step.icon }}">
                         <div class="timeline-dot dot-{{ step.state }}">
                             {% if step.state == "done" %}
-                            <i class="bi bi-check"></i>
+                            <i class="bi bi-check-circle"></i>
                             {% elif step.state == "current" %}
-                            <i class="bi bi-circle-fill" style="font-size:0.45rem"></i>
+                            <i class="bi bi-play-circle" style="font-size:0.7rem"></i>
                             {% elif step.state == "failed" %}
-                            <i class="bi bi-x"></i>
+                            <i class="bi bi-x-circle"></i>
                             {% endif %}
                         </div>
                         <div class="small timeline-label-{{ step.state }}">
@@ -499,7 +499,7 @@
                     <span class="info-row-value">#{{ task.pk }}</span>
                 </div>
                 <div class="info-row">
-                    <span class="info-row-label"><i class="bi bi-folder2-open me-1"></i>Project</span>
+                    <span class="info-row-label"><i class="bi bi-folder me-1"></i>Project</span>
                     <span class="info-row-value">
                         <a href="{% url 'projects:detail' pk=task.project.pk %}"
                            style="color:var(--tars-accent); text-decoration:none">
@@ -567,9 +567,13 @@
     function updateBadge(status, statusDisplay) {
         STATUS_CLASSES.forEach(function (c) { badge.classList.remove(c); });
         badge.classList.add('status-' + status);
-        var icon = status === 'in_progress'
-            ? '<span class="status-live-dot"></span>'
-            : '<i class="bi bi-circle-fill" style="font-size:0.4rem"></i>';
+        var iconMap = {
+            'in_progress': '<i class="bi bi-play-circle"></i>',
+            'reviewing':   '<i class="bi bi-eye"></i>',
+            'completed':   '<i class="bi bi-check-circle"></i>',
+            'failed':      '<i class="bi bi-x-circle"></i>'
+        };
+        var icon = iconMap[status] || '<i class="bi bi-clock"></i>';
         badge.innerHTML = icon + '<span id="task-status-label">' + statusDisplay + '</span>';
     }
 
@@ -577,7 +581,7 @@
         if (!heroPrBtn || heroPrBtn.querySelector('a')) return;
         heroPrBtn.innerHTML =
             '<a href="' + prUrl + '" target="_blank" rel="noopener noreferrer" class="btn btn-outline-accent btn-sm">' +
-            '<i class="bi bi-git me-1"></i> View Pull Request</a>';
+            '<i class="bi bi-box-arrow-up-right me-1"></i> View Pull Request</a>';
     }
 
     var scheme = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -723,9 +727,9 @@
 
             // Rebuild dot glyph
             var glyph = '';
-            if (state === 'done') glyph = '<i class="bi bi-check"></i>';
-            else if (state === 'current') glyph = '<i class="bi bi-circle-fill" style="font-size:0.45rem"></i>';
-            else if (state === 'failed') glyph = '<i class="bi bi-x"></i>';
+            if (state === 'done') glyph = '<i class="bi bi-check-circle"></i>';
+            else if (state === 'current') glyph = '<i class="bi bi-play-circle" style="font-size:0.7rem"></i>';
+            else if (state === 'failed') glyph = '<i class="bi bi-x-circle"></i>';
             dot.innerHTML = glyph;
         });
     }
@@ -738,7 +742,7 @@
             .replace(/"/g, '&quot;');
     }
 
-    var _GH_SVG = '<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" style="flex-shrink:0"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>';
+    var _GH_SVG = '<i class="bi bi-github" style="flex-shrink:0"></i>';
 
     function buildPrCard(prUrl, fallbackTitle) {
         var m = prUrl.match(/github\.com\/([^/]+\/[^/]+)\/pull\/(\d+)/);
