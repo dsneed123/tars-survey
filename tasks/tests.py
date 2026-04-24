@@ -581,6 +581,103 @@ class ApiTaskListTests(TestCase):
         resp = self.client.delete(self.url)
         self.assertEqual(resp.status_code, 405)
 
+    def test_filter_by_status(self):
+        make_task(self.project, self.user, title="Pending", status="pending")
+        make_task(self.project, self.user, title="Done", status="completed")
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url, {"status": "completed"})
+        data = resp.json()
+        self.assertEqual(len(data["tasks"]), 1)
+        self.assertEqual(data["tasks"][0]["title"], "Done")
+
+    def test_invalid_status_returns_400(self):
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url, {"status": "flying"})
+        self.assertEqual(resp.status_code, 400)
+        self.assertIn("Invalid status", resp.json()["error"])
+
+    def test_filter_by_project(self):
+        project2 = make_project(self.user, name="P2", github_repo="owner/repo2")
+        make_task(self.project, self.user, title="Task A")
+        make_task(project2, self.user, title="Task B")
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url, {"project": self.project.pk})
+        data = resp.json()
+        self.assertEqual(len(data["tasks"]), 1)
+        self.assertEqual(data["tasks"][0]["title"], "Task A")
+
+    def test_search_by_title(self):
+        make_task(self.project, self.user, title="Fix login bug")
+        make_task(self.project, self.user, title="Add dark mode")
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url, {"q": "login"})
+        data = resp.json()
+        self.assertEqual(len(data["tasks"]), 1)
+        self.assertEqual(data["tasks"][0]["title"], "Fix login bug")
+
+    def test_search_by_description(self):
+        make_task(self.project, self.user, title="Task A", description="Refactor the auth module")
+        make_task(self.project, self.user, title="Task B", description="Improve UI colors")
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url, {"q": "auth"})
+        data = resp.json()
+        self.assertEqual(len(data["tasks"]), 1)
+        self.assertEqual(data["tasks"][0]["title"], "Task A")
+
+    def test_search_is_case_insensitive(self):
+        make_task(self.project, self.user, title="Fix Login Bug")
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url, {"q": "login"})
+        self.assertEqual(len(resp.json()["tasks"]), 1)
+
+    def test_sort_ascending(self):
+        make_task(self.project, self.user, title="First")
+        make_task(self.project, self.user, title="Second")
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url, {"sort": "created_at"})
+        titles = [t["title"] for t in resp.json()["tasks"]]
+        self.assertEqual(titles, ["First", "Second"])
+
+    def test_sort_descending_is_default(self):
+        make_task(self.project, self.user, title="First")
+        make_task(self.project, self.user, title="Second")
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        titles = [t["title"] for t in resp.json()["tasks"]]
+        self.assertEqual(titles, ["Second", "First"])
+
+    def test_invalid_sort_defaults_to_newest_first(self):
+        make_task(self.project, self.user, title="First")
+        make_task(self.project, self.user, title="Second")
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url, {"sort": "title"})
+        titles = [t["title"] for t in resp.json()["tasks"]]
+        self.assertEqual(titles, ["Second", "First"])
+
+    def test_combined_filters(self):
+        project2 = make_project(self.user, name="P2", github_repo="owner/repo2")
+        make_task(self.project, self.user, title="Fix auth bug", status="completed")
+        make_task(self.project, self.user, title="Add auth token", status="pending")
+        make_task(project2, self.user, title="Fix auth issue", status="completed")
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url, {
+            "status": "completed",
+            "project": self.project.pk,
+            "q": "auth",
+        })
+        data = resp.json()
+        self.assertEqual(len(data["tasks"]), 1)
+        self.assertEqual(data["tasks"][0]["title"], "Fix auth bug")
+
 
 # ---------------------------------------------------------------------------
 # POST /api/tasks/  — task creation via API

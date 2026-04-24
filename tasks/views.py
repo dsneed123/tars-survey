@@ -15,6 +15,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.core.paginator import EmptyPage, Paginator
+from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -53,6 +54,7 @@ _VALID_TRANSITIONS = {
 
 _IDEMPOTENCY_TTL = 86_400  # 24 hours
 _PR_DIFF_CACHE_TTL = 3_600  # 1 hour
+_VALID_SORT_FIELDS = {"created_at", "-created_at"}
 
 
 def _fetch_pr_diff_summary(pr_url):
@@ -289,6 +291,14 @@ def task_queue(request):
         "failed": "failed",
     }
 
+    # Query parameter filters
+    status_filter = request.GET.get("status", "").strip()
+    project_filter = request.GET.get("project", "").strip()
+    q = request.GET.get("q", "").strip()
+    sort = request.GET.get("sort", "").strip()
+    if sort not in _VALID_SORT_FIELDS:
+        sort = ""
+
     status_order = Case(
         When(status="in_progress", then=Value(0)),
         When(status="assigned", then=Value(1)),
@@ -300,12 +310,24 @@ def task_queue(request):
         default=Value(7),
         output_field=IntegerField(),
     )
-    tasks = list(
-        Task.objects.filter(created_by=request.user)
-        .select_related("project")
-        .annotate(status_order=status_order)
-        .order_by("status_order", "priority", "created_at")
-    )
+
+    base_qs = Task.objects.filter(created_by=request.user).select_related("project")
+
+    if status_filter and status_filter in _TARS_STATUS_CHOICES:
+        base_qs = base_qs.filter(status=status_filter)
+    if project_filter:
+        base_qs = base_qs.filter(project_id=project_filter)
+    if q:
+        base_qs = base_qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
+
+    if sort:
+        tasks = list(base_qs.annotate(status_order=status_order).order_by(sort))
+    else:
+        tasks = list(
+            base_qs
+            .annotate(status_order=status_order)
+            .order_by("status_order", "priority", "created_at")
+        )
 
     today = timezone.now().date()
     completed_today = Task.objects.filter(
@@ -406,6 +428,11 @@ def task_queue(request):
         "completed_count": completed_count,
         "failed_count": failed_count,
         "project_health": project_health,
+        "status_filter": status_filter,
+        "project_filter": project_filter,
+        "q": q,
+        "sort": sort,
+        "status_choices": Task.STATUS_CHOICES,
     })
 
 
@@ -422,7 +449,6 @@ def task_list(request):
     if status_filter:
         tasks = tasks.filter(status=status_filter)
 
-    from django.db.models import Q
     projects = Project.objects.filter(
         Q(owner=request.user) | Q(team__owner=request.user) | Q(team__memberships__user=request.user),
         is_active=True,
@@ -670,11 +696,29 @@ def api_task_list(request):
     except (ValueError, TypeError):
         return JsonResponse({"error": "Invalid page or per_page parameter"}, status=400)
 
-    qs = (
-        Task.objects.filter(created_by=request.user)
-        .select_related("project")
-        .order_by("-created_at")
-    )
+    status_filter = request.GET.get("status", "").strip()
+    if status_filter and status_filter not in _TARS_STATUS_CHOICES:
+        return JsonResponse(
+            {"error": f"Invalid status. Must be one of: {sorted(_TARS_STATUS_CHOICES)}"},
+            status=400,
+        )
+
+    project_id = request.GET.get("project", "").strip()
+    q = request.GET.get("q", "").strip()
+    sort = request.GET.get("sort", "-created_at").strip()
+    if sort not in _VALID_SORT_FIELDS:
+        sort = "-created_at"
+
+    qs = Task.objects.filter(created_by=request.user).select_related("project")
+
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+    if project_id:
+        qs = qs.filter(project_id=project_id)
+    if q:
+        qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
+
+    qs = qs.order_by(sort)
 
     paginator = Paginator(qs, per_page)
     try:
@@ -739,8 +783,6 @@ def api_task_create(request):
         return JsonResponse({"error": "project_id is required"}, status=400)
     if not title:
         return JsonResponse({"error": "title is required"}, status=400)
-
-    from django.db.models import Q
 
     project = (
         Project.objects.filter(
