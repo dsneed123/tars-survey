@@ -916,6 +916,162 @@ class ApiTaskStatusTests(TestCase):
         self._post({"status": "in_progress"})
         mock_bcast.assert_called_once()
 
+    # --- Status transition validation ---
+
+    @override_settings(TARS_API_KEY="testkey")
+    def test_rejects_completed_to_pending_transition(self):
+        self.task.status = "completed"
+        self.task.save(update_fields=["status"])
+        resp = self._post({"status": "pending"})
+        self.assertEqual(resp.status_code, 409)
+        self.assertIn("Invalid status transition", resp.json()["error"])
+
+    @override_settings(TARS_API_KEY="testkey")
+    def test_rejects_failed_to_in_progress_transition(self):
+        self.task.status = "failed"
+        self.task.save(update_fields=["status"])
+        resp = self._post({"status": "in_progress"})
+        self.assertEqual(resp.status_code, 409)
+
+    @override_settings(TARS_API_KEY="testkey")
+    def test_rejects_completed_to_failed_transition(self):
+        self.task.status = "completed"
+        self.task.save(update_fields=["status"])
+        resp = self._post({"status": "failed"})
+        self.assertEqual(resp.status_code, 409)
+
+    @patch("tasks.views._broadcast_task_update")
+    @override_settings(TARS_API_KEY="testkey")
+    def test_allows_same_status_idempotent_update(self, _mock_bcast):
+        self.task.status = "completed"
+        self.task.save(update_fields=["status"])
+        resp = self._post({"status": "completed"})
+        self.assertEqual(resp.status_code, 200)
+
+    @patch("tasks.views._broadcast_task_update")
+    @override_settings(TARS_API_KEY="testkey")
+    def test_allows_valid_transition_pending_to_in_progress(self, _mock_bcast):
+        resp = self._post({"status": "in_progress"})
+        self.assertEqual(resp.status_code, 200)
+
+    @patch("tasks.views._broadcast_task_update")
+    @override_settings(TARS_API_KEY="testkey")
+    def test_allows_valid_transition_in_progress_to_reviewing(self, _mock_bcast):
+        self.task.status = "in_progress"
+        self.task.save(update_fields=["status"])
+        resp = self._post({"status": "reviewing"})
+        self.assertEqual(resp.status_code, 200)
+
+    # --- Idempotency key ---
+
+    _LOCMEM_CACHE = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
+
+    @patch("tasks.views._broadcast_task_update")
+    @override_settings(TARS_API_KEY="testkey", CACHES=_LOCMEM_CACHE)
+    def test_idempotency_key_returns_cached_response(self, _mock_bcast):
+        from django.core.cache import cache
+        cache.clear()
+
+        resp1 = self.client.post(
+            self.url,
+            data=json.dumps({"status": "in_progress"}),
+            content_type="application/json",
+            HTTP_X_API_KEY="testkey",
+            HTTP_IDEMPOTENCY_KEY="idem-key-abc",
+        )
+        self.assertEqual(resp1.status_code, 200)
+        self.assertEqual(resp1.json()["status"], "in_progress")
+
+        # Second request with same key but different payload returns first response
+        resp2 = self.client.post(
+            self.url,
+            data=json.dumps({"status": "reviewing"}),
+            content_type="application/json",
+            HTTP_X_API_KEY="testkey",
+            HTTP_IDEMPOTENCY_KEY="idem-key-abc",
+        )
+        self.assertEqual(resp2.status_code, 200)
+        self.assertEqual(resp2.json()["status"], "in_progress")
+
+    @patch("tasks.views._broadcast_task_update")
+    @override_settings(TARS_API_KEY="testkey", CACHES=_LOCMEM_CACHE)
+    def test_idempotency_key_in_body_is_accepted(self, _mock_bcast):
+        from django.core.cache import cache
+        cache.clear()
+
+        resp1 = self.client.post(
+            self.url,
+            data=json.dumps({"status": "in_progress", "idempotency_key": "body-key-xyz"}),
+            content_type="application/json",
+            HTTP_X_API_KEY="testkey",
+        )
+        self.assertEqual(resp1.status_code, 200)
+
+        resp2 = self.client.post(
+            self.url,
+            data=json.dumps({"status": "reviewing", "idempotency_key": "body-key-xyz"}),
+            content_type="application/json",
+            HTTP_X_API_KEY="testkey",
+        )
+        self.assertEqual(resp2.json()["status"], "in_progress")
+
+    @patch("tasks.views._broadcast_task_update")
+    @override_settings(TARS_API_KEY="testkey", CACHES=_LOCMEM_CACHE)
+    def test_different_idempotency_keys_are_independent(self, _mock_bcast):
+        from django.core.cache import cache
+        cache.clear()
+
+        self.client.post(
+            self.url,
+            data=json.dumps({"status": "in_progress"}),
+            content_type="application/json",
+            HTTP_X_API_KEY="testkey",
+            HTTP_IDEMPOTENCY_KEY="key-A",
+        )
+        self.task.refresh_from_db()
+        self.task.status = "in_progress"
+        self.task.save(update_fields=["status"])
+
+        resp = self.client.post(
+            self.url,
+            data=json.dumps({"status": "reviewing"}),
+            content_type="application/json",
+            HTTP_X_API_KEY="testkey",
+            HTTP_IDEMPOTENCY_KEY="key-B",
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.json()["status"], "reviewing")
+
+    # --- Extended response data ---
+
+    @patch("tasks.views._broadcast_task_update")
+    @override_settings(TARS_API_KEY="testkey")
+    def test_response_includes_extended_task_fields(self, _mock_bcast):
+        resp = self._post({"status": "in_progress", "branch_name": "feature/test-branch"})
+        data = resp.json()
+        self.assertIn("branch_name", data)
+        self.assertIn("pr_url", data)
+        self.assertIn("worker_id", data)
+        self.assertIn("started_at", data)
+        self.assertIn("completed_at", data)
+        self.assertIn("updated_at", data)
+        self.assertEqual(data["branch_name"], "feature/test-branch")
+
+    @patch("tasks.views._broadcast_task_update")
+    @override_settings(TARS_API_KEY="testkey")
+    def test_response_started_at_set_for_in_progress(self, _mock_bcast):
+        resp = self._post({"status": "in_progress"})
+        data = resp.json()
+        self.assertIsNotNone(data["started_at"])
+        self.assertIsNone(data["completed_at"])
+
+    @patch("tasks.views._broadcast_task_update")
+    @override_settings(TARS_API_KEY="testkey")
+    def test_response_completed_at_set_for_completed(self, _mock_bcast):
+        resp = self._post({"status": "completed"})
+        data = resp.json()
+        self.assertIsNotNone(data["completed_at"])
+
 
 # ---------------------------------------------------------------------------
 # GET /api/tasks/updates/  — polling fallback for WebSocket reconnect
