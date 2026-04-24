@@ -1990,3 +1990,40 @@ class GitHubWebhookTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.task.refresh_from_db()
         self.assertEqual(self.task.status, "completed")
+
+
+# ---------------------------------------------------------------------------
+# Health check
+# ---------------------------------------------------------------------------
+
+_HEALTH_URL = "/api/health/"
+
+
+class ApiHealthTests(TestCase):
+    def test_healthy_returns_200(self):
+        resp = self.client.get(_HEALTH_URL)
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data["status"], "ok")
+        self.assertTrue(data["db"])
+        self.assertEqual(data["version"], "1.0")
+        self.assertIn("redis", data)
+
+    def test_redis_false_with_in_memory_layer(self):
+        # InMemoryChannelLayer is used in tests — redis should be False
+        resp = self.client.get(_HEALTH_URL)
+        data = resp.json()
+        self.assertFalse(data["redis"])
+
+    def test_only_get_allowed(self):
+        resp = self.client.post(_HEALTH_URL)
+        self.assertEqual(resp.status_code, 405)
+
+    @patch("tars_site.views.connection")
+    def test_db_failure_returns_503(self, mock_conn):
+        mock_conn.cursor.side_effect = Exception("DB down")
+        resp = self.client.get(_HEALTH_URL)
+        self.assertEqual(resp.status_code, 503)
+        data = resp.json()
+        self.assertEqual(data["status"], "error")
+        self.assertFalse(data["db"])
