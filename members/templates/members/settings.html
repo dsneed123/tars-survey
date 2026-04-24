@@ -131,7 +131,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 1.1rem 1.5rem;
-    border-bottom: 1px solid rgba(31,41,55,0.7);
+    border-bottom: 1px solid var(--tars-border);
     gap: 1rem;
 }
 
@@ -195,7 +195,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 1rem 1.5rem;
-    border-bottom: 1px solid rgba(31,41,55,0.7);
+    border-bottom: 1px solid var(--tars-border);
     gap: 1rem;
 }
 
@@ -333,6 +333,21 @@
                         Save profile
                     </button>
                 </form>
+            </div>
+        </div>
+
+        <!-- ── Appearance ──────────────────────────────────── -->
+        <p class="section-label">Appearance</p>
+        <div class="pref-card mb-5">
+            <div class="pref-row" style="border-bottom:none">
+                <div class="pref-info">
+                    <div class="pref-title">Dark mode</div>
+                    <div class="pref-desc">Switch between dark and light interface. Defaults to your system preference.</div>
+                </div>
+                <label class="toggle-switch" aria-label="Toggle dark mode">
+                    <input type="checkbox" id="settings-dark-mode-toggle">
+                    <span class="toggle-slider"></span>
+                </label>
             </div>
         </div>
 
@@ -524,4 +539,17 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    var toggle = document.getElementById('settings-dark-mode-toggle');
+    if (!toggle) return;
+    toggle.checked = (document.documentElement.getAttribute('data-theme') || 'dark') === 'dark';
+    toggle.addEventListener('change', function () {
+        if (window.setTheme) window.setTheme(this.checked ? 'dark' : 'light');
+    });
+}());
+</script>
 {% endblock %}
