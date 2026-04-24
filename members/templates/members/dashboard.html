@@ -614,6 +614,61 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
     .bulk-add-btn { width: 44px; height: 44px; font-size: 17px; }
 }
 
+/* ── Task templates dropdown ───────────────────────────── */
+.tmpl-btn-wrap { position: relative; flex-shrink: 0; }
+.tmpl-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: none;
+    color: #444;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    padding: 0;
+    font-size: 15px;
+    touch-action: manipulation;
+}
+.tmpl-btn:hover { color: #aaa; background: rgba(255,255,255,0.05); }
+@media (max-width: 768px) {
+    .tmpl-btn { width: 44px; height: 44px; font-size: 17px; }
+}
+.tmpl-dropdown {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 10px);
+    right: 0;
+    background: #141414;
+    border: 1px solid #272727;
+    border-radius: 12px;
+    padding: 6px;
+    z-index: 200;
+    min-width: 200px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+}
+.tmpl-dropdown.show { display: block; }
+.tmpl-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #ccc;
+    font-size: 13px;
+    transition: background 0.12s, color 0.12s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    white-space: nowrap;
+}
+.tmpl-item:hover { background: #1e1e1e; color: #fff; }
+.tmpl-item i { font-size: 14px; color: #6366f1; flex-shrink: 0; }
+
 /* ── Project sheet overlay (mobile) ───────────────────── */
 .project-sheet-overlay {
     display: none;
@@ -1310,6 +1365,19 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
                         <textarea name="title" class="chat-textarea" id="chatInput"
                                   placeholder="Ask TARS to code something..." rows="1"
                                   onkeydown="handleKey(event)" oninput="autoGrow(this); updateSend()"></textarea>
+                        <div class="tmpl-btn-wrap">
+                            <button type="button" class="tmpl-btn" id="tmplBtn" title="Task templates" aria-label="Task templates" onclick="toggleTemplates(event)">
+                                <i class="bi bi-card-list" aria-hidden="true"></i>
+                            </button>
+                            <div class="tmpl-dropdown" id="tmplDropdown">
+                                {% for tpl in task_templates %}
+                                <button type="button" class="tmpl-item" onclick="applyTemplate('{{ tpl.id }}')">
+                                    <i class="bi {{ tpl.icon }}" aria-hidden="true"></i>
+                                    {{ tpl.label }}
+                                </button>
+                                {% endfor %}
+                            </div>
+                        </div>
                         <button type="button" class="bulk-add-btn" id="bulkAddBtn" title="Bulk add tasks" aria-label="Bulk add tasks" onclick="openBulkModal()">
                             <i class="bi bi-list-ul" aria-hidden="true"></i>
                         </button>
@@ -1374,6 +1442,9 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 {% endblock %}
 
 {% block extra_scripts %}
+<script>
+var _TASK_TEMPLATES = {{ task_templates_json|safe }};
+</script>
 <script>
 // ── Scroll management ──────────────────────────────────────
 var feed = document.getElementById('chatFeed');
@@ -2602,6 +2673,50 @@ function submitBulkTasks() {
         closeBulkModal();
         appendTarsErrorBubble("Couldn't add bulk tasks — check your connection and try again.", null);
     });
+}
+</script>
+
+<script>
+// ── Task templates ─────────────────────────────────────────
+
+function toggleTemplates(e) {
+    e.stopPropagation();
+    var dd = document.getElementById('tmplDropdown');
+    if (!dd) return;
+    var isOpen = dd.classList.contains('show');
+    dd.classList.toggle('show', !isOpen);
+    if (!isOpen) {
+        document.addEventListener('click', _tmplOutsideClick);
+    } else {
+        document.removeEventListener('click', _tmplOutsideClick);
+    }
+}
+
+function _tmplOutsideClick(e) {
+    var wrap = document.querySelector('.tmpl-btn-wrap');
+    if (wrap && !wrap.contains(e.target)) {
+        var dd = document.getElementById('tmplDropdown');
+        if (dd) dd.classList.remove('show');
+        document.removeEventListener('click', _tmplOutsideClick);
+    }
+}
+
+function closeTemplates() {
+    var dd = document.getElementById('tmplDropdown');
+    if (dd) dd.classList.remove('show');
+    document.removeEventListener('click', _tmplOutsideClick);
+}
+
+function applyTemplate(id) {
+    var tpl = _TASK_TEMPLATES.find(function(t) { return t.id === id; });
+    if (!tpl) return;
+    var ta = document.getElementById('chatInput');
+    if (!ta) return;
+    ta.value = tpl.text;
+    autoGrow(ta);
+    updateSend();
+    ta.focus();
+    closeTemplates();
 }
 </script>
 
