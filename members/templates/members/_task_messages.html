@@ -15,7 +15,7 @@
     </div>
 </div>
 
-<div class="chat-message tars-msg" data-task-id="{{ task.pk }}" data-timestamp="{{ task.created_at|date:'c' }}">
+<div class="chat-message tars-msg" data-task-id="{{ task.pk }}" data-task-title="{{ task.title|escapejs }}" data-task-project="{{ task.project.name|escapejs }}" data-timestamp="{{ task.created_at|date:'c' }}">
     <div class="msg-avatar tars-avatar"><i class="bi bi-robot" aria-hidden="true"></i></div>
     <div class="msg-body">
         <div class="msg-sender">TARS</div>
@@ -90,7 +90,7 @@
             {% endif %}
         </div>
         <div class="task-detail-panel" id="task-detail-panel-{{ task.pk }}"></div>
-        <div class="msg-time">{% if task.completed_at %}<span class="msg-timestamp" data-timestamp="{{ task.completed_at|date:'c' }}">{{ task.completed_at|timesince }} ago</span>{% elif task.started_at %}<span class="msg-timestamp" data-timestamp="{{ task.started_at|date:'c' }}">{{ task.started_at|timesince }} ago</span>{% else %}<span class="msg-timestamp" data-timestamp="{{ task.created_at|date:'c' }}">{{ task.created_at|timesince }} ago</span>{% endif %} &middot; <button class="task-expand-btn" onclick="toggleTaskDetail(this, {{ task.pk }})" aria-expanded="false"><span>Details</span><i class="bi bi-chevron-down"></i></button></div>
+        <div class="msg-time">{% if task.completed_at %}<span class="msg-timestamp" data-timestamp="{{ task.completed_at|date:'c' }}">{{ task.completed_at|timesince }} ago</span>{% elif task.started_at %}<span class="msg-timestamp" data-timestamp="{{ task.started_at|date:'c' }}">{{ task.started_at|timesince }} ago</span>{% else %}<span class="msg-timestamp" data-timestamp="{{ task.created_at|date:'c' }}">{{ task.created_at|timesince }} ago</span>{% endif %} &middot; <button class="task-expand-btn" onclick="toggleTaskDetail(this, {{ task.pk }})" aria-expanded="false"><span>Details</span><i class="bi bi-chevron-down"></i></button> &middot; <button class="pin-btn{% if task.is_pinned %} pinned{% endif %}" onclick="togglePin({{ task.pk }}, this); event.stopPropagation();" data-task-id="{{ task.pk }}" title="{% if task.is_pinned %}Unpin task{% else %}Pin task{% endif %}" aria-label="{% if task.is_pinned %}Unpin task{% else %}Pin task{% endif %}"><i class="bi bi-pin{% if task.is_pinned %}-fill{% endif %}"></i></button></div>
     </div>
 </div>
 

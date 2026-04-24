@@ -46,13 +46,16 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 /* ── Chat feed wrapper + messages feed ─────────────────── */
 .chat-feed-wrapper {
     flex: 1;
+    display: flex;
+    flex-direction: column;
     position: relative;
     overflow: hidden;
     min-height: 0;
 }
 
 .chat-feed {
-    height: 100%;
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch; /* iOS momentum scrolling */
     overscroll-behavior: contain; /* prevent parent scroll when feed hits top/bottom */
@@ -96,6 +99,80 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 .chat-feed::-webkit-scrollbar { width: 6px; }
 .chat-feed::-webkit-scrollbar-track { background: transparent; }
 .chat-feed::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 6px; }
+
+/* ── Pinned tasks section ──────────────────────────────── */
+.pinned-section {
+    flex-shrink: 0;
+    background: rgba(99,102,241,0.04);
+    border-bottom: 1px solid rgba(99,102,241,0.12);
+}
+.pinned-header {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 7px 20px 5px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #555;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.pinned-header .bi-pin-fill { color: #6366f1; font-size: 11px; }
+.pinned-count { font-weight: 400; color: #444; }
+.pinned-list {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 20px 7px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.pinned-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.12s;
+    min-width: 0;
+}
+.pinned-item:hover { background: rgba(255,255,255,0.04); }
+.pinned-title {
+    flex: 1;
+    font-size: 13px;
+    color: #ccc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+.pinned-status-badge { flex-shrink: 0; }
+
+/* ── Pin button ────────────────────────────────────────── */
+.pin-btn {
+    background: none;
+    border: none;
+    color: #444;
+    font-size: 12px;
+    padding: 0 2px;
+    cursor: pointer;
+    vertical-align: middle;
+    line-height: 1;
+    transition: color 0.15s, opacity 0.15s;
+    opacity: 0.55;
+}
+.pin-btn:hover { color: #6366f1; opacity: 1; }
+.pin-btn.pinned { color: #6366f1; opacity: 1; }
+
+/* ── Task highlight on scroll-to ───────────────────────── */
+@keyframes task-highlight-pulse {
+    0%,100% { background: transparent; }
+    30% { background: rgba(99,102,241,0.08); }
+}
+.task-highlight { animation: task-highlight-pulse 1.2s ease-out; border-radius: 8px; }
 
 .chat-container {
     max-width: 760px;
@@ -1244,6 +1321,24 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
         </div>
     </div>
     {% endif %}
+
+    <!-- Pinned tasks section -->
+    <div class="pinned-section" id="pinnedSection"{% if not pinned_tasks %} hidden{% endif %}>
+        <div class="pinned-header">
+            <i class="bi bi-pin-fill" aria-hidden="true"></i> Pinned
+            <span id="pinnedCount" class="pinned-count">{{ pinned_tasks|length }}/5</span>
+        </div>
+        <div class="pinned-list" id="pinnedList">
+            {% for task in pinned_tasks %}
+            <div class="pinned-item" id="pinned-item-{{ task.pk }}" data-task-id="{{ task.pk }}" onclick="scrollToTask({{ task.pk }})">
+                <span class="pinned-title">{{ task.title|truncatechars:70 }}</span>
+                <span class="status-badge badge-{{ task.status }} pinned-status-badge">{{ task.get_status_display }}</span>
+                <button class="pin-btn pinned" onclick="togglePin({{ task.pk }}, this); event.stopPropagation();" data-task-id="{{ task.pk }}" title="Unpin task" aria-label="Unpin task"><i class="bi bi-pin-fill"></i></button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
     <div class="chat-feed" id="chatFeed" role="log" aria-live="polite" aria-label="Chat messages" tabindex="0">
         <div class="chat-container">
             <div id="loadOlderIndicator" class="load-older-indicator" aria-hidden="true">
@@ -1324,7 +1419,7 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
             </div>
 
             <!-- TARS response -->
-            <div class="chat-message tars-msg" role="article" aria-label="TARS: {{ task.title }}" tabindex="-1" data-task-id="{{ task.pk }}" data-timestamp="{{ task.created_at|date:'c' }}">
+            <div class="chat-message tars-msg" role="article" aria-label="TARS: {{ task.title }}" tabindex="-1" data-task-id="{{ task.pk }}" data-task-title="{{ task.title|escapejs }}" data-task-project="{{ task.project.name|escapejs }}" data-timestamp="{{ task.created_at|date:'c' }}">
                 <div class="msg-avatar tars-avatar"><i class="bi bi-robot" aria-hidden="true"></i></div>
                 <div class="msg-body">
                     <div class="msg-sender">TARS</div>
@@ -1397,7 +1492,7 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
                         {% endif %}
                     </div>
                     <div class="task-detail-panel" id="task-detail-panel-{{ task.pk }}"></div>
-                    <div class="msg-time">{% if task.completed_at %}<span class="msg-timestamp" data-timestamp="{{ task.completed_at|date:'c' }}">{{ task.completed_at|timesince }} ago</span>{% elif task.started_at %}<span class="msg-timestamp" data-timestamp="{{ task.started_at|date:'c' }}">{{ task.started_at|timesince }} ago</span>{% else %}<span class="msg-timestamp" data-timestamp="{{ task.created_at|date:'c' }}">{{ task.created_at|timesince }} ago</span>{% endif %} &middot; <button class="task-expand-btn" onclick="toggleTaskDetail(this, {{ task.pk }})" aria-expanded="false"><span>Details</span><i class="bi bi-chevron-down"></i></button></div>
+                    <div class="msg-time">{% if task.completed_at %}<span class="msg-timestamp" data-timestamp="{{ task.completed_at|date:'c' }}">{{ task.completed_at|timesince }} ago</span>{% elif task.started_at %}<span class="msg-timestamp" data-timestamp="{{ task.started_at|date:'c' }}">{{ task.started_at|timesince }} ago</span>{% else %}<span class="msg-timestamp" data-timestamp="{{ task.created_at|date:'c' }}">{{ task.created_at|timesince }} ago</span>{% endif %} &middot; <button class="task-expand-btn" onclick="toggleTaskDetail(this, {{ task.pk }})" aria-expanded="false"><span>Details</span><i class="bi bi-chevron-down"></i></button> &middot; <button class="pin-btn{% if task.is_pinned %} pinned{% endif %}" onclick="togglePin({{ task.pk }}, this); event.stopPropagation();" data-task-id="{{ task.pk }}" title="{% if task.is_pinned %}Unpin task{% else %}Pin task{% endif %}" aria-label="{% if task.is_pinned %}Unpin task{% else %}Pin task{% endif %}"><i class="bi bi-pin{% if task.is_pinned %}-fill{% endif %}"></i></button></div>
                 </div>
             </div>
 
@@ -2615,7 +2710,8 @@ function _resolvePendingBubble(bubbleEl, taskId) {
         var nowIso = new Date().toISOString();
         timeEl.innerHTML = '<span class="msg-timestamp" data-timestamp="' + nowIso + '">just now</span>' +
             ' &middot; <button class="task-expand-btn" onclick="toggleTaskDetail(this, ' + parseInt(taskId, 10) + ')" aria-expanded="false">' +
-            '<span>Details</span><i class="bi bi-chevron-down"></i></button>';
+            '<span>Details</span><i class="bi bi-chevron-down"></i></button>' +
+            ' &middot; <button class="pin-btn" onclick="togglePin(' + parseInt(taskId, 10) + ', this); event.stopPropagation();" data-task-id="' + parseInt(taskId, 10) + '" title="Pin task" aria-label="Pin task"><i class="bi bi-pin"></i></button>';
     }
     if (typeof window._queueWidgetUpdate === 'function') {
         window._queueWidgetUpdate({ task_id: taskId, status: 'pending', status_display: 'Pending' });
@@ -3108,6 +3204,98 @@ function buildPrDiffHtml(data) {
         html += '</ul>';
     }
     return html;
+}
+</script>
+
+<script>
+// ── Task pinning ───────────────────────────────────────────
+
+function togglePin(pk, btn) {
+    var wasPinned = btn.classList.contains('pinned');
+
+    // Optimistic update
+    _setPinBtnState(btn, !wasPinned);
+
+    fetch('/api/tasks/' + pk + '/pin', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCsrfToken(), 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'same-origin'
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.error) {
+            // Revert on error (e.g. max pins exceeded)
+            _setPinBtnState(btn, wasPinned);
+            if (typeof window.showToast === 'function') {
+                showToast(data.error, 'error');
+            }
+            return;
+        }
+        var isPinned = data.is_pinned;
+        // Confirm state on all pin buttons for this task
+        document.querySelectorAll('.pin-btn[data-task-id="' + pk + '"]').forEach(function(b) {
+            _setPinBtnState(b, isPinned);
+        });
+        _updatePinnedSection(pk, isPinned);
+    })
+    .catch(function() {
+        _setPinBtnState(btn, wasPinned);
+    });
+}
+
+function _setPinBtnState(btn, isPinned) {
+    btn.classList.toggle('pinned', isPinned);
+    var icon = btn.querySelector('i');
+    if (icon) icon.className = isPinned ? 'bi bi-pin-fill' : 'bi bi-pin';
+    btn.title = isPinned ? 'Unpin task' : 'Pin task';
+    btn.setAttribute('aria-label', isPinned ? 'Unpin task' : 'Pin task');
+}
+
+function _updatePinnedSection(pk, isPinned) {
+    var pinnedSection = document.getElementById('pinnedSection');
+    var pinnedList = document.getElementById('pinnedList');
+    var pinnedCount = document.getElementById('pinnedCount');
+    if (!pinnedSection || !pinnedList) return;
+
+    if (isPinned) {
+        if (!document.getElementById('pinned-item-' + pk)) {
+            // Gather title and status badge from the TARS bubble
+            var taskBubble = document.querySelector('.chat-message.tars-msg[data-task-id="' + pk + '"]');
+            var title = taskBubble ? taskBubble.getAttribute('data-task-title') || '' : '';
+            var badge = taskBubble ? taskBubble.querySelector('.status-badge') : null;
+            var badgeClass = badge ? badge.className.replace(' pinned-status-badge', '') : 'status-badge badge-pending';
+            var badgeText = badge ? badge.textContent.trim() : 'Pending';
+
+            var item = document.createElement('div');
+            item.className = 'pinned-item';
+            item.id = 'pinned-item-' + pk;
+            item.setAttribute('data-task-id', String(pk));
+            item.onclick = function() { scrollToTask(pk); };
+            item.innerHTML =
+                '<span class="pinned-title">' + _esc(title) + '</span>' +
+                '<span class="' + _esc(badgeClass) + ' pinned-status-badge">' + _esc(badgeText) + '</span>' +
+                '<button class="pin-btn pinned" onclick="togglePin(' + parseInt(pk, 10) + ', this); event.stopPropagation();" data-task-id="' + parseInt(pk, 10) + '" title="Unpin task" aria-label="Unpin task"><i class="bi bi-pin-fill"></i></button>';
+            pinnedList.appendChild(item);
+        }
+        pinnedSection.hidden = false;
+    } else {
+        var itemToRemove = document.getElementById('pinned-item-' + pk);
+        if (itemToRemove) itemToRemove.remove();
+        if (!pinnedList.querySelector('.pinned-item')) {
+            pinnedSection.hidden = true;
+        }
+    }
+
+    var count = pinnedList.querySelectorAll('.pinned-item').length;
+    if (pinnedCount) pinnedCount.textContent = count + '/5';
+}
+
+function scrollToTask(pk) {
+    var bubble = document.querySelector('.chat-message.tars-msg[data-task-id="' + pk + '"]');
+    if (!bubble) return;
+    bubble.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    bubble.classList.add('task-highlight');
+    setTimeout(function() { bubble.classList.remove('task-highlight'); }, 1200);
 }
 </script>
 {% endblock %}
