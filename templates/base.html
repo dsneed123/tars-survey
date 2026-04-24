@@ -546,7 +546,7 @@
 </head>
 <body{% if user.is_authenticated %} class="app-authed"{% endif %}>
 
-<nav id="main-nav" class="navbar{% if not user.is_authenticated %} navbar-expand-lg{% endif %} sticky-top">
+{% block navbar %}<nav id="main-nav" class="navbar{% if not user.is_authenticated %} navbar-expand-lg{% endif %} sticky-top">
     <div class="container">
         <a class="navbar-brand" href="{% url 'pages:landing' %}">
             T<span>.</span>ARS
@@ -581,11 +581,11 @@
         </div>
         {% endif %}
     </div>
-</nav>
+</nav>{% endblock %}
 
 {% block content %}{% endblock %}
 
-<footer class="py-5 mt-5">
+{% block footer %}<footer class="py-5 mt-5">
     <div class="container">
         <div class="row gy-4">
             <div class="col-md-4">
@@ -625,7 +625,7 @@
             </div>
         </div>
     </div>
-</footer>
+</footer>{% endblock %}
 
 <!-- Toast container -->
 <div id="toast-container" aria-live="polite" aria-atomic="false"></div>

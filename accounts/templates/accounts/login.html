@@ -1,28 +1,36 @@
 {% extends "base.html" %}
 
 {% block title %}Sign In — TARS{% endblock %}
-
 {% block meta_description %}<meta name="description" content="Sign in to your TARS member dashboard.">{% endblock %}
+
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
 
 {% block extra_head %}
 <style>
+    .auth-page {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+    }
+
     .auth-card {
         background-color: var(--tars-surface);
         border: 1px solid var(--tars-border);
         border-radius: 20px;
         padding: 2.5rem 2rem;
+        width: 100%;
         max-width: 420px;
-        margin: 0 auto;
     }
 
     .auth-logo {
-        font-size: 1.5rem;
+        font-size: 1.6rem;
         font-weight: 700;
-        letter-spacing: -0.02em;
+        letter-spacing: -0.03em;
         color: var(--tars-text);
         text-decoration: none;
-        display: inline-block;
-        margin-bottom: 1.5rem;
     }
 
     .auth-logo span { color: var(--tars-accent); }
@@ -32,38 +40,44 @@
         border: 1px solid var(--tars-border);
         color: var(--tars-text);
         border-radius: 8px;
+        padding: 0.6rem 0.85rem;
     }
 
     .form-control:focus {
         background-color: rgba(255,255,255,0.06);
         border-color: var(--tars-accent);
         color: var(--tars-text);
-        box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+        box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+        outline: none;
     }
 
     .form-label {
         color: var(--tars-muted);
-        font-size: 0.85rem;
+        font-size: 0.82rem;
         font-weight: 500;
+        margin-bottom: 0.35rem;
     }
 
-    .divider {
-        border-color: var(--tars-border);
+    .field-error {
+        font-size: 0.78rem;
+        color: #fca5a5;
+        margin-top: 0.3rem;
     }
+
+    .auth-divider { border-color: var(--tars-border); }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container py-5 mt-3">
+<div class="auth-page">
     <div class="auth-card">
-        <div class="text-center">
+        <div class="text-center mb-4">
             <a class="auth-logo" href="{% url 'pages:landing' %}">T<span>.</span>ARS</a>
-            <h1 class="h4 fw-bold mb-1" style="color:var(--tars-text)">Welcome back</h1>
-            <p class="small mb-4" style="color:var(--tars-muted)">Sign in to your member dashboard</p>
+            <p class="small mt-2 mb-0" style="color:var(--tars-muted)">Sign in to your member dashboard</p>
         </div>
 
         {% if form.non_field_errors %}
-        <div class="alert rounded-3 small py-2 mb-3" style="background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.25); color:#fca5a5;">
+        <div class="mb-3 small rounded-3 px-3 py-2" style="background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.25); color:#fca5a5;">
             {{ form.non_field_errors }}
         </div>
         {% endif %}
@@ -74,27 +88,27 @@
                 <label for="{{ form.email.id_for_label }}" class="form-label">Email address</label>
                 {{ form.email }}
                 {% if form.email.errors %}
-                <div class="small mt-1" style="color:#fca5a5">{{ form.email.errors|join:", " }}</div>
+                <div class="field-error">{{ form.email.errors|join:", " }}</div>
                 {% endif %}
             </div>
-            <div class="mb-3">
-                <div class="d-flex justify-content-between align-items-center">
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-1">
                     <label for="{{ form.password.id_for_label }}" class="form-label mb-0">Password</label>
                     <a href="{% url 'accounts:password_reset' %}" class="small" style="color:var(--tars-accent)">Forgot password?</a>
                 </div>
-                <div class="mt-1">{{ form.password }}</div>
+                {{ form.password }}
                 {% if form.password.errors %}
-                <div class="small mt-1" style="color:#fca5a5">{{ form.password.errors|join:", " }}</div>
+                <div class="field-error">{{ form.password.errors|join:", " }}</div>
                 {% endif %}
             </div>
-            <button type="submit" class="btn btn-accent w-100 mt-1">Sign In</button>
+            <button type="submit" class="btn btn-accent w-100">Sign in</button>
         </form>
 
-        <hr class="divider my-4">
+        <hr class="auth-divider my-4">
 
         <p class="text-center small mb-0" style="color:var(--tars-muted)">
             Don't have an account?
-            <a href="{% url 'accounts:register' %}" style="color:var(--tars-accent)">Create one</a>
+            <a href="{% url 'accounts:register' %}" style="color:var(--tars-accent)">Sign up</a>
         </p>
     </div>
 </div>
