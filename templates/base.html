@@ -1,7 +1,17 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- Inline theme init: runs synchronously before render to prevent flash -->
+    <script>
+    (function(){
+        var s = localStorage.getItem('tars-theme');
+        var t = (s === 'light' || s === 'dark') ? s :
+                (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+        document.documentElement.setAttribute('data-theme', t);
+        document.documentElement.setAttribute('data-bs-theme', t);
+    }());
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
     <title>{% block title %}TARS — Autonomous Coding{% endblock %}</title>
 
@@ -84,6 +94,19 @@
             --tars-warning: #f59e0b;
         }
 
+        html[data-theme="light"] {
+            --tars-bg: #f9fafb;
+            --tars-surface: #ffffff;
+            --tars-border: #e5e7eb;
+            --tars-text: #111827;
+            --tars-muted: #6b7280;
+            --tars-user-bubble: #dbeafe;
+            --tars-tars-bubble: #f3f4f6;
+            --tars-success: #16a34a;
+            --tars-error: #dc2626;
+            --tars-warning: #d97706;
+        }
+
         body {
             background-color: var(--tars-bg);
             color: var(--tars-text);
@@ -127,6 +150,10 @@
             backdrop-filter: blur(20px) saturate(1.4) !important;
             -webkit-backdrop-filter: blur(20px) saturate(1.4) !important;
             border-bottom: 1px solid var(--tars-border) !important;
+        }
+
+        html[data-theme="light"] #main-nav.nav-scrolled {
+            background-color: rgba(249, 250, 251, 0.92) !important;
         }
 
         .navbar-brand {
@@ -229,6 +256,16 @@
             animation: skeleton-shimmer 1.6s ease-in-out infinite;
             border-radius: 6px;
             display: block;
+        }
+
+        html[data-theme="light"] .skeleton {
+            background: linear-gradient(
+                90deg,
+                var(--tars-border) 25%,
+                rgba(240, 240, 240, 0.8) 50%,
+                var(--tars-border) 75%
+            );
+            background-size: 1200px 100%;
         }
 
         .skeleton-text   { height: 0.9em; margin-bottom: 0.5rem; }
@@ -401,6 +438,19 @@
             opacity: 1;
         }
 
+        button.app-icon-nav-item {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            font-family: inherit;
+        }
+
+        html[data-theme="light"] .app-icon-nav-item:hover,
+        html[data-theme="light"] button.app-icon-nav-item:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
         .app-icon-nav-item.active {
             color: var(--tars-text);
             opacity: 1;
@@ -525,6 +575,9 @@
             <a href="{% url 'members:settings' %}"
                class="app-icon-nav-item{% if '/dashboard/settings' in request.path %} active{% endif %}"
                title="Settings"><i class="bi bi-gear"></i></a>
+            <button class="app-icon-nav-item theme-toggle-btn" title="Toggle theme" aria-label="Toggle dark/light mode">
+                <i class="bi bi-moon-stars theme-icon"></i>
+            </button>
         </div>
         {% else %}
         <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
@@ -537,6 +590,12 @@
                 <li class="nav-item"><a class="nav-link" href="#how-it-works">How It Works</a></li>
                 <li class="nav-item"><a class="nav-link" href="{% url 'pages:docs_index' %}">Docs</a></li>
                 <li class="nav-item"><a class="nav-link" href="{% url 'accounts:login' %}">Sign In</a></li>
+                <li class="nav-item">
+                    <button class="theme-toggle-btn" title="Toggle theme" aria-label="Toggle dark/light mode"
+                            style="background:none;border:none;padding:0 0.25rem;color:var(--tars-muted);font-size:1rem;cursor:pointer;opacity:0.7;transition:opacity 0.15s,color 0.2s;">
+                        <i class="bi bi-moon-stars theme-icon"></i>
+                    </button>
+                </li>
                 <li class="nav-item">
                     <a class="btn btn-accent" href="{% url 'inquiries:get_started' %}">Get Started</a>
                 </li>
@@ -795,6 +854,45 @@
         content.classList.remove('page-visible');
         setTimeout(function () { window.location.href = href; }, 200);
     }, true);
+}());
+</script>
+
+<!-- Theme toggle -->
+<script>
+(function () {
+    function applyThemeIcons(theme) {
+        document.querySelectorAll('.theme-icon').forEach(function (ic) {
+            ic.className = 'bi ' + (theme === 'dark' ? 'bi-moon-stars' : 'bi-sun');
+        });
+    }
+
+    function setTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.setAttribute('data-bs-theme', theme);
+        localStorage.setItem('tars-theme', theme);
+        applyThemeIcons(theme);
+    }
+    window.setTheme = setTheme;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var current = document.documentElement.getAttribute('data-theme') || 'dark';
+        applyThemeIcons(current);
+
+        document.querySelectorAll('.theme-toggle-btn').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var t = document.documentElement.getAttribute('data-theme') || 'dark';
+                setTheme(t === 'dark' ? 'light' : 'dark');
+            });
+        });
+    });
+
+    if (window.matchMedia) {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
+            if (!localStorage.getItem('tars-theme')) {
+                setTheme(e.matches ? 'dark' : 'light');
+            }
+        });
+    }
 }());
 </script>
 
