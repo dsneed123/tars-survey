@@ -1609,6 +1609,8 @@ class QueueConsumerTests(TestCase):
             comm = self._make_comm(user=user)
             connected, _ = await comm.connect()
             self.assertTrue(connected)
+            # Consume the initial queue_stats message sent on connect
+            await comm.receive_json_from()
             await comm.send_json_to({"type": "ping"})
             response = await comm.receive_json_from()
             self.assertEqual(response, {"type": "pong"})
@@ -1626,6 +1628,8 @@ class QueueConsumerTests(TestCase):
             comm = self._make_comm(user=user)
             connected, _ = await comm.connect()
             self.assertTrue(connected)
+            # Consume the initial queue_stats message sent on connect
+            await comm.receive_json_from()
 
             layer = get_channel_layer()
             update_data = {

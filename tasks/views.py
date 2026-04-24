@@ -220,13 +220,9 @@ def _broadcast_task_update(task):
         status="completed",
         completed_at__date=timezone.now().date(),
     ).count()
-    send(
-        f"dashboard_{task.created_by_id}",
-        {
-            "type": "queue_stats",
-            "data": {"type": "queue_stats", "active_count": active_count, "completed_today": completed_today},
-        },
-    )
+    stats_payload = {"type": "queue_stats", "data": {"type": "queue_stats", "active_count": active_count, "completed_today": completed_today}}
+    send(f"dashboard_{task.created_by_id}", stats_payload)
+    send(f"queue_{task.created_by_id}", stats_payload)
 
     # When the queue shifts, broadcast updated positions to other pending/queued tasks.
     other_pks = [pk for pk in queue_positions if pk != task.pk]
