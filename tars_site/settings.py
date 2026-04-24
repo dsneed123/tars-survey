@@ -56,6 +56,7 @@ SITE_URL = "https://tarsai.dev"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "tars_site.middleware.RequestIdMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -203,6 +204,57 @@ else:
             "BACKEND": "channels.layers.InMemoryChannelLayer",
         }
     }
+
+# ---------------------------------------------------------------------------
+# Logging — JSON format in production, verbose text in development.
+# Every log record carries a request_id injected by RequestIdFilter so that
+# all lines for a single HTTP request can be correlated in Railway logs.
+# ---------------------------------------------------------------------------
+_LOG_FORMATTER = "json" if not DEBUG else "verbose"
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "request_id": {
+            "()": "tars_site.middleware.RequestIdFilter",
+        },
+    },
+    "formatters": {
+        "json": {
+            "()": "tars_site.middleware.JsonFormatter",
+        },
+        "verbose": {
+            "format": "[{asctime}] {levelname} [{request_id}] {name}: {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": _LOG_FORMATTER,
+            "filters": ["request_id"],
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+    "loggers": {
+        # Capture 500 errors (and only errors) from Django's request handling.
+        # ERROR level records include the full exc_info traceback.
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        "django.security": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
+}
 
 # ---------------------------------------------------------------------------
 # Test environment overrides

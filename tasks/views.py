@@ -481,11 +481,22 @@ def _forward_to_controller(task):
             timeout=10,
         )
         if resp.ok:
-            logger.info("Task %s forwarded to controller: %s", task.pk, resp.json().get("task", {}).get("id"))
+            logger.info(
+                "Task %s forwarded to controller: %s",
+                task.pk,
+                resp.json().get("task", {}).get("id"),
+            )
         else:
-            logger.warning("Controller rejected task %s: %s", task.pk, resp.text)
-    except Exception as e:
-        logger.warning("Failed to forward task %s to controller: %s", task.pk, e)
+            logger.error(
+                "Controller rejected task %s (HTTP %s): %s",
+                task.pk,
+                resp.status_code,
+                resp.text,
+            )
+    except Exception:
+        logger.exception(
+            "Failed to forward task %s to controller at %s", task.pk, url
+        )
 
 
 # ---------------------------------------------------------------------------
