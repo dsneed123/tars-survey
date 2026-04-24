@@ -94,6 +94,17 @@ def _get_avg_completion_seconds(user_id, sample=20):
     return result
 
 
+def _format_duration(total_seconds):
+    total_seconds = int(total_seconds)
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    if hours:
+        return f"{hours}h {minutes}m"
+    if minutes:
+        return f"{minutes}m {seconds}s"
+    return f"{seconds}s"
+
+
 def _format_wait(seconds):
     if seconds < 90:
         return "~1m wait"
@@ -281,8 +292,38 @@ def task_queue(request):
         elif task.status == "failed":
             entry["failed"] += 1
 
+    # Compute average completion time per project (created_at → completed_at)
+    proj_ids = list(_proj_map.keys())
+    if proj_ids:
+        from django.db.models import Avg, DurationField, ExpressionWrapper, F
+        proj_avg_qs = (
+            Task.objects.filter(
+                created_by=request.user,
+                project_id__in=proj_ids,
+                status="completed",
+                created_at__isnull=False,
+                completed_at__isnull=False,
+            )
+            .values("project_id")
+            .annotate(
+                avg_duration=Avg(
+                    ExpressionWrapper(
+                        F("completed_at") - F("created_at"),
+                        output_field=DurationField(),
+                    )
+                )
+            )
+        )
+        proj_avg_map = {
+            row["project_id"]: row["avg_duration"]
+            for row in proj_avg_qs
+            if row["avg_duration"] is not None
+        }
+    else:
+        proj_avg_map = {}
+
     project_health = []
-    for data in _proj_map.values():
+    for proj_id, data in _proj_map.items():
         done = data["completed"] + data["failed"]
         rate = round(data["completed"] / done * 100) if done > 0 else None
         if rate is None:
@@ -293,6 +334,8 @@ def task_queue(request):
             color = "yellow"
         else:
             color = "red"
+        avg_td = proj_avg_map.get(proj_id)
+        avg_display = _format_duration(avg_td.total_seconds()) if avg_td else None
         project_health.append({
             "name": data["name"],
             "pending": data["pending"],
@@ -300,6 +343,7 @@ def task_queue(request):
             "failed": data["failed"],
             "success_rate": rate,
             "color": color,
+            "avg_completion": avg_display,
         })
     project_health.sort(key=lambda x: x["name"])
 

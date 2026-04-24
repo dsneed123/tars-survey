@@ -52,6 +52,21 @@ class Task(models.Model):
     def is_done(self):
         return self.status in ("completed", "failed")
 
+    @property
+    def duration_display(self):
+        if not self.completed_at or not self.created_at:
+            return None
+        total_seconds = int((self.completed_at - self.created_at).total_seconds())
+        if total_seconds <= 0:
+            return None
+        hours, remainder = divmod(total_seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        if hours:
+            return f"{hours}h {minutes}m"
+        if minutes:
+            return f"{minutes}m {seconds}s"
+        return f"{seconds}s"
+
 
 class TaskAttachment(models.Model):
     task = models.ForeignKey(
