@@ -52,6 +52,59 @@ _VALID_TRANSITIONS = {
 }
 
 _IDEMPOTENCY_TTL = 86_400  # 24 hours
+_PR_DIFF_CACHE_TTL = 3_600  # 1 hour
+
+
+def _fetch_pr_diff_summary(pr_url):
+    """Fetch PR diff stats from GitHub API. Returns dict or None on failure."""
+    if not pr_url:
+        return None
+    m = re.match(r'https://github\.com/([^/]+/[^/]+)/pull/(\d+)', pr_url)
+    if not m:
+        return None
+    repo, pr_num = m.group(1), m.group(2)
+    token = getattr(settings, 'GITHUB_TOKEN', '') or None
+    headers = {
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+        'User-Agent': 'TARS-Survey/1.0',
+    }
+    if token:
+        headers['Authorization'] = f'Bearer {token}'
+    base = 'https://api.github.com'
+    try:
+        pr_resp = http_requests.get(
+            f'{base}/repos/{repo}/pulls/{pr_num}',
+            headers=headers,
+            timeout=8,
+        )
+        if not pr_resp.ok:
+            logger.warning('GitHub PR API %s for %s', pr_resp.status_code, pr_url)
+            return None
+        pr_data = pr_resp.json()
+    except Exception as exc:
+        logger.warning('GitHub PR API error for %s: %s', pr_url, exc)
+        return None
+    try:
+        files_resp = http_requests.get(
+            f'{base}/repos/{repo}/pulls/{pr_num}/files',
+            headers=headers,
+            params={'per_page': 50},
+            timeout=8,
+        )
+        files_data = files_resp.json() if files_resp.ok else []
+    except Exception:
+        files_data = []
+    return {
+        'changed_files': pr_data.get('changed_files', 0),
+        'additions': pr_data.get('additions', 0),
+        'deletions': pr_data.get('deletions', 0),
+        'files': [
+            {'filename': f['filename'], 'status': f['status']}
+            for f in (files_data or [])
+            if isinstance(f, dict)
+        ],
+    }
 
 
 def _get_queue_positions(user_id):
@@ -503,6 +556,27 @@ def api_task_detail(request, pk):
             for s in timeline
         ],
     })
+
+
+@login_required
+@require_GET
+def api_task_pr_diff(request, pk):
+    """Return PR diff summary (files changed, additions, deletions) for a completed task."""
+    task = get_object_or_404(Task, pk=pk, created_by=request.user)
+    if not task.pr_url:
+        return JsonResponse({'error': 'no PR URL'}, status=404)
+
+    cache_key = f'tars_pr_diff_{pk}'
+    cached = cache.get(cache_key, _CACHE_MISS)
+    if cached is not _CACHE_MISS:
+        return JsonResponse(cached)
+
+    data = _fetch_pr_diff_summary(task.pr_url)
+    if data is None:
+        return JsonResponse({'error': 'failed to fetch diff'}, status=502)
+
+    cache.set(cache_key, data, timeout=_PR_DIFF_CACHE_TTL)
+    return JsonResponse(data)
 
 
 def _build_timeline(task):

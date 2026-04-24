@@ -282,6 +282,58 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 }
 .pr-link:hover { background: rgba(34,197,94,0.18); color: #4ade80; }
 
+.view-changes-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: none;
+    border: 1px solid #2a2a2a;
+    color: #666;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 6px;
+    transition: all 0.15s;
+    line-height: 1;
+}
+.view-changes-btn:hover { border-color: #444; color: #999; }
+.view-changes-btn .bi-chevron-down { font-size: 10px; transition: transform 0.2s; }
+.view-changes-btn[aria-expanded="true"] .bi-chevron-down { transform: rotate(180deg); }
+.view-changes-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.pr-diff-panel { display: none; margin-top: 8px; }
+.pr-diff-panel.open { display: block; }
+.pr-diff-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+}
+.pr-diff-stat { color: #666; }
+.pr-diff-add { color: #22c55e; font-weight: 600; }
+.pr-diff-del { color: #ef4444; font-weight: 600; }
+.pr-diff-files { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 2px; }
+.pr-diff-file {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-family: monospace;
+    color: #666;
+    padding: 1px 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.pr-diff-file-icon { flex-shrink: 0; font-size: 11px; font-style: normal; width: 12px; text-align: center; }
+.pr-diff-file-added .pr-diff-file-icon { color: #22c55e; }
+.pr-diff-file-removed .pr-diff-file-icon { color: #ef4444; }
+.pr-diff-file-modified .pr-diff-file-icon { color: #f59e0b; }
+.pr-diff-file-renamed .pr-diff-file-icon { color: #6366f1; }
+
 .error-text { color: #ef4444; font-size: 13px; margin-top: 4px; }
 
 .retry-btn {
@@ -1750,8 +1802,12 @@ document.addEventListener('keydown', function(e) {
         } else if (s === 'completed') {
             html = '<p>Done! Changes have been pushed.</p>';
             if (data.pr_url) {
+                var tid = parseInt(data.task_id, 10);
                 html += '<a href="' + escHtml(data.pr_url) + '" target="_blank" rel="noopener" class="pr-link">' +
-                    '<i class="bi bi-git"></i> View Pull Request</a>';
+                    '<i class="bi bi-git"></i> View Pull Request</a>' +
+                    '<button class="view-changes-btn" onclick="togglePrDiff(this,' + tid + ')" data-task-id="' + tid + '" aria-expanded="false">' +
+                    '<i class="bi bi-code-square"></i> <span>View Changes</span><i class="bi bi-chevron-down"></i></button>' +
+                    '<div class="pr-diff-panel" id="pr-diff-panel-' + tid + '"></div>';
             }
             if (data.branch_name) {
                 html += '<div style="font-size:12px;color:#555;margin-top:6px;">Branch: <code style="color:#888;">' + escHtml(data.branch_name) + '</code></div>';
@@ -2524,5 +2580,76 @@ window._onTaskDetailCacheInvalidate = function(taskId) {
         delete _taskDetailCache[taskId];
     }
 };
+</script>
+
+<script>
+// ── PR diff expandable panel ───────────────────────────────
+var _prDiffCache = {};
+
+function togglePrDiff(btn, pk) {
+    var panel = document.getElementById('pr-diff-panel-' + pk);
+    if (!panel) return;
+
+    var isOpen = btn.getAttribute('aria-expanded') === 'true';
+    if (isOpen) {
+        panel.classList.remove('open');
+        btn.setAttribute('aria-expanded', 'false');
+        return;
+    }
+
+    btn.setAttribute('aria-expanded', 'true');
+    panel.classList.add('open');
+
+    if (_prDiffCache[pk]) {
+        panel.innerHTML = buildPrDiffHtml(_prDiffCache[pk]);
+        return;
+    }
+
+    panel.innerHTML = '<div style="font-size:12px;color:#555;padding:4px 0;">Loading changes…</div>';
+    btn.disabled = true;
+
+    fetch('/api/tasks/' + pk + '/pr_diff', { credentials: 'same-origin' })
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(data) {
+            btn.disabled = false;
+            if (!data || data.error) {
+                panel.innerHTML = '<div style="font-size:12px;color:#ef4444;">Could not load diff.</div>';
+                return;
+            }
+            _prDiffCache[pk] = data;
+            panel.innerHTML = buildPrDiffHtml(data);
+        })
+        .catch(function() {
+            btn.disabled = false;
+            panel.innerHTML = '<div style="font-size:12px;color:#ef4444;">Could not load diff.</div>';
+        });
+}
+
+function buildPrDiffHtml(data) {
+    var html = '<div class="pr-diff-summary">';
+    html += '<span class="pr-diff-stat">' + parseInt(data.changed_files, 10) + ' file' +
+        (data.changed_files !== 1 ? 's' : '') + ' changed</span>';
+    if (data.additions > 0) {
+        html += '<span class="pr-diff-add">+' + parseInt(data.additions, 10) + '</span>';
+    }
+    if (data.deletions > 0) {
+        html += '<span class="pr-diff-del">-' + parseInt(data.deletions, 10) + '</span>';
+    }
+    html += '</div>';
+    if (data.files && data.files.length) {
+        html += '<ul class="pr-diff-files">';
+        data.files.forEach(function(f) {
+            var status = f.status || 'modified';
+            var icons = { added: '+', removed: '-', modified: '~', renamed: '→' };
+            var icon = icons[status] || '~';
+            html += '<li class="pr-diff-file pr-diff-file-' + _esc(status) + '">' +
+                '<i class="pr-diff-file-icon">' + icon + '</i>' +
+                '<span class="pr-diff-file-name">' + _esc(f.filename) + '</span>' +
+                '</li>';
+        });
+        html += '</ul>';
+    }
+    return html;
+}
 </script>
 {% endblock %}

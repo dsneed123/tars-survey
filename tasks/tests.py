@@ -1074,6 +1074,96 @@ class ApiTaskStatusTests(TestCase):
 
 
 # ---------------------------------------------------------------------------
+# GET /api/tasks/<pk>/pr_diff
+# ---------------------------------------------------------------------------
+
+class ApiTaskPrDiffTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = make_user()
+        self.project = make_project(self.user)
+        self.task = make_task(
+            self.project,
+            self.user,
+            status="completed",
+            pr_url="https://github.com/owner/repo/pull/42",
+        )
+        self.url = f"/api/tasks/{self.task.pk}/pr_diff"
+
+    def test_requires_authentication(self):
+        resp = self.client.get(self.url)
+        self.assertNotEqual(resp.status_code, 200)
+
+    def test_returns_404_for_task_without_pr_url(self):
+        task = make_task(self.project, self.user, status="completed")
+        self.client.force_login(self.user)
+        resp = self.client.get(f"/api/tasks/{task.pk}/pr_diff")
+        self.assertEqual(resp.status_code, 404)
+        self.assertEqual(resp.json()["error"], "no PR URL")
+
+    def test_returns_404_for_other_users_task(self):
+        other = make_user(email="other@example.com", username="other")
+        other_project = make_project(other, github_repo="other/repo")
+        other_task = make_task(
+            other_project, other, status="completed",
+            pr_url="https://github.com/owner/repo/pull/1",
+        )
+        self.client.force_login(self.user)
+        resp = self.client.get(f"/api/tasks/{other_task.pk}/pr_diff")
+        self.assertEqual(resp.status_code, 404)
+
+    @patch("tasks.views._fetch_pr_diff_summary")
+    def test_returns_diff_data_for_valid_task(self, mock_fetch):
+        mock_fetch.return_value = {
+            "changed_files": 3,
+            "additions": 42,
+            "deletions": 7,
+            "files": [
+                {"filename": "tasks/views.py", "status": "modified"},
+                {"filename": "tasks/tests.py", "status": "modified"},
+                {"filename": "README.md", "status": "added"},
+            ],
+        }
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, 200)
+        data = resp.json()
+        self.assertEqual(data["changed_files"], 3)
+        self.assertEqual(data["additions"], 42)
+        self.assertEqual(data["deletions"], 7)
+        self.assertEqual(len(data["files"]), 3)
+
+    @patch("tasks.views._fetch_pr_diff_summary")
+    def test_returns_502_when_github_fetch_fails(self, mock_fetch):
+        mock_fetch.return_value = None
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, 502)
+        self.assertIn("error", resp.json())
+
+    @patch("tasks.views._fetch_pr_diff_summary")
+    @override_settings(CACHES={"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}})
+    def test_caches_result(self, mock_fetch):
+        from django.core.cache import cache
+        cache.clear()
+        mock_fetch.return_value = {
+            "changed_files": 1,
+            "additions": 5,
+            "deletions": 2,
+            "files": [{"filename": "foo.py", "status": "modified"}],
+        }
+        self.client.force_login(self.user)
+        self.client.get(self.url)
+        self.client.get(self.url)
+        mock_fetch.assert_called_once()
+
+    def test_post_not_allowed(self):
+        self.client.force_login(self.user)
+        resp = self.client.post(self.url)
+        self.assertEqual(resp.status_code, 405)
+
+
+# ---------------------------------------------------------------------------
 # GET /api/tasks/updates/  — polling fallback for WebSocket reconnect
 # ---------------------------------------------------------------------------
 
