@@ -183,6 +183,46 @@ def quick_add_task(request):
 
 
 @login_required
+@require_POST
+def bulk_add_tasks(request):
+    tasks_text = request.POST.get("tasks", "").strip()
+    project_id = request.POST.get("project_id")
+
+    if not tasks_text or not project_id:
+        return JsonResponse(
+            {"ok": False, "error": "Please provide tasks and select a project."},
+            status=400,
+        )
+
+    lines = [line.strip() for line in tasks_text.splitlines() if line.strip()]
+    if not lines:
+        return JsonResponse(
+            {"ok": False, "error": "No tasks found. Enter one task per line."},
+            status=400,
+        )
+
+    try:
+        project = Project.objects.get(pk=project_id, owner=request.user)
+    except Project.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Project not found."}, status=400)
+
+    created = []
+    for title in lines:
+        task = Task.objects.create(
+            title=title,
+            description=title,
+            project=project,
+            created_by=request.user,
+            status="pending",
+            priority=50,
+        )
+        _forward_to_controller(task)
+        created.append({"task_id": task.pk, "title": task.title, "status": task.status})
+
+    return JsonResponse({"ok": True, "tasks": created})
+
+
+@login_required
 def settings_view(request):
     user = request.user
     prefs, _ = NotificationPreference.objects.get_or_create(user=user)

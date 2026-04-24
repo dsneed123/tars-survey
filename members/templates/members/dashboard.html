@@ -494,6 +494,126 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 }
 .project-dropdown.show { display: block; }
 
+/* ── Bulk add modal ─────────────────────────────────────── */
+.bulk-modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    z-index: 1100;
+    align-items: flex-end;
+    justify-content: center;
+}
+.bulk-modal-backdrop.show {
+    display: flex;
+}
+@media (min-width: 600px) {
+    .bulk-modal-backdrop { align-items: center; }
+}
+.bulk-modal {
+    background: #111;
+    border: 1px solid #252525;
+    border-radius: 16px 16px 0 0;
+    padding: 20px 20px 24px;
+    width: 100%;
+    max-width: 560px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: 0 -4px 32px rgba(0,0,0,0.6);
+}
+@media (min-width: 600px) {
+    .bulk-modal { border-radius: 16px; box-shadow: 0 8px 40px rgba(0,0,0,0.7); }
+}
+.bulk-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.bulk-modal-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #e0e0e0;
+}
+.bulk-modal-close {
+    background: none;
+    border: none;
+    color: #555;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+    border-radius: 6px;
+    transition: color 0.15s;
+}
+.bulk-modal-close:hover { color: #aaa; }
+.bulk-modal-hint {
+    font-size: 12px;
+    color: #444;
+    margin: 0;
+}
+.bulk-modal-textarea {
+    width: 100%;
+    background: #0d0d0d;
+    border: 1px solid #252525;
+    border-radius: 10px;
+    color: #e0e0e0;
+    font-size: 14px;
+    line-height: 1.55;
+    padding: 12px 14px;
+    resize: vertical;
+    min-height: 140px;
+    outline: none;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+.bulk-modal-textarea::placeholder { color: #3a3a3a; }
+.bulk-modal-textarea:focus { border-color: #6366f1; }
+.bulk-modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+.bulk-count-label {
+    font-size: 12px;
+    color: #444;
+}
+.bulk-submit-btn {
+    background: #6366f1;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+}
+.bulk-submit-btn:hover:not(:disabled) { background: #4f46e5; }
+.bulk-submit-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.bulk-add-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: none;
+    color: #444;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    flex-shrink: 0;
+    padding: 0;
+    font-size: 15px;
+    touch-action: manipulation;
+}
+.bulk-add-btn:hover { color: #aaa; background: rgba(255,255,255,0.05); }
+@media (max-width: 768px) {
+    .bulk-add-btn { width: 44px; height: 44px; font-size: 17px; }
+}
+
 /* ── Project sheet overlay (mobile) ───────────────────── */
 .project-sheet-overlay {
     display: none;
@@ -1190,6 +1310,9 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
                         <textarea name="title" class="chat-textarea" id="chatInput"
                                   placeholder="Ask TARS to code something..." rows="1"
                                   onkeydown="handleKey(event)" oninput="autoGrow(this); updateSend()"></textarea>
+                        <button type="button" class="bulk-add-btn" id="bulkAddBtn" title="Bulk add tasks" aria-label="Bulk add tasks" onclick="openBulkModal()">
+                            <i class="bi bi-list-ul" aria-hidden="true"></i>
+                        </button>
                         <button type="button" class="attach-btn" title="Attach file" aria-label="Attach file">
                             <i class="bi bi-paperclip" aria-hidden="true"></i>
                         </button>
@@ -1223,6 +1346,28 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 
     <!-- Sheet overlay for project dropdown on mobile -->
     <div id="projectSheetOverlay" class="project-sheet-overlay"></div>
+
+    <!-- Bulk add modal -->
+    <div class="bulk-modal-backdrop" id="bulkModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="bulkModalTitle" onclick="handleBulkBackdropClick(event)">
+        <div class="bulk-modal">
+            <div class="bulk-modal-header">
+                <span class="bulk-modal-title" id="bulkModalTitle">Bulk add tasks</span>
+                <button type="button" class="bulk-modal-close" onclick="closeBulkModal()" aria-label="Close">
+                    <i class="bi bi-x" aria-hidden="true"></i>
+                </button>
+            </div>
+            <p class="bulk-modal-hint">One task per line. Each line becomes a separate task for the selected project.</p>
+            <textarea class="bulk-modal-textarea" id="bulkTasksInput"
+                      placeholder="Fix login bug&#10;Add dark mode&#10;Write unit tests for auth module"
+                      oninput="updateBulkCount()"></textarea>
+            <div class="bulk-modal-footer">
+                <span class="bulk-count-label" id="bulkCountLabel">0 tasks</span>
+                <button type="button" class="bulk-submit-btn" id="bulkSubmitBtn" disabled onclick="submitBulkTasks()">
+                    Add tasks
+                </button>
+            </div>
+        </div>
+    </div>
 
 </main>
 </div>
@@ -1932,6 +2077,7 @@ var _tarsAvatarHtml = '<div class="msg-avatar tars-avatar"><i class="bi bi-robot
 var _detectUrl = "{% url 'projects:detect' %}";
 var _addChatUrl = "{% url 'projects:add_chat' %}";
 var _quickTaskUrl = "{% url 'members:quick_task' %}";
+var _bulkTaskUrl = "{% url 'members:bulk_add_tasks' %}";
 var GH_URL_RE = /^(?:https?:\/\/)?(?:www\.)?github\.com\/([A-Za-z0-9_.\-]+\/[A-Za-z0-9_.\-]+?)(?:\.git)?(?:[\/\?#].*)?$/i;
 
 function isGithubUrl(text) {
@@ -2371,6 +2517,91 @@ function appendTarsErrorBubble(message, retryFn) {
     }
     if (typeof hideNewMsgPill === 'function') hideNewMsgPill();
     return div;
+}
+
+// ── Bulk add modal ─────────────────────────────────────────
+
+function openBulkModal() {
+    var projectId = document.getElementById('projectIdInput') && document.getElementById('projectIdInput').value;
+    if (!projectId) {
+        var pill = document.getElementById('projectPill');
+        if (pill) pill.click();
+        return;
+    }
+    var backdrop = document.getElementById('bulkModalBackdrop');
+    if (!backdrop) return;
+    backdrop.classList.add('show');
+    var ta = document.getElementById('bulkTasksInput');
+    if (ta) { ta.value = ''; updateBulkCount(); ta.focus(); }
+    document.addEventListener('keydown', _bulkEscListener);
+}
+
+function closeBulkModal() {
+    var backdrop = document.getElementById('bulkModalBackdrop');
+    if (backdrop) backdrop.classList.remove('show');
+    document.removeEventListener('keydown', _bulkEscListener);
+}
+
+function handleBulkBackdropClick(e) {
+    if (e.target === document.getElementById('bulkModalBackdrop')) closeBulkModal();
+}
+
+function _bulkEscListener(e) {
+    if (e.key === 'Escape') closeBulkModal();
+}
+
+function _bulkLines() {
+    var ta = document.getElementById('bulkTasksInput');
+    if (!ta) return [];
+    return ta.value.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
+}
+
+function updateBulkCount() {
+    var lines = _bulkLines();
+    var label = document.getElementById('bulkCountLabel');
+    var btn = document.getElementById('bulkSubmitBtn');
+    var n = lines.length;
+    if (label) label.textContent = n === 1 ? '1 task' : n + ' tasks';
+    if (btn) btn.disabled = n === 0;
+}
+
+function submitBulkTasks() {
+    var projectId = document.getElementById('projectIdInput') && document.getElementById('projectIdInput').value;
+    if (!projectId) return;
+    var lines = _bulkLines();
+    if (!lines.length) return;
+
+    var btn = document.getElementById('bulkSubmitBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
+
+    var fd = new FormData();
+    fd.append('tasks', lines.join('\n'));
+    fd.append('project_id', projectId);
+    fd.append('csrfmiddlewaretoken', getCsrfToken());
+
+    fetch(_bulkTaskUrl, {
+        method: 'POST',
+        body: fd,
+        credentials: 'same-origin',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        closeBulkModal();
+        if (data.ok && data.tasks && data.tasks.length) {
+            data.tasks.forEach(function(t) {
+                appendUserBubble(t.title);
+                var bubble = _appendTarsPendingBubble(t.title);
+                _resolvePendingBubble(bubble, t.task_id);
+            });
+        } else {
+            appendTarsErrorBubble(data.error || "Couldn't add bulk tasks. Try again?", null);
+        }
+    })
+    .catch(function() {
+        closeBulkModal();
+        appendTarsErrorBubble("Couldn't add bulk tasks — check your connection and try again.", null);
+    });
 }
 </script>
 
