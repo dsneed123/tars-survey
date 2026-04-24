@@ -29,4 +29,6 @@ urlpatterns = [
     path("api/tasks/<int:pk>/pin", views.api_task_pin, name="api_pin"),
     # GitHub webhook receiver (HMAC-SHA256 signature validation)
     path("api/webhooks/github/", views.github_webhook, name="github_webhook"),
+    # CSV export of task history (date_from, date_to, project filters)
+    path("api/tasks/export/", views.export_tasks_csv, name="export_csv"),
 ]
