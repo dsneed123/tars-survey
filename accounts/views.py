@@ -10,8 +10,15 @@ from .forms import LoginForm, RegisterForm
 from .models import CustomUser
 
 
-@ratelimit(key="ip", rate="5/m", method=["POST"], block=True)
+@ratelimit(key="ip", rate="5/m", method=["POST"], block=False)
 def accounts_login(request):
+    if getattr(request, "limited", False):
+        form = LoginForm()
+        form.add_error(None, "Too many login attempts. Please wait a minute before trying again.")
+        response = render(request, "accounts/login.html", {"form": form})
+        response.status_code = 429
+        response["Retry-After"] = "60"
+        return response
     if request.user.is_authenticated:
         return redirect("members:dashboard")
     if request.method == "POST":
