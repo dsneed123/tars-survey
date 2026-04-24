@@ -2,7 +2,7 @@
 <html lang="en" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
     <title>{% block title %}TARS — Autonomous Coding{% endblock %}</title>
 
     <!-- Favicon -->
@@ -79,6 +79,8 @@
             font-family: "Inter", system-ui, -apple-system, sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            -webkit-text-size-adjust: 100%; /* prevent iOS text resize on orientation change */
+            text-size-adjust: 100%;
         }
 
         h1, h2, h3, h4, h5, h6,

@@ -7,12 +7,13 @@
 /* ── Reset for full-screen chat layout ─────────────────── */
 #main-nav { display: none !important; }
 footer { display: none !important; }
-body { overflow: hidden; height: 100vh; }
+body { overflow: hidden; height: 100vh; height: 100dvh; }
 
 /* ── Full-screen chat layout ───────────────────────────── */
 .chat-app {
     display: flex;
     height: 100vh;
+    height: 100dvh; /* dynamic viewport height: shrinks with iOS keyboard */
     background: #0a0a0a;
 }
 
@@ -22,6 +23,7 @@ body { overflow: hidden; height: 100vh; }
     display: flex;
     flex-direction: column;
     min-width: 0;
+    min-height: 0; /* Firefox: allow flex column children to scroll within constrained height */
     background: #0a0a0a;
 }
 
@@ -52,7 +54,12 @@ body { overflow: hidden; height: 100vh; }
 .chat-feed {
     height: 100%;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch; /* iOS momentum scrolling */
+    overscroll-behavior: contain; /* prevent parent scroll when feed hits top/bottom */
     padding: 24px 0;
+    /* Firefox scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: #1a1a1a transparent;
 }
 
 /* ── New messages pill ─────────────────────────────────── */
@@ -142,6 +149,7 @@ body { overflow: hidden; height: 100vh; }
     display: inline-flex;
     align-items: center;
     gap: 5px;
+    touch-action: manipulation;
 }
 
 .suggestion-chip:hover {
@@ -470,14 +478,16 @@ body { overflow: hidden; height: 100vh; }
     flex: 1;
     background: none;
     border: none;
+    -webkit-appearance: none; /* Safari: remove default form styling */
+    appearance: none;
     color: #e0e0e0;
-    font-size: 15px;
+    font-size: 16px; /* 16px minimum prevents iOS Safari auto-zoom on focus */
     font-family: inherit;
     resize: none;
     outline: none;
     line-height: 1.5;
     max-height: 120px;
-    min-height: 21px;
+    min-height: 24px;
 }
 .chat-textarea::placeholder { color: #444; }
 
@@ -496,6 +506,7 @@ body { overflow: hidden; height: 100vh; }
     flex-shrink: 0;
     padding: 0;
     font-size: 15px;
+    touch-action: manipulation; /* remove 300ms tap delay on mobile */
 }
 .attach-btn:hover { color: #666; background: rgba(255,255,255,0.05); }
 
@@ -513,6 +524,7 @@ body { overflow: hidden; height: 100vh; }
     transition: all 0.15s;
     flex-shrink: 0;
     font-size: 14px;
+    touch-action: manipulation; /* remove 300ms tap delay on mobile */
 }
 .send-btn.active { background: #6366f1; color: #fff; }
 .send-btn.active:hover { background: #4f46e5; transform: scale(1.05); }
@@ -531,6 +543,7 @@ body { overflow: hidden; height: 100vh; }
     /* Constrain to space above the 60px mobile nav */
     .chat-app {
         height: calc(100vh - 60px - env(safe-area-inset-bottom, 0px));
+        height: calc(100dvh - 60px - env(safe-area-inset-bottom, 0px)); /* dvh: resizes with iOS keyboard */
         padding-bottom: 0;
     }
 
@@ -551,7 +564,7 @@ body { overflow: hidden; height: 100vh; }
     /* Project selector as full-width bottom sheet */
     .project-dropdown {
         position: fixed !important;
-        bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 8px);
+        bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 8px); /* dvh fallback handled by fixed positioning */
         left: 12px;
         right: 12px;
         top: auto !important;
@@ -775,7 +788,11 @@ body { overflow: hidden; height: 100vh; }
 /* ── Chat feed skeleton overlay ─────────────────────────── */
 .chat-feed-skeleton {
     position: absolute;
-    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    inset: 0; /* shorthand: Safari 14.1+, Chrome 87+, Firefox 87+ */
     background: #0a0a0a;
     z-index: 4;
     overflow: hidden;
@@ -1166,7 +1183,7 @@ function isNearBottom() {
 
 function scrollToBottom(smooth) {
     if (!feed) return;
-    if (smooth) {
+    if (smooth && 'scrollBehavior' in document.documentElement.style) {
         feed.scrollTo({ top: feed.scrollHeight, behavior: 'smooth' });
     } else {
         feed.scrollTop = feed.scrollHeight;
@@ -1262,6 +1279,32 @@ function loadOlderMessages() {
             _isLoadingOlder = false;
         });
 }
+
+// ── iOS keyboard: adjust chat-app height via visualViewport ──
+// Handles older iOS Safari (< 15.4) that doesn't support dvh units.
+// On modern iOS, dvh already does this; the listener is a no-op.
+(function () {
+    if (!window.visualViewport) return;
+    var chatApp = document.querySelector('.chat-app');
+    if (!chatApp) return;
+
+    function onViewportResize() {
+        var vvh = window.visualViewport.height;
+        var isMobile = window.innerWidth <= 768;
+        if (!isMobile) { chatApp.style.height = ''; return; }
+        // On older iOS (no interactive-widget support), when the keyboard is open the
+        // fixed bottom nav is covered by the keyboard and should not be subtracted.
+        // Heuristic: if visual viewport lost more than 100px vs layout viewport, keyboard is open.
+        var keyboardVisible = vvh < (window.innerHeight - 100);
+        var navHeight = keyboardVisible ? 0 : 60;
+        chatApp.style.height = (vvh - navHeight) + 'px';
+        if (isNearBottom()) scrollToBottom(false);
+    }
+
+    // Listen to both resize (keyboard open/close) and scroll (iOS position shift)
+    window.visualViewport.addEventListener('resize', onViewportResize);
+    window.visualViewport.addEventListener('scroll', onViewportResize);
+}());
 
 // ── Auto-grow textarea ─────────────────────────────────────
 function autoGrow(el) {
