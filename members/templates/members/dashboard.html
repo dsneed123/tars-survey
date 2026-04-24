@@ -785,6 +785,16 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 }
 .tdp-full-link:hover { color: #666; }
 
+/* ── Keyboard focus ring for chat bubbles ───────────────── */
+.chat-message:focus {
+    outline: 2px solid rgba(99, 102, 241, 0.45);
+    outline-offset: 3px;
+    border-radius: 4px;
+}
+.chat-message:focus:not(:focus-visible) {
+    outline: none;
+}
+
 /* ── Chat feed skeleton overlay ─────────────────────────── */
 .chat-feed-skeleton {
     position: absolute;
@@ -863,11 +873,11 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
             {% endif %}
 
             <div class="app-icon-nav d-none d-md-flex">
-                <a href="{% url 'members:dashboard' %}" class="app-icon-nav-item active" title="Chat">
-                    <i class="bi bi-chat-dots"></i>
+                <a href="{% url 'members:dashboard' %}" class="app-icon-nav-item active" aria-label="Chat" aria-current="page">
+                    <i class="bi bi-chat-dots" aria-hidden="true"></i>
                 </a>
-                <a href="{% url 'tasks:queue' %}" class="app-icon-nav-item" title="Queue">
-                    <i class="bi bi-list-task"></i>
+                <a href="{% url 'tasks:queue' %}" class="app-icon-nav-item" aria-label="Queue">
+                    <i class="bi bi-list-task" aria-hidden="true"></i>
                 </a>
             </div>
 
@@ -933,7 +943,7 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
         </div>
     </div>
     {% endif %}
-    <div class="chat-feed" id="chatFeed">
+    <div class="chat-feed" id="chatFeed" role="log" aria-live="polite" aria-label="Chat messages" tabindex="0">
         <div class="chat-container">
             <div id="loadOlderIndicator" class="load-older-indicator" aria-hidden="true">
                 <div class="chat-skl-bubble">
@@ -982,7 +992,7 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 
             <!-- Queue stats welcome message -->
             {% if active_count > 0 %}
-            <div class="chat-message tars-msg" id="tars-welcome-msg">
+            <div class="chat-message tars-msg" id="tars-welcome-msg" role="article" aria-label="TARS status update">
                 <div class="msg-avatar tars-avatar"><i class="bi bi-robot" aria-hidden="true"></i></div>
                 <div class="msg-body">
                     <div class="msg-sender">TARS</div>
@@ -998,7 +1008,7 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
             {% for task in all_tasks reversed %}
 
             <!-- User message: the task request -->
-            <div class="chat-message" data-timestamp="{{ task.created_at|date:'c' }}">
+            <div class="chat-message" role="article" aria-label="You: {{ task.title }}" tabindex="-1" data-timestamp="{{ task.created_at|date:'c' }}">
                 <div class="msg-avatar user-avatar-sm">{{ task.created_by.email|first|upper }}</div>
                 <div class="msg-body">
                     <div class="msg-sender">You</div>
@@ -1013,7 +1023,7 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
             </div>
 
             <!-- TARS response -->
-            <div class="chat-message tars-msg" data-task-id="{{ task.pk }}" data-timestamp="{{ task.created_at|date:'c' }}">
+            <div class="chat-message tars-msg" role="article" aria-label="TARS: {{ task.title }}" tabindex="-1" data-task-id="{{ task.pk }}" data-timestamp="{{ task.created_at|date:'c' }}">
                 <div class="msg-avatar tars-avatar"><i class="bi bi-robot" aria-hidden="true"></i></div>
                 <div class="msg-body">
                     <div class="msg-sender">TARS</div>
@@ -1097,7 +1107,7 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
         </div>
     </div>
     <button type="button" class="new-msg-pill" id="newMsgPill">
-        <i class="bi bi-arrow-down"></i> New messages
+        <i class="bi bi-arrow-down" aria-hidden="true"></i> New messages
     </button>
     </div>
 
@@ -1124,14 +1134,15 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
                             </div>
                         </div>
                         <input type="hidden" name="project_id" id="projectIdInput" value="">
+                        <label for="chatInput" class="visually-hidden">Message to TARS</label>
                         <textarea name="title" class="chat-textarea" id="chatInput"
                                   placeholder="Ask TARS to code something..." rows="1"
                                   onkeydown="handleKey(event)" oninput="autoGrow(this); updateSend()"></textarea>
-                        <button type="button" class="attach-btn" title="Attach file">
-                            <i class="bi bi-paperclip"></i>
+                        <button type="button" class="attach-btn" title="Attach file" aria-label="Attach file">
+                            <i class="bi bi-paperclip" aria-hidden="true"></i>
                         </button>
-                        <button type="submit" class="send-btn" id="sendBtn" disabled>
-                            <i class="bi bi-arrow-up"></i>
+                        <button type="submit" class="send-btn" id="sendBtn" disabled aria-label="Send message">
+                            <i class="bi bi-arrow-up" aria-hidden="true"></i>
                         </button>
                     </div>
                 </div>
@@ -1142,12 +1153,13 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
                 {% csrf_token %}
                 <div class="input-container">
                     <div class="input-row">
+                        <label for="githubInput" class="visually-hidden">GitHub repository URL</label>
                         <textarea class="chat-textarea" id="githubInput"
                                   placeholder="Paste a GitHub repo URL (e.g. github.com/user/repo)"
                                   rows="1" onkeydown="handleGithubKey(event)"
                                   oninput="autoGrow(this); updateGithubSend()"></textarea>
-                        <button type="submit" class="send-btn" id="githubSendBtn" disabled>
-                            <i class="bi bi-arrow-up"></i>
+                        <button type="submit" class="send-btn" id="githubSendBtn" disabled aria-label="Connect repository">
+                            <i class="bi bi-arrow-up" aria-hidden="true"></i>
                         </button>
                     </div>
                 </div>
@@ -1427,6 +1439,49 @@ document.addEventListener('keydown', function(e) {
         focusInput();
     }
 });
+
+// ── Arrow-key navigation through chat bubbles ──────────────
+// ArrowDown/ArrowUp move focus between .chat-message elements.
+// Home/End jump to first/last bubble.
+// Focus does not scroll the feed on its own; scrollIntoView keeps
+// the focused bubble visible without disrupting reading position.
+(function () {
+    if (!feed) return;
+
+    function getBubbles() {
+        return Array.from(feed.querySelectorAll('.chat-message[tabindex="-1"]'));
+    }
+
+    feed.addEventListener('keydown', function (e) {
+        if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp' &&
+            e.key !== 'Home' && e.key !== 'End') return;
+
+        var bubbles = getBubbles();
+        if (!bubbles.length) return;
+
+        var active = document.activeElement;
+        var idx = bubbles.indexOf(active);
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            var next = idx === -1 ? bubbles[0] : bubbles[idx + 1];
+            if (next) { next.focus(); next.scrollIntoView({ block: 'nearest' }); }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            var prev = idx === -1 ? bubbles[bubbles.length - 1] : bubbles[idx - 1];
+            if (prev) { prev.focus(); prev.scrollIntoView({ block: 'nearest' }); }
+        } else if (e.key === 'Home' && idx !== -1) {
+            e.preventDefault();
+            bubbles[0].focus();
+            bubbles[0].scrollIntoView({ block: 'nearest' });
+        } else if (e.key === 'End' && idx !== -1) {
+            e.preventDefault();
+            var last = bubbles[bubbles.length - 1];
+            last.focus();
+            last.scrollIntoView({ block: 'nearest' });
+        }
+    });
+}());
 </script>
 
 <script>
@@ -1498,6 +1553,9 @@ document.addEventListener('keydown', function(e) {
         var nowIso = new Date().toISOString();
         reconnectingBanner = document.createElement('div');
         reconnectingBanner.className = 'chat-message tars-msg';
+        reconnectingBanner.setAttribute('role', 'article');
+        reconnectingBanner.setAttribute('aria-label', 'TARS');
+        reconnectingBanner.setAttribute('tabindex', '-1');
         reconnectingBanner.setAttribute('data-timestamp', nowIso);
         reconnectingBanner.innerHTML =
             _tarsAvatarHtml +
@@ -1872,6 +1930,9 @@ function appendUserBubble(text) {
     var nowIso = new Date().toISOString();
     var div = document.createElement('div');
     div.className = 'chat-message';
+    div.setAttribute('role', 'article');
+    div.setAttribute('aria-label', 'You: ' + text);
+    div.setAttribute('tabindex', '-1');
     div.setAttribute('data-timestamp', nowIso);
     div.innerHTML =
         '<div class="msg-avatar user-avatar-sm">' + _esc(_userInitial) + '</div>' +
@@ -1895,6 +1956,9 @@ function appendTarsDetectBubble() {
     var div = document.createElement('div');
     div.className = 'chat-message tars-msg';
     div.id = 'tars-detect-bubble';
+    div.setAttribute('role', 'article');
+    div.setAttribute('aria-label', 'TARS');
+    div.setAttribute('tabindex', '-1');
     div.setAttribute('data-timestamp', nowIso);
     div.innerHTML =
         _tarsAvatarHtml +
@@ -2087,7 +2151,7 @@ function triggerGithubInput() {
 
 function submitTaskAjax(title, projectId, bubbleEl) {
     if (!bubbleEl) {
-        bubbleEl = _appendTarsPendingBubble();
+        bubbleEl = _appendTarsPendingBubble(title);
     }
     var fd = new FormData();
     fd.append('title', title);
@@ -2112,7 +2176,7 @@ function submitTaskAjax(title, projectId, bubbleEl) {
     });
 }
 
-function _appendTarsPendingBubble() {
+function _appendTarsPendingBubble(title) {
     var container = document.querySelector('.chat-container');
     if (!container) return null;
     var emptyState = container.querySelector('.empty-state');
@@ -2120,6 +2184,9 @@ function _appendTarsPendingBubble() {
     var nowIso = new Date().toISOString();
     var div = document.createElement('div');
     div.className = 'chat-message tars-msg';
+    div.setAttribute('role', 'article');
+    div.setAttribute('aria-label', title ? 'TARS: ' + title : 'TARS');
+    div.setAttribute('tabindex', '-1');
     div.setAttribute('data-timestamp', nowIso);
     div.innerHTML =
         _tarsAvatarHtml +
@@ -2207,6 +2274,9 @@ function appendTarsErrorBubble(message, retryFn) {
     var nowIso = new Date().toISOString();
     var div = document.createElement('div');
     div.className = 'chat-message tars-msg';
+    div.setAttribute('role', 'article');
+    div.setAttribute('aria-label', 'TARS');
+    div.setAttribute('tabindex', '-1');
     div.setAttribute('data-timestamp', nowIso);
     div.innerHTML =
         _tarsAvatarHtml +
