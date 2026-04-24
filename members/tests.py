@@ -206,6 +206,107 @@ class QuickAddTaskViewTests(TestCase):
 
 
 # ---------------------------------------------------------------------------
+# POST /dashboard/bulk-tasks/
+# ---------------------------------------------------------------------------
+
+class BulkAddTasksViewTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.url = "/dashboard/bulk-tasks/"
+        self.user = make_user()
+        self.project = make_project(self.user)
+
+    def test_requires_login(self):
+        resp = self.client.post(self.url, {"tasks": "Task one\nTask two", "project_id": self.project.pk})
+        self.assertRedirects(resp, f"/login/?next={self.url}", fetch_redirect_response=False)
+
+    def test_get_not_allowed(self):
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, 405)
+
+    @patch("members.views._forward_to_controller")
+    def test_creates_one_task_per_line(self, _mock):
+        self.client.force_login(self.user)
+        resp = self.client.post(self.url, {
+            "tasks": "Fix login bug\nAdd dark mode\nWrite unit tests",
+            "project_id": self.project.pk,
+        })
+        data = resp.json()
+        self.assertTrue(data["ok"])
+        self.assertEqual(len(data["tasks"]), 3)
+        self.assertEqual(Task.objects.count(), 3)
+        titles = list(Task.objects.values_list("title", flat=True).order_by("created_at"))
+        self.assertEqual(titles, ["Fix login bug", "Add dark mode", "Write unit tests"])
+
+    @patch("members.views._forward_to_controller")
+    def test_blank_lines_are_skipped(self, _mock):
+        self.client.force_login(self.user)
+        resp = self.client.post(self.url, {
+            "tasks": "Task one\n\n   \nTask two",
+            "project_id": self.project.pk,
+        })
+        data = resp.json()
+        self.assertTrue(data["ok"])
+        self.assertEqual(Task.objects.count(), 2)
+
+    @patch("members.views._forward_to_controller")
+    def test_response_contains_task_ids_and_titles(self, _mock):
+        self.client.force_login(self.user)
+        resp = self.client.post(self.url, {
+            "tasks": "My task",
+            "project_id": self.project.pk,
+        })
+        data = resp.json()
+        self.assertTrue(data["ok"])
+        self.assertEqual(len(data["tasks"]), 1)
+        entry = data["tasks"][0]
+        self.assertIn("task_id", entry)
+        self.assertEqual(entry["title"], "My task")
+        self.assertEqual(entry["status"], "pending")
+
+    def test_missing_tasks_returns_400(self):
+        self.client.force_login(self.user)
+        resp = self.client.post(self.url, {"tasks": "", "project_id": self.project.pk})
+        self.assertEqual(resp.status_code, 400)
+        self.assertFalse(resp.json()["ok"])
+
+    def test_missing_project_id_returns_400(self):
+        self.client.force_login(self.user)
+        resp = self.client.post(self.url, {"tasks": "Task one", "project_id": ""})
+        self.assertEqual(resp.status_code, 400)
+        self.assertFalse(resp.json()["ok"])
+
+    def test_only_whitespace_tasks_returns_400(self):
+        self.client.force_login(self.user)
+        resp = self.client.post(self.url, {"tasks": "   \n\n   ", "project_id": self.project.pk})
+        self.assertEqual(resp.status_code, 400)
+        self.assertFalse(resp.json()["ok"])
+
+    @patch("members.views._forward_to_controller")
+    def test_other_users_project_not_accepted(self, _mock):
+        other = make_user(email="other@example.com", username="other")
+        other_project = make_project(other, github_repo="other/repo")
+
+        self.client.force_login(self.user)
+        resp = self.client.post(self.url, {
+            "tasks": "Sneaky task",
+            "project_id": other_project.pk,
+        })
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(Task.objects.count(), 0)
+
+    @patch("members.views._forward_to_controller")
+    def test_forwards_each_task_to_controller(self, mock_forward):
+        self.client.force_login(self.user)
+        self.client.post(self.url, {
+            "tasks": "Task A\nTask B",
+            "project_id": self.project.pk,
+        })
+        self.assertEqual(mock_forward.call_count, 2)
+
+
+# ---------------------------------------------------------------------------
 # MemberProfile model
 # ---------------------------------------------------------------------------
 
