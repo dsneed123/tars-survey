@@ -20,6 +20,8 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
+from django_ratelimit.core import is_ratelimited
+
 from analytics.utils import fire_event
 from notifications.utils import create_notification
 from projects.models import Project
@@ -311,6 +313,13 @@ def task_list(request):
 @login_required
 def task_add(request):
     if request.method == "POST":
+        if is_ratelimited(request, group="task_add", key="user", rate="30/h", method="POST", increment=True):
+            form = TaskForm(request.user)
+            form.add_error(None, "Rate limit exceeded. You can submit at most 30 tasks per hour.")
+            response = render(request, "tasks/task_add.html", {"form": form, "service": request.GET.get("service", "")})
+            response.status_code = 429
+            response["Retry-After"] = "3600"
+            return response
         form = TaskForm(request.user, request.POST)
         if form.is_valid():
             task = form.save(commit=False)
@@ -549,6 +558,11 @@ def api_task_create(request):
     if not request.user.is_authenticated:
         return JsonResponse({"error": "Authentication required"}, status=401)
 
+    if is_ratelimited(request, group="api_task_create", key="user", rate="30/h", method="POST", increment=True):
+        response = JsonResponse({"error": "Rate limit exceeded. Maximum 30 tasks per hour."}, status=429)
+        response["Retry-After"] = "3600"
+        return response
+
     try:
         data = json.loads(request.body or b"{}")
     except (json.JSONDecodeError, ValueError):
@@ -682,6 +696,11 @@ def api_task_status(request, pk):
     expected = getattr(settings, "TARS_API_KEY", "")
     if not expected or api_key != expected:
         return JsonResponse({"error": "Invalid or missing X-API-Key"}, status=401)
+
+    if is_ratelimited(request, group="api_task_status", key="header:x-api-key", rate="100/h", method="POST", increment=True):
+        response = JsonResponse({"error": "Rate limit exceeded. Maximum 100 status updates per hour."}, status=429)
+        response["Retry-After"] = "3600"
+        return response
 
     try:
         data = json.loads(request.body or b"{}")
