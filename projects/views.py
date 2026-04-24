@@ -307,14 +307,40 @@ def project_detect(request):
     slug = _parse_github_repo(raw)
     if not slug:
         return JsonResponse({"ok": False, "error": "Enter a valid GitHub URL or owner/repo slug."})
+
     token = getattr(settings, "GITHUB_TOKEN", "")
-    data = _github_request(f"/repos/{slug}", token)
-    if not data or not isinstance(data, dict):
-        return JsonResponse({"ok": False, "error": f'Repository "{slug}" not found on GitHub. Make sure it\'s public.'})
+
+    # Try with TARS token first (supports private repos the token can access)
+    data = None
+    tars_has_access = False
+    if token:
+        data = _github_request(f"/repos/{slug}", token)
+        tars_has_access = isinstance(data, dict)
+
+    # Fall back to unauthenticated request (public repos only)
+    if not tars_has_access:
+        data = _github_request(f"/repos/{slug}")
+        if not isinstance(data, dict):
+            if token:
+                msg = (
+                    f'Repository "{slug}" was not found. It may be private and TARS does '
+                    f"not have access, or it doesn't exist."
+                )
+            else:
+                msg = (
+                    f'Repository "{slug}" not found on GitHub. '
+                    f"Make sure it's public or configure a GITHUB_TOKEN."
+                )
+            return JsonResponse({"ok": False, "error": msg})
+
     lang = (data.get("language") or "other").lower()
     valid = [c[0] for c in Project.LANGUAGE_CHOICES]
     if lang not in valid:
         lang = "other"
+
+    is_private = bool(data.get("private", False))
+    existing = _visible_projects(request.user).filter(github_repo=slug).first()
+
     return JsonResponse({
         "ok": True,
         "slug": slug,
@@ -322,6 +348,11 @@ def project_detect(request):
         "language": lang,
         "default_branch": data.get("default_branch", "main"),
         "description": data.get("description", "") or "",
+        "is_private": is_private,
+        "tars_has_access": tars_has_access,
+        "token_configured": bool(token),
+        "already_connected": existing is not None,
+        "existing_project_id": existing.pk if existing else None,
     })
 
 
