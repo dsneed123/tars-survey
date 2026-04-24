@@ -24,7 +24,7 @@ from django.views.decorators.http import require_GET, require_POST
 from django_ratelimit.core import is_ratelimited
 
 from analytics.utils import fire_event
-from notifications.utils import create_notification
+from notifications.utils import create_notification, send_task_completed_email
 from projects.models import Project
 
 from .forms import TaskForm
@@ -871,6 +871,9 @@ def api_task_status(request, pk):
     task.save(update_fields=update_fields)
     _broadcast_task_update(task)
 
+    if new_status == "completed":
+        send_task_completed_email(task)
+
     logger.info("Task %s status %r -> %r", task.pk, current_status, new_status)
 
     response_data = {
@@ -1047,6 +1050,7 @@ def _handle_pr_merged(task, pr_url):
         "PR merged! Your changes are live.",
         link=task.pr_url or pr_url,
     )
+    send_task_completed_email(task, notify=False)
 
     logger.info("GitHub webhook: PR merged for task %s → completed", task.pk)
 
