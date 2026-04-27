@@ -2149,3 +2149,85 @@ class ApiHealthTests(TestCase):
         data = resp.json()
         self.assertEqual(data["status"], "error")
         self.assertFalse(data["db"])
+
+
+# ---------------------------------------------------------------------------
+# Rate limiting
+# ---------------------------------------------------------------------------
+
+_TASK_ADD_URL = "/dashboard/tasks/new/"
+_API_TASKS_URL = "/api/tasks/"
+
+
+class TaskAddRateLimitTests(TestCase):
+    def setUp(self):
+        self.user = make_user(email="rl@example.com")
+        self.project = make_project(self.user)
+        self.client.force_login(self.user)
+
+    @patch("tasks.views.is_ratelimited", return_value=False)
+    def test_no_limit_hit_creates_task(self, _mock):
+        with patch("tasks.views._forward_to_controller"):
+            resp = self.client.post(_TASK_ADD_URL, {"project": self.project.pk, "title": "Ok task"})
+        self.assertEqual(resp.status_code, 302)
+
+    @override_settings(STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage")
+    @patch("tasks.views.is_ratelimited")
+    def test_per_minute_limit_returns_429(self, mock_rl):
+        # First call (5/m) returns True; second call (30/h) never reached
+        mock_rl.side_effect = lambda *a, **kw: kw.get("rate") == "5/m"
+        resp = self.client.post(_TASK_ADD_URL, {"project": self.project.pk, "title": "Spam"})
+        self.assertEqual(resp.status_code, 429)
+        self.assertEqual(resp["Retry-After"], "60")
+        self.assertContains(resp, "Slow down!", status_code=429)
+
+    @override_settings(STATICFILES_STORAGE="django.contrib.staticfiles.storage.StaticFilesStorage")
+    @patch("tasks.views.is_ratelimited")
+    def test_per_hour_limit_returns_429(self, mock_rl):
+        # 5/m passes, 30/h triggers
+        mock_rl.side_effect = lambda *a, **kw: kw.get("rate") == "30/h"
+        resp = self.client.post(_TASK_ADD_URL, {"project": self.project.pk, "title": "Spam"})
+        self.assertEqual(resp.status_code, 429)
+        self.assertEqual(resp["Retry-After"], "3600")
+        self.assertContains(resp, "30 tasks/hour", status_code=429)
+
+
+class ApiTaskCreateRateLimitTests(TestCase):
+    def setUp(self):
+        self.user = make_user(email="api-rl@example.com")
+        self.project = make_project(self.user)
+        self.client.force_login(self.user)
+
+    @patch("tasks.views.is_ratelimited")
+    def test_per_minute_limit_returns_429(self, mock_rl):
+        mock_rl.side_effect = lambda *a, **kw: kw.get("rate") == "5/m"
+        resp = self.client.post(
+            _API_TASKS_URL,
+            data=json.dumps({"project_id": self.project.pk, "title": "Spam"}),
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 429)
+        self.assertEqual(resp["Retry-After"], "60")
+        self.assertIn("Slow down!", resp.json()["error"])
+
+    @patch("tasks.views.is_ratelimited")
+    def test_per_hour_limit_returns_429(self, mock_rl):
+        mock_rl.side_effect = lambda *a, **kw: kw.get("rate") == "30/h"
+        resp = self.client.post(
+            _API_TASKS_URL,
+            data=json.dumps({"project_id": self.project.pk, "title": "Spam"}),
+            content_type="application/json",
+        )
+        self.assertEqual(resp.status_code, 429)
+        self.assertEqual(resp["Retry-After"], "3600")
+        self.assertIn("30 tasks/hour", resp.json()["error"])
+
+    @patch("tasks.views.is_ratelimited", return_value=False)
+    def test_no_limit_hit_creates_task(self, _mock):
+        with patch("tasks.views._forward_to_controller"):
+            resp = self.client.post(
+                _API_TASKS_URL,
+                data=json.dumps({"project_id": self.project.pk, "title": "Good task"}),
+                content_type="application/json",
+            )
+        self.assertEqual(resp.status_code, 201)
