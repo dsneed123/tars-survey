@@ -1130,6 +1130,18 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
     cursor: pointer; margin-top: 12px; transition: background 0.15s;
 }
 .detect-add-btn:hover { background: #4f46e5; color: #fff; }
+.detect-add-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.detect-dismiss-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: transparent; color: #666; border: 1px solid #333;
+    padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 500;
+    cursor: pointer; margin-top: 12px; transition: border-color 0.15s, color 0.15s;
+}
+.detect-dismiss-btn:hover { border-color: #555; color: #999; }
+.detect-quick-repo {
+    font-size: 12px; color: #555; margin: 6px 0 10px;
+    display: flex; align-items: center; gap: 5px;
+}
 
 /* ── Task expand/collapse panel ─────────────────────────── */
 .task-expand-btn {
@@ -2654,81 +2666,118 @@ function appendTarsDetectBubble() {
 }
 
 function renderDetectCard(contentEl, data) {
-    var langLabels = {
-        python:'Python', javascript:'JavaScript', typescript:'TypeScript',
-        go:'Go', rust:'Rust', java:'Java', swift:'Swift', other:'Other'
-    };
-    var langLabel = langLabels[data.language] || data.language;
-
-    var privacyBadge = data.is_private
-        ? '<span><i class="bi bi-lock"></i> Private</span>'
-        : '<span><i class="bi bi-globe2"></i> Public</span>';
-
-    var accessBadge = '';
-    if (data.tars_has_access) {
-        accessBadge = '<div style="margin-top:8px;">' +
-            '<span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:4px;' +
-            'background:rgba(34,197,94,0.12);color:#22c55e;">' +
-            '<i class="bi bi-check-circle"></i> TARS has access</span></div>';
-    } else if (!data.token_configured) {
-        accessBadge = '<div style="margin-top:8px;">' +
-            '<span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:4px;' +
-            'background:rgba(245,158,11,0.12);color:#f59e0b;">' +
-            '<i class="bi bi-exclamation-triangle"></i> No GitHub token — TARS may not be able to push</span></div>';
-    } else {
-        accessBadge = '<div style="margin-top:8px;">' +
-            '<span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:4px;' +
-            'background:rgba(239,68,68,0.1);color:#ef4444;">' +
-            '<i class="bi bi-x-circle"></i> TARS cannot access this repo</span></div>';
-    }
-
-    var html = '<p>Found it! Here\'s what I detected:</p>' +
-        '<div class="project-detect-card">' +
-            '<div class="detect-repo-slug"><i class="bi bi-github"></i> github.com/' + _esc(data.slug) + '</div>' +
-            '<div class="detect-repo-name">' + _esc(data.name) + '</div>' +
-            '<div class="detect-meta">' +
-                '<span><i class="bi bi-code-slash"></i> ' + _esc(langLabel) + '</span>' +
-                '<span><i class="bi bi-git"></i> ' + _esc(data.default_branch) + '</span>' +
-                privacyBadge +
-            '</div>' +
-            accessBadge;
-
-    if (data.description) {
-        html += '<div class="detect-desc">' + _esc(data.description) + '</div>';
-    }
+    var html;
 
     if (data.already_connected) {
-        html +=
-            '<div style="margin-top:10px;padding:8px 12px;background:rgba(99,102,241,0.08);' +
-            'border:1px solid rgba(99,102,241,0.18);border-radius:6px;font-size:13px;color:#818cf8;">' +
-            '<i class="bi bi-check2-circle"></i> Already connected to your workspace.' +
-            '</div>' +
+        html = '<p>That repo is already connected to your workspace.</p>' +
             '<a href="/dashboard/projects/' + parseInt(data.existing_project_id, 10) + '/" ' +
-            'class="detect-add-btn" style="display:inline-flex;text-decoration:none;margin-top:12px;">' +
+            'class="detect-add-btn" style="display:inline-flex;text-decoration:none;margin-top:8px;">' +
                 '<i class="bi bi-arrow-right"></i> View Project' +
             '</a>';
     } else {
-        html +=
-            '<form method="post" action="' + _addChatUrl + '">' +
-                '<input type="hidden" name="csrfmiddlewaretoken" value="' + _esc(getCsrfToken()) + '">' +
-                '<input type="hidden" name="github_repo" value="' + _esc(data.slug) + '">' +
-                '<input type="hidden" name="name" value="' + _esc(data.name) + '">' +
-                '<input type="hidden" name="language" value="' + _esc(data.language) + '">' +
-                '<input type="hidden" name="default_branch" value="' + _esc(data.default_branch) + '">' +
-                '<input type="hidden" name="description" value="' + _esc(data.description) + '">' +
-                '<button type="submit" class="detect-add-btn">' +
-                    '<i class="bi bi-plus-lg"></i> Add Project' +
+        html = '<p>I see a GitHub repo. Want me to add it as a project?</p>' +
+            '<div class="detect-quick-repo"><i class="bi bi-github"></i> github.com/' + _esc(data.slug) + '</div>' +
+            '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+                '<button type="button" class="detect-add-btn" id="detect-yes-btn" ' +
+                    'data-slug="' + _esc(data.slug) + '" ' +
+                    'data-name="' + _esc(data.name) + '" ' +
+                    'data-language="' + _esc(data.language) + '" ' +
+                    'data-branch="' + _esc(data.default_branch) + '" ' +
+                    'data-description="' + _esc(data.description) + '" ' +
+                    'onclick="addProjectAjax(this)">' +
+                    '<i class="bi bi-check-lg"></i> Yes, add it' +
                 '</button>' +
-            '</form>';
+                '<button type="button" class="detect-dismiss-btn" onclick="dismissDetect(this)">' +
+                    '<i class="bi bi-x"></i> No' +
+                '</button>' +
+            '</div>';
     }
 
-    html += '</div>';
     contentEl.classList.remove('msg-content-updating');
     void contentEl.offsetWidth;
     contentEl.innerHTML = html;
     contentEl.classList.add('msg-content-updating');
     scrollToBottom(true);
     hideNewMsgPill();
+}
+
+function addProjectAjax(btn) {
+    btn.disabled = true;
+    var contentEl = btn.closest('.msg-content');
+    var fd = new FormData();
+    fd.append('github_repo', btn.dataset.slug);
+    fd.append('name', btn.dataset.name);
+    fd.append('language', btn.dataset.language);
+    fd.append('default_branch', btn.dataset.branch);
+    fd.append('description', btn.dataset.description);
+    fd.append('csrfmiddlewaretoken', getCsrfToken());
+    fetch(_addChatUrl, {
+        method: 'POST',
+        body: fd,
+        credentials: 'same-origin',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.ok) {
+            _addProjectToPickerDOM(data.project_id, data.name);
+            if (contentEl) {
+                contentEl.classList.remove('msg-content-updating');
+                void contentEl.offsetWidth;
+                contentEl.innerHTML = '<p>Done! <strong>' + _esc(data.name) + '</strong> is now connected' +
+                    (data.already_existed ? ' (it was already in your workspace)' : '') +
+                    '. I\'ve selected it for you — what should I build?</p>';
+                contentEl.classList.add('msg-content-updating');
+                scrollToBottom(true);
+                hideNewMsgPill();
+            }
+        } else {
+            btn.disabled = false;
+            if (contentEl) {
+                var errEl = document.createElement('div');
+                errEl.className = 'error-text';
+                errEl.style.marginTop = '8px';
+                errEl.textContent = data.error || 'Could not add project. Please try again.';
+                contentEl.appendChild(errEl);
+            }
+        }
+    })
+    .catch(function() {
+        btn.disabled = false;
+    });
+}
+
+function _addProjectToPickerDOM(projectId, projectName) {
+    var dropdown = document.getElementById('projectDropdown');
+    if (!dropdown) {
+        // User had no projects — reload so the full task form appears
+        window.location.reload();
+        return;
+    }
+    var existing = dropdown.querySelector('[data-project-id="' + projectId + '"]');
+    if (existing) {
+        selectProject(projectId, projectName, existing, null);
+        return;
+    }
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'project-option';
+    btn.setAttribute('data-project-id', String(projectId));
+    btn.textContent = projectName;
+    btn.addEventListener('click', function(e) {
+        selectProject(projectId, projectName, btn, e);
+    });
+    dropdown.appendChild(btn);
+    selectProject(projectId, projectName, btn, null);
+}
+
+function dismissDetect(btn) {
+    var contentEl = btn.closest('.msg-content');
+    if (!contentEl) return;
+    contentEl.classList.remove('msg-content-updating');
+    void contentEl.offsetWidth;
+    contentEl.innerHTML = '<p>No problem! Paste a GitHub URL any time to connect a repo.</p>';
+    contentEl.classList.add('msg-content-updating');
 }
 
 function renderDetectError(contentEl, errorMsg) {
