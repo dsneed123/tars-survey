@@ -360,15 +360,21 @@ def project_detect(request):
 @require_POST
 def project_add_chat(request):
     """Create a project from the chat-based simplified one-field flow."""
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
     github_repo = request.POST.get("github_repo", "").strip()
     name = request.POST.get("name", "").strip()
     language = request.POST.get("language", "other").strip()
     default_branch = request.POST.get("default_branch", "main").strip()
     description = request.POST.get("description", "").strip()
     if not github_repo or not name:
+        if is_ajax:
+            return JsonResponse({"ok": False, "error": "Missing project data."})
         messages.error(request, "Missing project data.")
         return redirect("members:dashboard")
-    if Project.objects.filter(owner=request.user, github_repo=github_repo).exists():
+    existing = Project.objects.filter(owner=request.user, github_repo=github_repo).first()
+    if existing:
+        if is_ajax:
+            return JsonResponse({"ok": True, "project_id": existing.pk, "name": existing.name, "already_existed": True})
         messages.info(request, f'"{name}" is already connected.')
         return redirect("members:dashboard")
     valid_languages = [c[0] for c in Project.LANGUAGE_CHOICES]
@@ -387,6 +393,8 @@ def project_add_chat(request):
         user=request.user,
         metadata={"project_id": project.pk, "repo": project.github_repo},
     )
+    if is_ajax:
+        return JsonResponse({"ok": True, "project_id": project.pk, "name": project.name, "already_existed": False})
     messages.success(request, f'Connected "{project.name}". Now tell TARS what to build!')
     return redirect("members:dashboard")
 
