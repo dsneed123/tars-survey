@@ -448,9 +448,15 @@
             Describe what to build. TARS writes the code, runs the tests, and opens a pull request.
         </p>
 
+        {% if user.is_authenticated %}
+        <a href="{% url 'members:dashboard' %}" class="btn btn-accent btn-lg px-5">
+            Submit Task &rarr;
+        </a>
+        {% else %}
         <a href="{% url 'accounts:register' %}" class="btn btn-accent btn-lg px-5">
             Get Started &rarr;
         </a>
+        {% endif %}
 
         <!-- Chat demo -->
         <div class="chat-demo" id="chat-demo">
