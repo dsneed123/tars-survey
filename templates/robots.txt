@@ -1,4 +1,10 @@
 User-agent: *
 Allow: /
+Allow: /docs/
+Allow: /services/
+Allow: /status/
+Disallow: /dashboard/
+Disallow: /api/
+Disallow: /admin/
 
 Sitemap: {{ request.scheme }}://{{ request.get_host }}/sitemap.xml
