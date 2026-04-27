@@ -42,6 +42,21 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
     color: #888;
 }
 
+/* ── Sound toggle button ───────────────────────────────── */
+#soundToggleBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #555;
+    font-size: 1rem;
+    padding: 4px 6px;
+    border-radius: 6px;
+    line-height: 1;
+    transition: color .15s, background .15s;
+}
+#soundToggleBtn:hover { background: #1c1c1c; color: #aaa; }
+#soundToggleBtn.sound-on { color: var(--tars-accent, #6366f1); }
+
 /* ── Chat feed wrapper + messages feed ─────────────────── */
 .chat-feed-wrapper {
     flex: 1;
@@ -1539,6 +1554,14 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
         <span class="topbar-title">TARS</span>
         <div style="display:flex;align-items:center;gap:10px;">
 
+            <!-- Sound notification toggle -->
+            <button id="soundToggleBtn" type="button"
+                    title="Toggle sound notifications"
+                    aria-label="Toggle sound notifications"
+                    onclick="toggleSound()">
+                <i class="bi bi-volume-mute-fill" id="soundIcon"></i>
+            </button>
+
             <!-- Queue mini widget -->
             {% if active_count > 0 %}
             <div class="queue-widget" id="queueWidget">
@@ -2577,6 +2600,11 @@ document.addEventListener('keydown', function(e) {
             }
         }
 
+        // Sound on completion
+        if (data.status === 'completed') {
+            playCompletionSound();
+        }
+
         // Toast for active status transitions
         var activeStatuses = ['assigned', 'in_progress', 'reviewing', 'completed', 'failed'];
         if (activeStatuses.indexOf(data.status) !== -1 && typeof window.showToast === 'function') {
@@ -2596,6 +2624,57 @@ document.addEventListener('keydown', function(e) {
     }
 
     connect();
+
+    // ── Sound notification ─────────────────────────────────
+    var _soundEnabled = (localStorage.getItem('tars_sound') === 'on');  // default off
+
+    function _applySoundUi() {
+        var btn  = document.getElementById('soundToggleBtn');
+        var icon = document.getElementById('soundIcon');
+        if (!btn || !icon) return;
+        if (_soundEnabled) {
+            btn.classList.add('sound-on');
+            icon.className = 'bi bi-volume-up-fill';
+            btn.title = 'Sound on — click to mute';
+        } else {
+            btn.classList.remove('sound-on');
+            icon.className = 'bi bi-volume-mute-fill';
+            btn.title = 'Sound off — click to enable';
+        }
+    }
+
+    function toggleSound() {
+        _soundEnabled = !_soundEnabled;
+        localStorage.setItem('tars_sound', _soundEnabled ? 'on' : 'off');
+        _applySoundUi();
+    }
+
+    function playCompletionSound() {
+        if (!_soundEnabled) return;
+        try {
+            var ctx = new (window.AudioContext || window.webkitAudioContext)();
+            // Two-note chime: C5 then E5
+            var notes = [523.25, 659.25];
+            notes.forEach(function(freq, i) {
+                var osc  = ctx.createOscillator();
+                var gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.value = freq;
+                var start = ctx.currentTime + i * 0.18;
+                gain.gain.setValueAtTime(0, start);
+                gain.gain.linearRampToValueAtTime(0.18, start + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.35);
+                osc.start(start);
+                osc.stop(start + 0.35);
+            });
+        } catch (e) { /* AudioContext unavailable */ }
+    }
+
+    // Apply saved preference on load
+    _applySoundUi();
+    // ── End sound notification ─────────────────────────────
 
     function escHtml(str) {
         return String(str)
