@@ -1,3 +1,7 @@
+import urllib.request
+import urllib.error
+
+from django.conf import settings
 from django.db import connection
 from django.http import JsonResponse
 from django.shortcuts import render
@@ -72,11 +76,27 @@ def status(request):
         pass
 
     workers_ok = workers_online > 0
+
+    # Check controller API reachability (unauthenticated /api/health endpoint)
+    controller_ok = False
+    controller_url = getattr(settings, "TARS_CONTROLLER_URL", "")
+    if controller_url:
+        try:
+            req = urllib.request.Request(
+                controller_url.rstrip("/") + "/api/health",
+                headers={"User-Agent": "tarsai-status-check"},
+            )
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                controller_ok = resp.status == 200
+        except Exception:
+            pass
+
     overall_ok = db_ok
 
     return render(request, "pages/status.html", {
         "db_ok": db_ok,
         "workers_online": workers_online,
         "workers_ok": workers_ok,
+        "controller_ok": controller_ok,
         "overall_ok": overall_ok,
     })

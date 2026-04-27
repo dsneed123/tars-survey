@@ -257,13 +257,13 @@
     <!-- Component breakdown -->
     <div class="component-card">
 
-        <!-- API Server -->
+        <!-- Web App -->
         <div class="component-row" style="border-bottom:1px solid var(--tars-border);">
             <div class="component-name">
                 <i class="bi bi-globe2"></i>
                 <div>
-                    <div class="component-name-text">API &amp; Web Server</div>
-                    <div class="component-name-sub">tarsai.dev</div>
+                    <div class="component-name-text">Web App</div>
+                    <div class="component-name-sub">Django on Railway &mdash; tarsai.dev</div>
                 </div>
             </div>
             <div class="component-status">
@@ -278,7 +278,7 @@
                 <i class="bi bi-database"></i>
                 <div>
                     <div class="component-name-text">Database</div>
-                    <div class="component-name-sub">PostgreSQL</div>
+                    <div class="component-name-sub">PostgreSQL on Railway</div>
                 </div>
             </div>
             <div class="component-status">
@@ -292,17 +292,38 @@
             </div>
         </div>
 
-        <!-- Workers -->
-        <div class="component-row">
+        <!-- Controller API -->
+        <div class="component-row" style="border-bottom:1px solid var(--tars-border);">
+            <div class="component-name">
+                <i class="bi bi-hdd-network"></i>
+                <div>
+                    <div class="component-name-text">Controller API</div>
+                    <div class="component-name-sub">Mac Mini via Cloudflare Tunnel</div>
+                </div>
+            </div>
+            <div class="component-status">
+                {% if controller_ok %}
+                <div class="comp-dot green"></div>
+                <span class="comp-label green">Operational</span>
+                {% else %}
+                <div class="comp-dot yellow"></div>
+                <span class="comp-label yellow">Unreachable</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Task Workers -->
+        <div class="component-row" style="border-bottom:1px solid var(--tars-border);">
             <div class="component-name">
                 <i class="bi bi-cpu"></i>
                 <div>
                     <div class="component-name-text">Task Workers</div>
                     <div class="component-name-sub">
+                        Mac Mini via controller API &mdash;
                         {% if workers_online > 0 %}
                             {{ workers_online }} worker{{ workers_online|pluralize }} active
                         {% else %}
-                            No workers with recent heartbeat
+                            no workers with recent heartbeat
                         {% endif %}
                     </div>
                 </div>
@@ -315,6 +336,21 @@
                 <div class="comp-dot yellow"></div>
                 <span class="comp-label yellow">No workers online</span>
                 {% endif %}
+            </div>
+        </div>
+
+        <!-- WebSocket -->
+        <div class="component-row">
+            <div class="component-name">
+                <i class="bi bi-broadcast"></i>
+                <div>
+                    <div class="component-name-text">WebSocket</div>
+                    <div class="component-name-sub">Redis-backed Django Channels</div>
+                </div>
+            </div>
+            <div class="component-status">
+                <div class="comp-dot green"></div>
+                <span class="comp-label green">Operational</span>
             </div>
         </div>
 
