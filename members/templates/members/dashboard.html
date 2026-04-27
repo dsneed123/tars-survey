@@ -979,6 +979,65 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 }
 .shortcut-help:hover .shortcut-tooltip,
 .shortcut-help:focus-within .shortcut-tooltip { display: block; }
+
+/* ── Inline help tooltips ──────────────────────────────── */
+.help-tip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+.help-tip-btn {
+    background: none;
+    border: 1px solid #2a2a2a;
+    color: #444;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    font-size: 9px;
+    line-height: 1;
+    cursor: default;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    font-family: inherit;
+    flex-shrink: 0;
+    user-select: none;
+}
+.help-tip-btn:hover,
+.help-tip-btn:focus { color: #999; border-color: #555; outline: none; }
+.help-tip-text {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 8px;
+    padding: 8px 12px;
+    white-space: nowrap;
+    z-index: 300;
+    color: #aaa;
+    font-size: 12px;
+    pointer-events: none;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: normal;
+}
+.help-tip-text::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #2a2a2a;
+}
+.help-tip:hover .help-tip-text,
+.help-tip:focus-within .help-tip-text { display: block; }
+
 .shortcut-row {
     display: flex;
     justify-content: space-between;
@@ -1493,10 +1552,22 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
                 </button>
                 <div class="queue-panel" id="queuePanel">
                     <div class="queue-panel-header">
-                        <span class="queue-panel-title">Queue</span>
-                        <span style="font-size:11px;color:#444;" id="queuePanelMeta">
-                            {{ active_count }} active
-                        </span>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <span class="queue-panel-title">Queue</span>
+                            <span class="help-tip">
+                                <span class="help-tip-btn" tabindex="0" aria-label="About the queue">?</span>
+                                <span class="help-tip-text" role="tooltip">Your task queue — tasks are processed top to bottom</span>
+                            </span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <span style="font-size:11px;color:#444;" id="queuePanelMeta">
+                                {{ active_count }} active
+                            </span>
+                            <span class="help-tip">
+                                <span class="help-tip-btn" tabindex="0" aria-label="Status color guide">?</span>
+                                <span class="help-tip-text" role="tooltip">Green = done, Blue = working, Gray = waiting</span>
+                            </span>
+                        </div>
                     </div>
                     {% for task in queue_widget_tasks %}
                     <div class="queue-panel-task" id="widget-task-{{ task.pk }}" data-task-id="{{ task.pk }}">
@@ -1803,6 +1874,10 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
                                 {% endfor %}
                             </div>
                         </div>
+                        <span class="help-tip" style="align-self:center;">
+                            <span class="help-tip-btn" tabindex="0" aria-label="Project selection help">?</span>
+                            <span class="help-tip-text" role="tooltip">Select which project TARS should work on</span>
+                        </span>
                         <input type="hidden" name="project_id" id="projectIdInput" value="">
                         <label for="chatInput" class="visually-hidden">Message to TARS</label>
                         <textarea name="title" class="chat-textarea" id="chatInput"
@@ -1834,6 +1909,10 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
                 </div>
             </form>
             <div class="input-hint">
+                <span class="help-tip" style="margin-right:8px;">
+                    <span class="help-tip-btn" tabindex="0" aria-label="Input bar help">?</span>
+                    <span class="help-tip-text" role="tooltip">Type a task and press Enter to submit</span>
+                </span>
                 <span class="shortcut-help">
                     <button type="button" class="shortcut-btn" tabindex="0" aria-label="Keyboard shortcuts">?</button>
                     <div class="shortcut-tooltip" role="tooltip">
