@@ -654,6 +654,14 @@
 
 <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
+<!-- Global CSRF token helper (reads csrftoken cookie set by Django) -->
+<script>
+window.getCsrfToken = function () {
+    var match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : '';
+};
+</script>
+
 <!-- Toast notification system -->
 <script>
 (function () {
