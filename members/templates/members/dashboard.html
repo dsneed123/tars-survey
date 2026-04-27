@@ -1540,6 +1540,64 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
     touch-action: manipulation;
 }
 .tour-skip-btn:hover { color: #888; }
+
+/* ── Project health dots ───────────────────────────────── */
+.health-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: inline-block;
+    transition: background 0.3s;
+}
+.health-dot-green  { background: #22c55e; }
+.health-dot-yellow { background: #f59e0b; }
+.health-dot-red    { background: #ef4444; }
+
+/* ── Queue panel project sections ─────────────────────── */
+.qp-project-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    background: none;
+    border: none;
+    border-top: 1px solid #1a1a1a;
+    padding: 7px 0 5px;
+    cursor: pointer;
+    color: #aaa;
+    font-size: 12px;
+    font-weight: 500;
+    text-align: left;
+    transition: color 0.12s;
+    user-select: none;
+}
+.qp-project-header:hover { color: #ccc; }
+.qp-project-name {
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+.qp-task-count {
+    font-size: 10px;
+    color: #444;
+    font-weight: 400;
+    flex-shrink: 0;
+}
+.qp-chevron {
+    font-size: 9px;
+    color: #444;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+}
+.qp-project-section.collapsed .qp-chevron { transform: rotate(-90deg); }
+.qp-project-tasks {
+    overflow: hidden;
+    transition: max-height 0.2s ease;
+}
+.qp-project-section.collapsed .qp-project-tasks { display: none; }
 </style>
 {% endblock %}
 
@@ -1592,10 +1650,27 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
                             </span>
                         </div>
                     </div>
-                    {% for task in queue_widget_tasks %}
-                    <div class="queue-panel-task" id="widget-task-{{ task.pk }}" data-task-id="{{ task.pk }}">
-                        <span class="status-badge badge-{{ task.status }} flex-shrink-0">{{ task.get_status_display }}</span>
-                        <span class="queue-panel-task-title" title="{{ task.title }}">{{ task.title|truncatechars:42 }}</span>
+                    {% for proj_data in queue_projects %}
+                    <div class="qp-project-section" id="qp-project-{{ proj_data.project.pk }}" data-project-id="{{ proj_data.project.pk }}">
+                        <button class="qp-project-header"
+                                onclick="toggleQueueProject('{{ proj_data.project.pk }}', this)"
+                                aria-expanded="true"
+                                aria-controls="qp-tasks-{{ proj_data.project.pk }}">
+                            <span class="health-dot health-dot-{{ proj_data.health }}"
+                                  id="health-dot-{{ proj_data.project.pk }}"
+                                  title="{{ proj_data.health }} health"></span>
+                            <span class="qp-project-name" title="{{ proj_data.project.name }}">{{ proj_data.project.name }}</span>
+                            <span class="qp-task-count" id="qp-count-{{ proj_data.project.pk }}">{{ proj_data.tasks|length }}</span>
+                            <i class="bi bi-chevron-down qp-chevron"></i>
+                        </button>
+                        <div class="qp-project-tasks" id="qp-tasks-{{ proj_data.project.pk }}">
+                            {% for task in proj_data.tasks %}
+                            <div class="queue-panel-task" id="widget-task-{{ task.pk }}" data-task-id="{{ task.pk }}" data-project-id="{{ proj_data.project.pk }}">
+                                <span class="status-badge badge-{{ task.status }} flex-shrink-0">{{ task.get_status_display }}</span>
+                                <span class="queue-panel-task-title" title="{{ task.title }}">{{ task.title|truncatechars:42 }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
                     </div>
                     {% endfor %}
                     <div class="queue-panel-footer">
@@ -2749,7 +2824,7 @@ document.addEventListener('keydown', function(e) {
 </script>
 
 <script>
-// Queue mini widget — toggle, real-time count updates
+// Queue mini widget — toggle, real-time count updates, project health
 (function () {
     var ACTIVE_STATUSES = ['pending', 'queued', 'assigned', 'in_progress', 'reviewing'];
 
@@ -2765,6 +2840,61 @@ document.addEventListener('keydown', function(e) {
 
     // Set initial tab title from server-rendered count
     if (typeof window.updateTabTitle === 'function') { window.updateTabTitle(_activeCount); }
+
+    // Project health stats seeded from server (completed/failed counts per project)
+    var _projectHealth = {};
+    {% for proj_data in queue_projects %}
+    _projectHealth[{{ proj_data.project.pk }}] = { completed: {{ proj_data.completed_cnt }}, failed: {{ proj_data.failed_cnt }} };
+    {% endfor %}
+
+    function _recalcProjectHealth(projectId) {
+        var stats = _projectHealth[projectId];
+        if (!stats) return;
+        var total = stats.completed + stats.failed;
+        var health;
+        if (total === 0) {
+            health = 'green';
+        } else {
+            var rate = stats.completed / total;
+            if (rate >= 0.8) health = 'green';
+            else if (rate >= 0.5) health = 'yellow';
+            else health = 'red';
+        }
+        var dot = document.getElementById('health-dot-' + projectId);
+        if (dot) {
+            dot.className = 'health-dot health-dot-' + health;
+            dot.title = health + ' health';
+        }
+    }
+
+    // Toggle a project section collapsed/expanded
+    window.toggleQueueProject = function (projectId, headerEl) {
+        var section = document.getElementById('qp-project-' + projectId);
+        if (!section) return;
+        var collapsed = section.classList.toggle('collapsed');
+        if (headerEl) headerEl.setAttribute('aria-expanded', String(!collapsed));
+        try {
+            var state = {};
+            try { state = JSON.parse(localStorage.getItem('tars_qp_collapsed')) || {}; } catch (_) {}
+            if (collapsed) { state[projectId] = 1; } else { delete state[projectId]; }
+            localStorage.setItem('tars_qp_collapsed', JSON.stringify(state));
+        } catch (_) {}
+    };
+
+    // Restore collapsed state from localStorage on load
+    (function () {
+        try {
+            var state = JSON.parse(localStorage.getItem('tars_qp_collapsed')) || {};
+            Object.keys(state).forEach(function (pid) {
+                var section = document.getElementById('qp-project-' + pid);
+                if (section) {
+                    section.classList.add('collapsed');
+                    var hdr = section.querySelector('.qp-project-header');
+                    if (hdr) hdr.setAttribute('aria-expanded', 'false');
+                }
+            });
+        } catch (_) {}
+    }());
 
     function refreshWidget() {
         var labelEl = document.getElementById('queueWidgetLabel');
@@ -2805,15 +2935,40 @@ document.addEventListener('keydown', function(e) {
         // Update status badge in the panel if the task is shown there
         var panelTask = document.getElementById('widget-task-' + id);
         if (panelTask) {
+            var projectId = panelTask.dataset.projectId;
             var badge = panelTask.querySelector('.status-badge');
             if (badge) {
                 badge.className = 'status-badge badge-' + newStatus + ' flex-shrink-0';
                 badge.textContent = data.status_display || newStatus;
             }
             if (!isActive) {
+                // Update health stats before removing the task
+                if (projectId && _projectHealth[projectId]) {
+                    if (newStatus === 'completed') { _projectHealth[projectId].completed++; }
+                    else if (newStatus === 'failed') { _projectHealth[projectId].failed++; }
+                    _recalcProjectHealth(projectId);
+                }
                 panelTask.style.opacity = '0';
                 setTimeout(function () {
                     if (panelTask.parentNode) panelTask.parentNode.removeChild(panelTask);
+                    // If the project section has no remaining tasks, fade it out
+                    if (projectId) {
+                        var section = document.getElementById('qp-project-' + projectId);
+                        if (section) {
+                            var remaining = section.querySelectorAll('.queue-panel-task');
+                            if (remaining.length === 0) {
+                                section.style.transition = 'opacity 0.3s';
+                                section.style.opacity = '0';
+                                setTimeout(function () {
+                                    if (section.parentNode) section.parentNode.removeChild(section);
+                                }, 300);
+                            } else {
+                                // Update task count badge
+                                var countEl = document.getElementById('qp-count-' + projectId);
+                                if (countEl) countEl.textContent = remaining.length;
+                            }
+                        }
+                    }
                 }, 300);
             }
         }
