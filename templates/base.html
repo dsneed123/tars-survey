@@ -546,6 +546,174 @@
             body.app-authed { padding-bottom: 60px; }
         }
 
+        /* ── Command Palette ─────────────────────────────────── */
+        #cmd-palette-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            z-index: 10000;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 15vh;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+        }
+
+        #cmd-palette-overlay.cmd-open {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        #cmd-palette {
+            width: 100%;
+            max-width: 560px;
+            background: var(--tars-surface);
+            border: 1px solid var(--tars-border);
+            border-radius: 14px;
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            transform: scale(0.97) translateY(-8px);
+            transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+            margin: 0 1rem;
+        }
+
+        #cmd-palette-overlay.cmd-open #cmd-palette {
+            transform: scale(1) translateY(0);
+        }
+
+        #cmd-palette-input-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.9rem 1rem;
+            border-bottom: 1px solid var(--tars-border);
+        }
+
+        #cmd-palette-input-wrap > i {
+            color: var(--tars-muted);
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        #cmd-palette-input {
+            flex: 1;
+            background: none;
+            border: none;
+            outline: none;
+            color: var(--tars-text);
+            font-size: 0.95rem;
+            font-family: inherit;
+            min-width: 0;
+        }
+
+        #cmd-palette-input::placeholder {
+            color: var(--tars-muted);
+        }
+
+        #cmd-palette-results {
+            max-height: 380px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--tars-border) transparent;
+        }
+
+        .cmd-section-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--tars-muted);
+            padding: 0.6rem 1rem 0.25rem;
+        }
+
+        .cmd-result-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.6rem 1rem;
+            cursor: pointer;
+            text-decoration: none;
+            color: var(--tars-text);
+            transition: background 0.1s;
+            font-size: 0.88rem;
+        }
+
+        .cmd-result-item:hover,
+        .cmd-result-item.cmd-active {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--tars-text);
+            text-decoration: none;
+        }
+
+        .cmd-result-item > i {
+            font-size: 0.9rem;
+            color: var(--tars-muted);
+            flex-shrink: 0;
+            width: 1rem;
+            text-align: center;
+        }
+
+        .cmd-result-item.cmd-active > i {
+            color: var(--tars-accent);
+        }
+
+        .cmd-result-main {
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .cmd-result-meta {
+            font-size: 0.75rem;
+            color: var(--tars-muted);
+            flex-shrink: 0;
+        }
+
+        .cmd-empty {
+            padding: 2rem 1rem;
+            text-align: center;
+            color: var(--tars-muted);
+            font-size: 0.85rem;
+        }
+
+        .cmd-kbd {
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.7rem;
+            color: var(--tars-muted);
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--tars-border);
+            border-radius: 4px;
+            padding: 1px 5px;
+            font-family: inherit;
+        }
+
+        html[data-theme="light"] .cmd-kbd {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        #cmd-palette-footer {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.55rem 1rem;
+            border-top: 1px solid var(--tars-border);
+            font-size: 0.72rem;
+            color: var(--tars-muted);
+        }
+
+        #cmd-palette-footer span {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
         /* ── Page transition ─────────────────────────────────────── */
         #page-content {
             opacity: 0;
@@ -777,6 +945,23 @@ window.getCsrfToken = function () {
 {% endif %}
 
 {% if user.is_authenticated %}
+<div id="cmd-palette-overlay" role="dialog" aria-label="Command palette" aria-modal="true">
+    <div id="cmd-palette">
+        <div id="cmd-palette-input-wrap">
+            <i class="bi bi-search"></i>
+            <input id="cmd-palette-input" type="text" placeholder="Search tasks, projects, or run a command…" autocomplete="off" spellcheck="false">
+        </div>
+        <div id="cmd-palette-results"></div>
+        <div id="cmd-palette-footer">
+            <span><kbd class="cmd-kbd">↑↓</kbd>&nbsp;navigate</span>
+            <span><kbd class="cmd-kbd">↵</kbd>&nbsp;select</span>
+            <span><kbd class="cmd-kbd">Esc</kbd>&nbsp;close</span>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if user.is_authenticated %}
 <script>
 (function () {
     var badges = [
@@ -905,6 +1090,231 @@ window.getCsrfToken = function () {
     }
 }());
 </script>
+
+{% if user.is_authenticated %}
+<!-- Command palette -->
+<script>
+(function () {
+    var overlay = document.getElementById('cmd-palette-overlay');
+    var input   = document.getElementById('cmd-palette-input');
+    var results = document.getElementById('cmd-palette-results');
+    if (!overlay) return;
+
+    var paletteData = null;
+    var activeIdx = -1;
+    var flatItems = [];
+
+    var QUICK_ACTIONS = [
+        { label: 'New Task',   icon: 'bi-plus-circle', url: '{% url "tasks:add" %}' },
+        { label: 'View Queue', icon: 'bi-list-task',   url: '{% url "tasks:queue" %}' },
+        { label: 'Settings',   icon: 'bi-gear',        url: '{% url "members:settings" %}' },
+    ];
+
+    var STATUS_ICONS = {
+        pending:     'bi-clock',
+        queued:      'bi-hourglass-split',
+        assigned:    'bi-cpu',
+        in_progress: 'bi-code-slash',
+        reviewing:   'bi-eye',
+        completed:   'bi-check-circle-fill',
+        failed:      'bi-x-circle-fill',
+    };
+
+    function openPalette() {
+        overlay.classList.add('cmd-open');
+        input.value = '';
+        activeIdx = -1;
+        render('');
+        input.focus();
+        if (!paletteData) fetchData();
+    }
+
+    function closePalette() {
+        overlay.classList.remove('cmd-open');
+        activeIdx = -1;
+    }
+
+    function fetchData() {
+        fetch('/api/command-palette/', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                paletteData = d;
+                render(input.value.trim());
+            })
+            .catch(function () {});
+    }
+
+    function fuzzy(query, text) {
+        var q = query.toLowerCase();
+        var t = text.toLowerCase();
+        var qi = 0;
+        for (var i = 0; i < t.length && qi < q.length; i++) {
+            if (t[i] === q[qi]) qi++;
+        }
+        return qi === q.length;
+    }
+
+    function esc(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function taskItemHtml(t, idx) {
+        var icon = STATUS_ICONS[t.status] || 'bi-circle';
+        return '<a href="' + esc(t.url) + '" class="cmd-result-item" data-idx="' + idx + '">' +
+            '<i class="bi ' + icon + '"></i>' +
+            '<span class="cmd-result-main">' + esc(t.title) + '</span>' +
+            (t.project_name ? '<span class="cmd-result-meta">' + esc(t.project_name) + '</span>' : '') +
+            '</a>';
+    }
+
+    function projectItemHtml(p, idx) {
+        return '<a href="' + esc(p.url) + '" class="cmd-result-item" data-idx="' + idx + '">' +
+            '<i class="bi bi-folder2"></i>' +
+            '<span class="cmd-result-main">' + esc(p.name) + '</span>' +
+            '</a>';
+    }
+
+    function actionItemHtml(a, idx) {
+        return '<a href="' + esc(a.url) + '" class="cmd-result-item" data-idx="' + idx + '">' +
+            '<i class="bi ' + a.icon + '"></i>' +
+            '<span class="cmd-result-main">' + esc(a.label) + '</span>' +
+            '</a>';
+    }
+
+    function render(query) {
+        flatItems = [];
+        var html = '';
+
+        if (!query) {
+            html += '<div class="cmd-section-label">Quick Actions</div>';
+            QUICK_ACTIONS.forEach(function (a) {
+                html += actionItemHtml(a, flatItems.length);
+                flatItems.push(a.url);
+            });
+
+            if (paletteData && paletteData.tasks && paletteData.tasks.length) {
+                html += '<div class="cmd-section-label">Recent Tasks</div>';
+                paletteData.tasks.slice(0, 6).forEach(function (t) {
+                    html += taskItemHtml(t, flatItems.length);
+                    flatItems.push(t.url);
+                });
+            }
+
+            if (paletteData && paletteData.projects && paletteData.projects.length) {
+                html += '<div class="cmd-section-label">Projects</div>';
+                paletteData.projects.forEach(function (p) {
+                    html += projectItemHtml(p, flatItems.length);
+                    flatItems.push(p.url);
+                });
+            }
+        } else {
+            var matchedActions   = QUICK_ACTIONS.filter(function (a) { return fuzzy(query, a.label); });
+            var matchedTasks     = paletteData ? paletteData.tasks.filter(function (t) { return fuzzy(query, t.title); }) : [];
+            var matchedProjects  = paletteData ? paletteData.projects.filter(function (p) { return fuzzy(query, p.name); }) : [];
+
+            if (!matchedActions.length && !matchedTasks.length && !matchedProjects.length) {
+                html = '<div class="cmd-empty">No results for <strong>' + esc(query) + '</strong></div>';
+            } else {
+                if (matchedActions.length) {
+                    html += '<div class="cmd-section-label">Actions</div>';
+                    matchedActions.forEach(function (a) {
+                        html += actionItemHtml(a, flatItems.length);
+                        flatItems.push(a.url);
+                    });
+                }
+                if (matchedTasks.length) {
+                    html += '<div class="cmd-section-label">Tasks</div>';
+                    matchedTasks.forEach(function (t) {
+                        html += taskItemHtml(t, flatItems.length);
+                        flatItems.push(t.url);
+                    });
+                }
+                if (matchedProjects.length) {
+                    html += '<div class="cmd-section-label">Projects</div>';
+                    matchedProjects.forEach(function (p) {
+                        html += projectItemHtml(p, flatItems.length);
+                        flatItems.push(p.url);
+                    });
+                }
+            }
+        }
+
+        results.innerHTML = html;
+        activeIdx = flatItems.length > 0 ? 0 : -1;
+        updateActive();
+
+        results.querySelectorAll('.cmd-result-item').forEach(function (el) {
+            el.addEventListener('mouseenter', function () {
+                activeIdx = parseInt(el.dataset.idx, 10);
+                updateActive();
+            });
+        });
+    }
+
+    function updateActive() {
+        results.querySelectorAll('.cmd-result-item').forEach(function (el) {
+            el.classList.toggle('cmd-active', parseInt(el.dataset.idx, 10) === activeIdx);
+        });
+        var activeEl = results.querySelector('.cmd-result-item.cmd-active');
+        if (activeEl) activeEl.scrollIntoView({ block: 'nearest' });
+    }
+
+    function navigateTo(url) {
+        closePalette();
+        var pc = document.getElementById('page-content');
+        if (pc) {
+            pc.classList.remove('page-visible');
+            setTimeout(function () { window.location.href = url; }, 200);
+        } else {
+            window.location.href = url;
+        }
+    }
+
+    document.addEventListener('keydown', function (e) {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault();
+            overlay.classList.contains('cmd-open') ? closePalette() : openPalette();
+            return;
+        }
+
+        if (!overlay.classList.contains('cmd-open')) return;
+
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            closePalette();
+        } else if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (flatItems.length) {
+                activeIdx = (activeIdx + 1) % flatItems.length;
+                updateActive();
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (flatItems.length) {
+                activeIdx = (activeIdx - 1 + flatItems.length) % flatItems.length;
+                updateActive();
+            }
+        } else if (e.key === 'Enter' && activeIdx >= 0 && flatItems[activeIdx]) {
+            e.preventDefault();
+            navigateTo(flatItems[activeIdx]);
+        }
+    });
+
+    overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) closePalette();
+    });
+
+    input.addEventListener('input', function () {
+        activeIdx = -1;
+        render(input.value.trim());
+    });
+}());
+</script>
+{% endif %}
 
 {% block extra_scripts %}{% endblock %}
 
