@@ -8,12 +8,26 @@
 <h1>API Reference</h1>
 <p class="docs-lead">All TARS API endpoints, request/response schemas, authentication headers, and error codes.</p>
 
+<div class="docs-note info">
+    <i class="bi bi-info-circle-fill"></i>
+    <div>
+        <strong>For users:</strong> task submission is done through the <a href="/">web chat interface</a> — no API key needed. The endpoints on this page are primarily for <strong>worker and controller communication</strong>. The <code>/api/tasks/</code> endpoints are also used internally by the dashboard chat UI (session-authenticated).
+    </div>
+</div>
+
 <h2>Authentication</h2>
-<p>Worker API endpoints require a worker API key passed in the <code>X-Worker-Key</code> HTTP header:</p>
+
+<h3>Worker API Key</h3>
+<p>Worker endpoints require a worker API key passed in the <code>X-Worker-Key</code> HTTP header:</p>
 
 <pre><code>X-Worker-Key: &lt;your-worker-api-key&gt;</code></pre>
 
-<p>Webhook endpoints use Stripe's signature verification — see the <a href="#webhooks">Webhooks</a> section.</p>
+<h3>Session Authentication</h3>
+<p>The <code>/api/tasks/</code> endpoints use Django session authentication (cookie-based). Callers must be logged in. Mutating requests (POST) must also include the CSRF token:</p>
+
+<pre><code>X-CSRFToken: &lt;csrf-token&gt;</code></pre>
+
+<p>Webhook endpoints use signature verification — see the <a href="#webhooks">Webhooks</a> section.</p>
 
 <div class="docs-note info">
     <i class="bi bi-info-circle-fill"></i>
@@ -41,12 +55,146 @@
     </thead>
     <tbody>
         <tr><td>400</td><td>Bad request — invalid JSON or missing required field</td></tr>
-        <tr><td>401</td><td>Unauthorized — missing or invalid <code>X-Worker-Key</code></td></tr>
+        <tr><td>401</td><td>Unauthorized — missing or invalid authentication credential</td></tr>
         <tr><td>404</td><td>Resource not found</td></tr>
         <tr><td>405</td><td>Method not allowed</td></tr>
         <tr><td>500</td><td>Internal server error</td></tr>
     </tbody>
 </table>
+
+<h2 id="tasks">Task Endpoints</h2>
+<p>These endpoints are used by the dashboard chat UI and are protected by Django session authentication. They are <strong>not</strong> intended for use with a worker API key.</p>
+
+<h2 id="task-create">POST /api/tasks/</h2>
+
+<div class="api-endpoint">
+    <div class="api-endpoint-header">
+        <span class="api-method post">POST</span>
+        <span class="api-path">/api/tasks/</span>
+    </div>
+    <div class="api-endpoint-body">
+        <p>Create a new task. This is the endpoint the web chat interface uses when a user submits a request. Requires an active session and CSRF token. Rate-limited to 30 requests per hour per user.</p>
+
+        <h3>Headers</h3>
+        <pre><code>X-CSRFToken: &lt;csrf-token&gt;
+Content-Type: application/json</code></pre>
+
+        <h3>Request Body</h3>
+        <table class="api-param-table">
+            <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td>project_id<span class="param-required">required</span></td>
+                    <td>integer</td>
+                    <td>ID of the project to associate the task with. Must be a project the authenticated user has access to.</td>
+                </tr>
+                <tr>
+                    <td>title<span class="param-required">required</span></td>
+                    <td>string</td>
+                    <td>Short description of what TARS should do. Displayed as the task name.</td>
+                </tr>
+                <tr>
+                    <td>description<span class="param-optional">optional</span></td>
+                    <td>string</td>
+                    <td>Extended details for TARS. Defaults to the value of <code>title</code> if omitted.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Example Request</h3>
+        <pre><code>curl -s -X POST https://tarsai.dev/api/tasks/ \
+  -H "X-CSRFToken: &lt;csrf-token&gt;" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "project_id": 12,
+    "title": "Add rate limiting to the login endpoint",
+    "description": "Use django-ratelimit; allow 10 attempts per minute per IP."
+  }'</code></pre>
+
+        <h3>Example Response — 201 Created</h3>
+        <pre><code>{
+  "id": 1338,
+  "title": "Add rate limiting to the login endpoint",
+  "description": "Use django-ratelimit; allow 10 attempts per minute per IP.",
+  "status": "pending",
+  "status_display": "Pending",
+  "project": "backend-api",
+  "created_at": "2026-04-27T14:32:00.000Z"
+}</code></pre>
+    </div>
+</div>
+
+<h2 id="task-list">GET /api/tasks/</h2>
+
+<div class="api-endpoint">
+    <div class="api-endpoint-header">
+        <span class="api-method get">GET</span>
+        <span class="api-path">/api/tasks/</span>
+    </div>
+    <div class="api-endpoint-body">
+        <p>Return a paginated list of tasks for the authenticated user, newest first by default. Used by the chat feed for infinite scroll.</p>
+
+        <h3>Query Parameters</h3>
+        <table class="api-param-table">
+            <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr>
+                    <td>page<span class="param-optional">optional</span></td>
+                    <td>integer</td>
+                    <td>Page number (1-indexed). Defaults to <code>1</code>.</td>
+                </tr>
+                <tr>
+                    <td>per_page<span class="param-optional">optional</span></td>
+                    <td>integer</td>
+                    <td>Results per page. Defaults to <code>20</code>; max <code>100</code>.</td>
+                </tr>
+                <tr>
+                    <td>status<span class="param-optional">optional</span></td>
+                    <td>string</td>
+                    <td>Filter by status. One of: <code>pending</code>, <code>queued</code>, <code>assigned</code>, <code>in_progress</code>, <code>reviewing</code>, <code>completed</code>, <code>failed</code>.</td>
+                </tr>
+                <tr>
+                    <td>project<span class="param-optional">optional</span></td>
+                    <td>integer</td>
+                    <td>Filter by project ID.</td>
+                </tr>
+                <tr>
+                    <td>q<span class="param-optional">optional</span></td>
+                    <td>string</td>
+                    <td>Full-text search across title and description.</td>
+                </tr>
+                <tr>
+                    <td>sort<span class="param-optional">optional</span></td>
+                    <td>string</td>
+                    <td>Sort order. One of <code>created_at</code> (oldest first) or <code>-created_at</code> (newest first, default).</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Example Request</h3>
+        <pre><code>curl -s "https://tarsai.dev/api/tasks/?page=1&amp;per_page=20&amp;status=completed"</code></pre>
+
+        <h3>Example Response — 200 OK</h3>
+        <pre><code>{
+  "tasks": [
+    {
+      "id": 1338,
+      "title": "Add rate limiting to the login endpoint",
+      "status": "completed",
+      "status_display": "Completed",
+      "project": "backend-api",
+      "branch_name": "tars/rate-limit-login-1338",
+      "pr_url": "https://github.com/acme-corp/backend-api/pull/92",
+      "error_message": null,
+      "created_at": "2026-04-27T14:32:00.000Z",
+      "completed_at": "2026-04-27T14:45:00.000Z"
+    }
+  ],
+  "has_more": false,
+  "next_page": null
+}</code></pre>
+    </div>
+</div>
 
 <h2 id="register">POST /api/workers/register/</h2>
 
@@ -250,18 +398,31 @@
     </div>
 </div>
 
-<h2>GET /health/</h2>
+<h2 id="health">GET /api/health/</h2>
 
 <div class="api-endpoint">
     <div class="api-endpoint-header">
         <span class="api-method get">GET</span>
-        <span class="api-path">/health/</span>
+        <span class="api-path">/api/health/</span>
     </div>
     <div class="api-endpoint-body">
-        <p>Simple health check endpoint — no authentication required. Returns <code>200 OK</code> if the API server is running.</p>
+        <p>Health check endpoint — no authentication required. Returns <code>200 OK</code> when the server and database are reachable, or <code>503 Service Unavailable</code> if the database is down.</p>
 
         <h3>Example Response — 200 OK</h3>
-        <pre><code>{"status": "ok"}</code></pre>
+        <pre><code>{
+  "status": "ok",
+  "db": true,
+  "redis": true,
+  "version": "1.0"
+}</code></pre>
+
+        <h3>Example Response — 503 Service Unavailable</h3>
+        <pre><code>{
+  "status": "error",
+  "db": false,
+  "redis": false,
+  "version": "1.0"
+}</code></pre>
     </div>
 </div>
 
