@@ -25,6 +25,8 @@ urlpatterns = [
     path("api/tasks/<int:pk>/retry", views.api_task_retry, name="api_retry"),
     # Cancel a pending/queued task (session auth + CSRF)
     path("api/tasks/<int:pk>/cancel", views.api_task_cancel, name="api_cancel"),
+    # Hard-delete a pending/queued task (session auth + CSRF)
+    path("api/tasks/<int:pk>/delete", views.api_task_delete, name="api_delete"),
     # Pin / unpin a task (session auth + CSRF; max 5 pins per user)
     path("api/tasks/<int:pk>/pin", views.api_task_pin, name="api_pin"),
     # GitHub webhook receiver (HMAC-SHA256 signature validation)

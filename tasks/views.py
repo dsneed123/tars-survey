@@ -1109,6 +1109,31 @@ def api_task_cancel(request, pk):
 
 
 # ---------------------------------------------------------------------------
+# POST /api/tasks/<pk>/delete
+#
+# Hard-delete a pending or queued task.  Only the task owner may delete, and
+# only before TARS has started work (pending/queued statuses).
+# Protected by Django's standard session auth + CSRF.
+# ---------------------------------------------------------------------------
+
+
+@login_required
+@require_POST
+def api_task_delete(request, pk):
+    task = get_object_or_404(Task, pk=pk, created_by=request.user)
+
+    if task.status not in ("pending", "queued"):
+        return JsonResponse({"error": "Only pending or queued tasks can be deleted"}, status=400)
+
+    task_id = task.pk
+    user_id = request.user.id
+    task.delete()
+
+    logger.info("Task %s deleted by user %s", task_id, user_id)
+    return JsonResponse({"ok": True, "task_id": task_id})
+
+
+# ---------------------------------------------------------------------------
 # POST /api/tasks/<pk>/pin
 #
 # Toggle the pinned state of a task.  At most 5 tasks can be pinned per user;
