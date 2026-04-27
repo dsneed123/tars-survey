@@ -1242,6 +1242,123 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
     padding: 6px 0;
     margin-bottom: 8px;
 }
+
+/* ── Onboarding tour ─────────────────────────────────────── */
+#tourOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    pointer-events: all;
+    display: none;
+}
+#tourOverlay.visible { display: block; }
+
+#tourSpotlight {
+    position: fixed;
+    border-radius: 10px;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.76);
+    pointer-events: none;
+    z-index: 9001;
+    transition: left 0.3s ease, top 0.3s ease, width 0.3s ease, height 0.3s ease;
+}
+
+#tourTooltip {
+    position: fixed;
+    z-index: 9002;
+    background: #16161e;
+    border: 1px solid #2a2a3d;
+    border-radius: 12px;
+    padding: 18px 20px 16px;
+    width: 248px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(99, 102, 241, 0.12);
+    pointer-events: all;
+    transition: left 0.3s ease, top 0.3s ease;
+}
+
+.tour-step-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #6366f1;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 7px;
+}
+
+.tour-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #e0e0e0;
+    margin-bottom: 6px;
+    line-height: 1.35;
+}
+
+.tour-body {
+    font-size: 13px;
+    color: #888;
+    line-height: 1.55;
+    margin-bottom: 16px;
+}
+
+.tour-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.tour-dots {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.tour-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #2a2a3a;
+    transition: background 0.2s, width 0.2s;
+}
+
+.tour-dot.active {
+    background: #6366f1;
+    width: 16px;
+    border-radius: 4px;
+}
+
+.tour-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.tour-next-btn {
+    background: #6366f1;
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+    white-space: nowrap;
+    touch-action: manipulation;
+}
+.tour-next-btn:hover { background: #4f46e5; }
+
+.tour-skip-btn {
+    background: none;
+    border: none;
+    color: #555;
+    font-size: 12px;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.15s;
+    white-space: nowrap;
+    touch-action: manipulation;
+}
+.tour-skip-btn:hover { color: #888; }
 </style>
 {% endblock %}
 
@@ -1293,7 +1410,7 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
                 <a href="{% url 'members:dashboard' %}" class="app-icon-nav-item active" aria-label="Chat" aria-current="page">
                     <i class="bi bi-chat-dots" aria-hidden="true"></i>
                 </a>
-                <a href="{% url 'tasks:queue' %}" class="app-icon-nav-item" aria-label="Queue">
+                <a href="{% url 'tasks:queue' %}" class="app-icon-nav-item" aria-label="Queue" id="queueNavLink">
                     <i class="bi bi-list-task" aria-hidden="true"></i>
                 </a>
             </div>
@@ -1659,6 +1776,25 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 
 </main>
 </div>
+
+{% if show_tour %}
+<div id="tourOverlay" role="dialog" aria-modal="true" aria-label="Getting started tour">
+    <div id="tourSpotlight" aria-hidden="true"></div>
+    <div id="tourTooltip">
+        <div class="tour-step-label" id="tourStepLabel">Step 1 of 3</div>
+        <div class="tour-title" id="tourTitle"></div>
+        <div class="tour-body" id="tourBody"></div>
+        <div class="tour-footer">
+            <div class="tour-dots" id="tourDots"></div>
+            <div class="tour-actions">
+                <button class="tour-skip-btn" onclick="tourSkip()">Skip</button>
+                <button class="tour-next-btn" id="tourNextBtn" onclick="tourNext()">Next →</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}
 
 {% block extra_scripts %}
@@ -3344,5 +3480,138 @@ function scrollToTask(pk) {
     bubble.classList.add('task-highlight');
     setTimeout(function() { bubble.classList.remove('task-highlight'); }, 1200);
 }
+
+{% if show_tour %}
+// ── Onboarding tour ───────────────────────────────────────
+var _TOUR_STEPS = [
+    {
+        target: '#chatFeed',
+        title: 'This is your chat with TARS',
+        body: 'Every task you submit shows up here as a conversation. TARS replies with status updates as it works.',
+        placement: 'center',
+    },
+    {
+        target: '.chat-input-area',
+        title: 'Type a task here',
+        body: 'Describe what you want TARS to build, fix, or improve. Press Enter (or tap the arrow) to send.',
+        placement: 'top',
+    },
+    {
+        target: '#queueWidget,#queueNavLink,.chat-topbar',
+        title: 'Track your queue here',
+        body: 'Your active tasks and queue position appear here. Click the queue icon for details.',
+        placement: 'below',
+    },
+];
+var _tourStep = 0;
+
+function tourStart() {
+    var overlay = document.getElementById('tourOverlay');
+    if (!overlay) return;
+    _tourStep = 0;
+    overlay.classList.add('visible');
+    _tourRender();
+}
+
+function tourNext() {
+    _tourStep++;
+    if (_tourStep >= _TOUR_STEPS.length) {
+        tourComplete();
+    } else {
+        _tourRender();
+    }
+}
+
+function tourSkip() {
+    tourComplete();
+}
+
+function tourComplete() {
+    var overlay = document.getElementById('tourOverlay');
+    if (overlay) overlay.classList.remove('visible');
+    fetch("{% url 'members:complete_tour' %}", {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+    });
+}
+
+function _tourFindTarget(selectorList) {
+    var selectors = selectorList.split(',');
+    for (var i = 0; i < selectors.length; i++) {
+        var el = document.querySelector(selectors[i].trim());
+        if (el) {
+            var r = el.getBoundingClientRect();
+            if (r.width > 0 && r.height > 0) return el;
+        }
+    }
+    return null;
+}
+
+function _tourRender() {
+    var step = _TOUR_STEPS[_tourStep];
+    var el = _tourFindTarget(step.target);
+    if (!el) {
+        _tourStep++;
+        if (_tourStep >= _TOUR_STEPS.length) { tourComplete(); } else { _tourRender(); }
+        return;
+    }
+
+    var rect = el.getBoundingClientRect();
+    var spotlight = document.getElementById('tourSpotlight');
+    var PAD = 8;
+    spotlight.style.left   = (rect.left   - PAD) + 'px';
+    spotlight.style.top    = (rect.top    - PAD) + 'px';
+    spotlight.style.width  = (rect.width  + PAD * 2) + 'px';
+    spotlight.style.height = (rect.height + PAD * 2) + 'px';
+
+    document.getElementById('tourStepLabel').textContent = 'Step ' + (_tourStep + 1) + ' of ' + _TOUR_STEPS.length;
+    document.getElementById('tourTitle').textContent = step.title;
+    document.getElementById('tourBody').textContent  = step.body;
+    document.getElementById('tourNextBtn').textContent = (_tourStep === _TOUR_STEPS.length - 1) ? 'Finish' : 'Next →';
+
+    var dots = document.getElementById('tourDots');
+    dots.innerHTML = '';
+    for (var i = 0; i < _TOUR_STEPS.length; i++) {
+        var dot = document.createElement('span');
+        dot.className = 'tour-dot' + (i === _tourStep ? ' active' : '');
+        dots.appendChild(dot);
+    }
+
+    requestAnimationFrame(function() { _tourPositionTooltip(rect, step.placement, PAD); });
+}
+
+function _tourPositionTooltip(rect, placement, pad) {
+    var tooltip = document.getElementById('tourTooltip');
+    var tw = tooltip.offsetWidth;
+    var th = tooltip.offsetHeight;
+    var vw = window.innerWidth;
+    var vh = window.innerHeight;
+    var GAP = 14;
+    var left, top;
+
+    if (placement === 'top') {
+        top  = Math.max(10, rect.top - pad - th - GAP);
+        left = Math.max(10, Math.min(vw - tw - 10, rect.left + rect.width / 2 - tw / 2));
+    } else if (placement === 'below') {
+        top  = Math.min(vh - th - 10, rect.bottom + pad + GAP);
+        left = Math.max(10, Math.min(vw - tw - 10, rect.left + rect.width / 2 - tw / 2));
+    } else {
+        top  = Math.max(10, Math.min(vh - th - 10, rect.top + rect.height / 2 - th / 2));
+        left = Math.max(10, Math.min(vw - tw - 10, rect.left + rect.width / 2 - tw / 2));
+    }
+
+    tooltip.style.left = left + 'px';
+    tooltip.style.top  = top  + 'px';
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', tourStart);
+} else {
+    tourStart();
+}
+{% endif %}
 </script>
 {% endblock %}
