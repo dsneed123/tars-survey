@@ -486,6 +486,93 @@
         from { opacity: 0; transform: translateY(4px); }
         to   { opacity: 1; transform: translateY(0); }
     }
+
+    /* Color-coded active states for completed/failed filter pills */
+    .filter-pill[data-filter="completed"].is-active {
+        background: rgba(34,197,94,0.1);
+        border-color: rgba(34,197,94,0.35);
+        color: #4ade80;
+    }
+    .filter-pill[data-filter="completed"].is-active .pill-badge {
+        background: rgba(34,197,94,0.18);
+    }
+    .filter-pill[data-filter="failed"].is-active {
+        background: rgba(239,68,68,0.1);
+        border-color: rgba(239,68,68,0.35);
+        color: #f87171;
+    }
+    .filter-pill[data-filter="failed"].is-active .pill-badge {
+        background: rgba(239,68,68,0.18);
+    }
+
+    /* Completion time for finished tasks */
+    .completion-time {
+        font-size: 0.72rem;
+        color: rgba(74,222,128,0.65);
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+    .completion-time-failed {
+        font-size: 0.72rem;
+        color: rgba(248,113,113,0.65);
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    /* Error message preview for failed tasks */
+    .error-preview {
+        font-size: 0.7rem;
+        color: rgba(248,113,113,0.7);
+        font-style: italic;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+        max-width: 420px;
+        margin-top: 0.2rem;
+    }
+
+    /* Clear completed button */
+    .clear-completed-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        padding: 0.22rem 0.65rem;
+        border-radius: 999px;
+        border: 1px solid rgba(239,68,68,0.2);
+        background: transparent;
+        color: rgba(248,113,113,0.55);
+        font-size: 0.7rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: border-color 0.15s, background 0.15s, color 0.15s;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+        line-height: 1;
+    }
+    .clear-completed-btn:hover {
+        background: rgba(239,68,68,0.08);
+        border-color: rgba(239,68,68,0.4);
+        color: #f87171;
+    }
+    .clear-completed-btn:disabled { opacity: 0.4; cursor: default; }
+
+    /* Filter-specific empty message (shown inside list section) */
+    .filter-empty-msg {
+        text-align: center;
+        padding: 2.5rem 1rem;
+    }
+    .filter-empty-msg i {
+        font-size: 1.6rem;
+        color: var(--tars-muted);
+        opacity: 0.45;
+        display: block;
+        margin-bottom: 0.65rem;
+    }
+    .filter-empty-msg p {
+        font-size: 0.85rem;
+        color: var(--tars-muted);
+        margin: 0;
+    }
 </style>
 {% endblock %}
 
@@ -635,23 +722,31 @@
 <div class="container py-5" style="max-width: 780px;">
     <!-- Task list section (hidden when queue is empty) -->
     <div id="queue-list-section"{% if not tasks %} style="display:none;"{% endif %}>
-        <!-- Filter pills -->
-        <div class="filter-pills" id="filter-pills" role="group" aria-label="Filter tasks">
-            <button class="filter-pill is-active" data-filter="all" aria-pressed="true">
-                All <span class="pill-badge" id="pill-count-all">{{ tasks|length }}</span>
+        <!-- Filter pills + clear completed -->
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2" style="margin-bottom:1.25rem;">
+            <div class="filter-pills" id="filter-pills" role="group" aria-label="Filter tasks" style="margin-bottom:0;">
+                <button class="filter-pill is-active" data-filter="all" aria-pressed="true">
+                    All <span class="pill-badge" id="pill-count-all">{{ tasks|length }}</span>
+                </button>
+                <button class="filter-pill" data-filter="active" aria-pressed="false">
+                    Active <span class="pill-badge" id="pill-count-active">{{ active_count|add:pending_count }}</span>
+                </button>
+                <button class="filter-pill" data-filter="completed" aria-pressed="false">
+                    Completed <span class="pill-badge" id="pill-count-completed">{{ completed_count }}</span>
+                </button>
+                <button class="filter-pill" data-filter="failed" aria-pressed="false">
+                    Failed <span class="pill-badge" id="pill-count-failed">{{ failed_count }}</span>
+                </button>
+            </div>
+            <button class="clear-completed-btn" id="clear-completed-btn" type="button"{% if not completed_count %} style="display:none;"{% endif %} title="Remove all completed tasks from view">
+                <i class="bi bi-trash3"></i> Clear completed
             </button>
-            <button class="filter-pill" data-filter="active" aria-pressed="false">
-                Active <span class="pill-badge" id="pill-count-active">{{ active_count }}</span>
-            </button>
-            <button class="filter-pill" data-filter="pending" aria-pressed="false">
-                Pending <span class="pill-badge" id="pill-count-pending">{{ pending_count }}</span>
-            </button>
-            <button class="filter-pill" data-filter="completed" aria-pressed="false">
-                Completed <span class="pill-badge" id="pill-count-completed">{{ completed_count }}</span>
-            </button>
-            <button class="filter-pill" data-filter="failed" aria-pressed="false">
-                Failed <span class="pill-badge" id="pill-count-failed">{{ failed_count }}</span>
-            </button>
+        </div>
+
+        <!-- Filter-specific empty message (when filter active but no matching tasks) -->
+        <div class="filter-empty-msg" id="filter-empty-msg" style="display:none;">
+            <i class="bi bi-funnel" id="filter-empty-icon"></i>
+            <p id="filter-empty-text">No tasks match this filter</p>
         </div>
 
         <p class="section-label" id="queue-count-label">{{ tasks|length }} task{{ tasks|length|pluralize }}</p>
@@ -707,11 +802,22 @@
                         <span class="proj-tag">
                             <i class="bi bi-folder me-1" style="font-size:0.65rem;"></i>{{ task.project.name }}
                         </span>
-                        <span class="time-label">{{ task.created_at|timesince }} ago</span>
-                        {% if task.wait_time %}
-                        <span class="wait-time-label" id="wait-time-{{ task.pk }}">{{ task.wait_time }}</span>
+                        {% if task.filter_group == 'completed' %}
+                            {% if task.completed_at %}<span class="completion-time"><i class="bi bi-check2-circle" style="font-size:0.65rem;"></i> {{ task.completed_at|timesince }} ago</span>{% endif %}
+                            {% if task.duration_display %}<span class="time-label">took {{ task.duration_display }}</span>{% endif %}
+                        {% elif task.filter_group == 'failed' %}
+                            {% if task.completed_at %}<span class="completion-time-failed"><i class="bi bi-x-circle" style="font-size:0.65rem;"></i> {{ task.completed_at|timesince }} ago</span>{% endif %}
+                            {% if task.duration_display %}<span class="time-label">{{ task.duration_display }}</span>{% endif %}
+                        {% else %}
+                            <span class="time-label">{{ task.created_at|timesince }} ago</span>
+                            {% if task.wait_time %}<span class="wait-time-label" id="wait-time-{{ task.pk }}">{{ task.wait_time }}</span>{% endif %}
                         {% endif %}
                     </div>
+                    {% if task.filter_group == 'failed' and task.error_message %}
+                    <div class="error-preview" title="{{ task.error_message }}">
+                        <i class="bi bi-exclamation-circle" style="font-size:0.65rem;"></i> {{ task.error_message|truncatechars:80 }}
+                    </div>
+                    {% endif %}
                 </div>
 
                 <!-- Status badge + cancel action -->
@@ -749,16 +855,16 @@
         </div>
     </div>
 
-    <!-- Empty state (hidden when queue has tasks) -->
+    <!-- Empty state (shown when there are zero tasks total) -->
     <div class="empty-state" id="queue-empty-state"{% if tasks %} style="display:none;"{% endif %}>
         <div class="mb-3" style="display:inline-flex;align-items:center;justify-content:center;width:72px;height:72px;border-radius:18px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.15);">
-            <i class="bi bi-inbox" style="font-size:2rem; color:var(--tars-accent); opacity:0.7;"></i>
+            <i id="empty-state-icon" class="bi bi-inbox" style="font-size:2rem; color:var(--tars-accent); opacity:0.7;"></i>
         </div>
-        <h5 class="fw-bold mt-1 mb-2" style="color:var(--tars-text)">Queue is empty</h5>
-        <p class="small mb-4" style="color:var(--tars-muted); max-width:320px; margin:0 auto 1.5rem;">
+        <h5 class="fw-bold mt-1 mb-2" id="empty-state-title" style="color:var(--tars-text)">Queue is empty</h5>
+        <p class="small mb-4" id="empty-state-body" style="color:var(--tars-muted); max-width:320px; margin:0 auto 1.5rem;">
             No active tasks right now. Submit a task and TARS will pick it up automatically.
         </p>
-        <a href="{% url 'tasks:add' %}" class="btn btn-accent">
+        <a href="{% url 'tasks:add' %}" class="btn btn-accent" id="empty-state-cta">
             <i class="bi bi-plus-lg me-1"></i> Submit a Task
         </a>
     </div>
@@ -785,6 +891,12 @@
 
     // ── Filter pills ──────────────────────────────────────────────────────────
 
+    var FILTER_EMPTY_CONFIG = {
+        'active':    { icon: 'bi-lightning',          text: 'No active or queued tasks right now' },
+        'completed': { icon: 'bi-check2-circle',       text: 'No completed tasks yet' },
+        'failed':    { icon: 'bi-exclamation-circle',  text: 'No failed tasks — all good!' },
+    };
+
     function applyFilter(filter) {
         currentFilter = filter;
 
@@ -797,7 +909,11 @@
         var cards = document.querySelectorAll('#queue-list .queue-card[data-task-id]');
         var visibleCount = 0;
         cards.forEach(function (card) {
-            var show = filter === 'all' || card.dataset.filterGroup === filter;
+            // "active" filter encompasses both running (active) and queued (pending) groups
+            var group = card.dataset.filterGroup;
+            var show = filter === 'all'
+                || group === filter
+                || (filter === 'active' && group === 'pending');
             card.style.display = show ? '' : 'none';
             if (show) visibleCount++;
         });
@@ -807,6 +923,26 @@
             var noun = filter === 'all' ? 'task' : filter + ' task';
             label.textContent = visibleCount + ' ' + noun + (visibleCount !== 1 ? 's' : '');
         }
+
+        // Show filter-specific empty message when the filter yields 0 results
+        // but there ARE tasks in other categories (otherwise the global empty state handles it)
+        var filterEmptyMsg = document.getElementById('filter-empty-msg');
+        var queueList      = document.getElementById('queue-list');
+        if (filterEmptyMsg) {
+            var hasTasks = cards.length > 0;
+            if (hasTasks && visibleCount === 0 && filter !== 'all') {
+                var cfg = FILTER_EMPTY_CONFIG[filter] || { icon: 'bi-funnel', text: 'No tasks match this filter' };
+                var iconEl = document.getElementById('filter-empty-icon');
+                var textEl = document.getElementById('filter-empty-text');
+                if (iconEl) iconEl.className = 'bi ' + cfg.icon;
+                if (textEl) textEl.textContent = cfg.text;
+                filterEmptyMsg.style.display = '';
+                if (queueList) queueList.style.display = 'none';
+            } else {
+                filterEmptyMsg.style.display = 'none';
+                if (queueList) queueList.style.display = '';
+            }
+        }
     }
 
     document.querySelectorAll('.filter-pill').forEach(function (pill) {
@@ -814,6 +950,23 @@
             applyFilter(this.dataset.filter);
         });
     });
+
+    // ── Clear completed ───────────────────────────────────────────────────────
+
+    (function () {
+        var btn = document.getElementById('clear-completed-btn');
+        if (!btn) return;
+        btn.addEventListener('click', function () {
+            btn.disabled = true;
+            var completedCards = Array.from(
+                document.querySelectorAll('#queue-list .queue-card[data-filter-group="completed"]')
+            );
+            if (!completedCards.length) { btn.disabled = false; return; }
+            completedCards.forEach(function (card) { removeCard(card); });
+            // removeCard has 450 ms animation; re-enable after all finish
+            setTimeout(function () { btn.disabled = false; }, 500);
+        });
+    })();
 
     // ── WebSocket ─────────────────────────────────────────────────────────────
 
@@ -909,7 +1062,70 @@
         if (data.status === 'completed' || data.status === 'failed') {
             if (card && !card.dataset.cancelledLocally) {
                 if (data.status === 'completed') completedTodayCount++;
-                removeCard(card);
+                // Update card in-place so completed/failed tasks remain visible with correct styling
+                var newGroup = data.status === 'completed' ? 'completed' : 'failed';
+                card.dataset.taskStatus = data.status;
+                card.dataset.filterGroup = newGroup;
+                card.removeAttribute('draggable');
+                card.removeAttribute('data-has-position');
+
+                // Swap CSS classes
+                card.classList.remove('is-active', 'is-in-progress');
+                if (data.status === 'completed') {
+                    card.classList.add('is-done');
+                } else {
+                    card.classList.remove('is-done');
+                    card.classList.add('is-failed');
+                }
+
+                if (data.status_display) updateStatusBadge(card, data.status, data.status_display);
+
+                // Remove drag handle and cancel controls; add chevron
+                var dragHandle = card.querySelector('.drag-handle');
+                if (dragHandle) dragHandle.remove();
+                var cancelBtn  = card.querySelector('.cancel-btn');
+                if (cancelBtn) cancelBtn.remove();
+                var cancelConf = card.querySelector('.cancel-confirm');
+                if (cancelConf) cancelConf.remove();
+                var posEl = card.querySelector('.queue-pos');
+                if (posEl) {
+                    posEl.className = 'queue-pos pos-' + data.status;
+                    posEl.innerHTML = data.status === 'completed'
+                        ? '<i class="bi bi-check2" style="font-size:0.9rem;"></i>'
+                        : '<i class="bi bi-x" style="font-size:1rem;"></i>';
+                }
+
+                // Update right section chevron
+                var rightSection = card.querySelector('.d-flex.align-items-center.gap-2.flex-shrink-0');
+                if (rightSection) {
+                    var chevron = rightSection.querySelector('.bi-chevron-right');
+                    if (!chevron) {
+                        var ch = document.createElement('i');
+                        ch.className = 'bi bi-chevron-right';
+                        ch.style.color = 'var(--tars-border)';
+                        rightSection.appendChild(ch);
+                    }
+                }
+
+                // Update meta row to show completion time
+                var metaRow = card.querySelector('.d-flex.align-items-center.gap-2.flex-wrap');
+                if (metaRow) {
+                    var timeEl = metaRow.querySelector('.time-label, .wait-time-label, .completion-time, .completion-time-failed');
+                    if (timeEl) timeEl.remove();
+                    var waitEl = metaRow.querySelector('.wait-time-label');
+                    if (waitEl) waitEl.remove();
+                    var span = document.createElement('span');
+                    span.className = data.status === 'completed' ? 'completion-time' : 'completion-time-failed';
+                    span.innerHTML = data.status === 'completed'
+                        ? '<i class="bi bi-check2-circle" style="font-size:0.65rem;"></i> just now'
+                        : '<i class="bi bi-x-circle" style="font-size:0.65rem;"></i> just now';
+                    metaRow.appendChild(span);
+                }
+
+                renumberPositions();
+                syncCountsFromDom();
+                applyFilter(currentFilter);
+                updateHealthBar();
             }
             return;
         }
@@ -929,7 +1145,10 @@
         card.classList.add('queue-card-new');
 
         var group = card.dataset.filterGroup;
-        if (currentFilter !== 'all' && group !== currentFilter) {
+        var visibleUnderFilter = currentFilter === 'all'
+            || group === currentFilter
+            || (currentFilter === 'active' && group === 'pending');
+        if (!visibleUnderFilter) {
             card.style.display = 'none';
         }
 
@@ -1114,10 +1333,12 @@
             if (c.dataset.taskStatus === 'in_progress') inProgress++;
         });
 
-        ['all', 'active', 'pending', 'completed', 'failed'].forEach(function (f) {
-            var el = document.getElementById('pill-count-' + f);
-            if (el) el.textContent = counts[f];
-        });
+        var el;
+        el = document.getElementById('pill-count-all');       if (el) el.textContent = counts.all;
+        // "Active" pill combines running tasks and queued/pending tasks
+        el = document.getElementById('pill-count-active');    if (el) el.textContent = counts.active + counts.pending;
+        el = document.getElementById('pill-count-completed'); if (el) el.textContent = counts.completed;
+        el = document.getElementById('pill-count-failed');    if (el) el.textContent = counts.failed;
 
         var queueActive = counts.active + counts.pending;
         var hero = document.getElementById('queue-hero-count');
@@ -1133,7 +1354,19 @@
             showListSection();
         }
 
+        updateClearCompletedBtn(counts.completed);
+
         return { inProgress: inProgress, pending: counts.pending };
+    }
+
+    function updateClearCompletedBtn(completedCount) {
+        var btn = document.getElementById('clear-completed-btn');
+        if (!btn) return;
+        if (completedCount == null) {
+            var cards = document.querySelectorAll('#queue-list .queue-card[data-filter-group="completed"]');
+            completedCount = cards.length;
+        }
+        btn.style.display = completedCount > 0 ? '' : 'none';
     }
 
     function updateHealthBar() {
