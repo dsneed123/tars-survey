@@ -587,7 +587,7 @@ def api_task_detail(request, pk):
         "completed_at": task.completed_at.isoformat() if task.completed_at else None,
         "attachments": attachments,
         "timeline": [
-            {"status": s["status"], "label": s["label"], "state": s["state"]}
+            {"status": s["status"], "label": s["label"], "state": s["state"], "timestamp": s["timestamp"]}
             for s in timeline
         ],
     })
@@ -631,6 +631,16 @@ def _build_timeline(task):
     failed = task.status == "failed"
     current_index = order.get(task.status, -1)
 
+    # Best-effort timestamp per step using available task datetimes
+    _ts = {
+        "pending": task.created_at,
+        "queued": task.created_at,
+        "assigned": task.started_at,
+        "in_progress": task.started_at,
+        "reviewing": task.updated_at,
+        "completed": task.completed_at,
+    }
+
     result = []
     for i, (status, label, icon) in enumerate(steps):
         if failed and i == current_index:
@@ -639,10 +649,12 @@ def _build_timeline(task):
             state = "done" if i < current_index else "current"
         else:
             state = "pending"
-        result.append({"status": status, "label": label, "icon": icon, "state": state})
+        ts = _ts.get(status) if state in ("done", "current", "failed") else None
+        result.append({"status": status, "label": label, "icon": icon, "state": state, "timestamp": ts.isoformat() if ts else None})
 
     if failed:
-        result.append({"status": "failed", "label": "Failed", "icon": "bi-x-circle-fill", "state": "failed"})
+        ts = task.updated_at
+        result.append({"status": "failed", "label": "Failed", "icon": "bi-x-circle-fill", "state": "failed", "timestamp": ts.isoformat() if ts else None})
 
     return result
 
