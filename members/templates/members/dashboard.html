@@ -1071,6 +1071,46 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 }
 .polling-notice i { margin-right: 5px; }
 
+/* ── WebSocket connection bar ───────────────────────────── */
+.ws-connection-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 5px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+}
+.ws-connection-bar.ws-bar-lost {
+    background: rgba(239, 68, 68, 0.12);
+    border-bottom: 1px solid rgba(239, 68, 68, 0.25);
+    color: #f87171;
+}
+.ws-connection-bar.ws-bar-reconnected {
+    background: rgba(34, 197, 94, 0.12);
+    border-bottom: 1px solid rgba(34, 197, 94, 0.25);
+    color: #4ade80;
+}
+@keyframes ws-bar-pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.4; }
+}
+.ws-bar-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #f87171;
+    flex-shrink: 0;
+    animation: ws-bar-pulse 1.2s ease-in-out infinite;
+}
+
 /* ── Project detection card ────────────────────────────── */
 .project-detect-card {
     background: #0f0f0f;
@@ -1263,6 +1303,7 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 
     <!-- Chat feed -->
     <div class="chat-feed-wrapper">
+    <div id="wsConnectionBar" class="ws-connection-bar" hidden></div>
     <div id="pollingNoticeBanner" class="polling-notice" hidden>
         <i class="bi bi-wifi-off"></i>Live updates unavailable — refreshing periodically
     </div>
@@ -1968,7 +2009,8 @@ document.addEventListener('keydown', function(e) {
     var ws = null;
     var heartbeatTimer = null;
     var lastMsgTime = null;
-    var reconnectingBanner = null;
+    var wsBarTimer = null;
+    var wsBarShown = false;
     var pollingTimer = null;
     var pollingMode = false;
 
@@ -1977,7 +2019,7 @@ document.addEventListener('keydown', function(e) {
 
         ws.onopen = function () {
             reconnectAttempt = 0;
-            removeReconnectingBanner();
+            if (wsBarShown) { showReconnectedBar(); } else { hideConnectionBar(); }
             stopPolling();
             startHeartbeat();
             if (lastMsgTime) { fetchMissedUpdates(lastMsgTime); }
@@ -1997,9 +2039,9 @@ document.addEventListener('keydown', function(e) {
             reconnectAttempt++;
             if (reconnectAttempt >= RECONNECT_DELAYS.length) {
                 if (!pollingMode) { startPolling(); }
-                removeReconnectingBanner();
+                hideConnectionBar();
             } else {
-                showReconnectingBanner();
+                showConnectionLostBar();
             }
             setTimeout(connect, delay);
         };
@@ -2020,36 +2062,44 @@ document.addEventListener('keydown', function(e) {
         if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
     }
 
-    function showReconnectingBanner() {
-        if (reconnectingBanner) { return; }
-        var container = document.querySelector('.chat-container');
-        if (!container) { return; }
-        var nowIso = new Date().toISOString();
-        reconnectingBanner = document.createElement('div');
-        reconnectingBanner.className = 'chat-message tars-msg';
-        reconnectingBanner.setAttribute('role', 'article');
-        reconnectingBanner.setAttribute('aria-label', 'TARS');
-        reconnectingBanner.setAttribute('tabindex', '-1');
-        reconnectingBanner.setAttribute('data-timestamp', nowIso);
-        reconnectingBanner.innerHTML =
-            _tarsAvatarHtml +
-            '<div class="msg-body">' +
-                '<div class="msg-sender">TARS</div>' +
-                '<div class="msg-content">' +
-                    '<div class="tars-error-content">' +
-                        '<p>I lost connection — reconnecting...</p>' +
-                    '</div>' +
-                '</div>' +
-                '<div class="msg-time"><span class="msg-timestamp" data-timestamp="' + nowIso + '">just now</span></div>' +
-            '</div>';
-        container.appendChild(reconnectingBanner);
-        if (typeof isNearBottom === 'function' && isNearBottom()) {
-            if (typeof scrollToBottom === 'function') { scrollToBottom(true); }
-        }
+    function showConnectionLostBar() {
+        var bar = document.getElementById('wsConnectionBar');
+        if (!bar || wsBarShown) { return; }
+        clearTimeout(wsBarTimer);
+        bar.className = 'ws-connection-bar ws-bar-lost';
+        bar.innerHTML = '<span class="ws-bar-dot"></span><span>Connection lost — reconnecting…</span>';
+        bar.style.opacity = '';
+        bar.hidden = false;
+        wsBarShown = true;
     }
 
-    function removeReconnectingBanner() {
-        if (reconnectingBanner) { reconnectingBanner.remove(); reconnectingBanner = null; }
+    function showReconnectedBar() {
+        var bar = document.getElementById('wsConnectionBar');
+        if (!bar) { return; }
+        clearTimeout(wsBarTimer);
+        bar.className = 'ws-connection-bar ws-bar-reconnected';
+        bar.innerHTML = '<i class="bi bi-wifi"></i><span>Reconnected</span>';
+        bar.style.opacity = '';
+        bar.hidden = false;
+        wsBarShown = false;
+        wsBarTimer = setTimeout(function () {
+            bar.style.transition = 'opacity 0.6s';
+            bar.style.opacity = '0';
+            setTimeout(function () {
+                bar.hidden = true;
+                bar.style.transition = '';
+                bar.style.opacity = '';
+            }, 600);
+        }, 2000);
+    }
+
+    function hideConnectionBar() {
+        var bar = document.getElementById('wsConnectionBar');
+        if (!bar) { return; }
+        clearTimeout(wsBarTimer);
+        bar.hidden = true;
+        bar.style.opacity = '';
+        wsBarShown = false;
     }
 
     function showPollingNotice() {
