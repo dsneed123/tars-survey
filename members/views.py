@@ -30,11 +30,11 @@ def dashboard(request):
 
     projects = Project.objects.filter(owner=request.user)
 
-    # Latest 50 tasks for the chat feed, newest first
+    # Latest 20 tasks for the chat feed, newest first
     all_tasks = list(
         Task.objects.filter(created_by=request.user)
         .select_related("project", "created_by")
-        .order_by("-created_at")[:50]
+        .order_by("-created_at")[:20]
     )
 
     # Pinned tasks, newest first (separate query so they always appear even outside the 50-task window)
@@ -120,7 +120,7 @@ def dashboard(request):
         "queue_widget_tasks": queue_widget_tasks,
         "in_progress_count": in_progress_count,
         "completed_today": completed_today,
-        "has_more": total_tasks > 50,
+        "has_more": total_tasks > 20,
         "oldest_task_id": all_tasks[-1].pk if all_tasks else None,
         "show_tour": not profile.tour_completed and total_tasks == 0,
     }

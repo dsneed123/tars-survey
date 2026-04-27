@@ -95,6 +95,39 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
     display: none;
 }
 
+/* ── Load earlier tasks button ─────────────────────────── */
+.load-earlier-wrap {
+    display: flex;
+    justify-content: center;
+    padding: 12px 0 4px;
+}
+
+.load-earlier-btn {
+    background: transparent;
+    border: 1px solid #2a2a3d;
+    color: #888;
+    padding: 5px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: border-color 0.15s, color 0.15s;
+    touch-action: manipulation;
+}
+
+.load-earlier-btn:hover {
+    border-color: #6366f1;
+    color: #c7c8ff;
+}
+
+.load-earlier-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
 .chat-feed::-webkit-scrollbar { width: 6px; }
 .chat-feed::-webkit-scrollbar-track { background: transparent; }
 .chat-feed::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 6px; }
@@ -1572,6 +1605,11 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 
     <div class="chat-feed" id="chatFeed" role="log" aria-live="polite" aria-label="Chat messages" tabindex="0">
         <div class="chat-container">
+            <div id="loadEarlierWrap" class="load-earlier-wrap"{% if not has_more %} style="display:none"{% endif %}>
+                <button type="button" class="load-earlier-btn" id="loadEarlierBtn" onclick="loadOlderMessages()">
+                    <i class="bi bi-arrow-up" aria-hidden="true"></i> Load earlier tasks
+                </button>
+            </div>
             <div id="loadOlderIndicator" class="load-older-indicator" aria-hidden="true">
                 <div class="chat-skl-bubble">
                     <div class="skeleton skeleton-circle" style="width:28px;height:28px;flex-shrink:0;margin-top:2px;"></div>
@@ -1952,10 +1990,6 @@ if (feed) {
         }, 100);
 
         if (isNearBottom()) hideNewMsgPill();
-
-        if (feed.scrollTop < 80 && _hasMoreOlder && !_isLoadingOlder) {
-            loadOlderMessages();
-        }
     }, { passive: true });
 }
 
@@ -1963,7 +1997,11 @@ if (feed) {
 function loadOlderMessages() {
     if (!_hasMoreOlder || _isLoadingOlder || !_oldestTaskId) return;
     _isLoadingOlder = true;
+    var btn = document.getElementById('loadEarlierBtn');
+    var wrap = document.getElementById('loadEarlierWrap');
     var indicator = document.getElementById('loadOlderIndicator');
+    if (btn) btn.disabled = true;
+    if (wrap) wrap.style.display = 'none';
     if (indicator) indicator.style.display = 'block';
 
     fetch(_loadMoreUrl + '?before_id=' + _oldestTaskId, { credentials: 'same-origin' })
@@ -1985,12 +2023,16 @@ function loadOlderMessages() {
             _hasMoreOlder = data.has_more;
             if (data.oldest_id) _oldestTaskId = data.oldest_id;
             if (indicator) indicator.style.display = 'none';
+            if (wrap) wrap.style.display = _hasMoreOlder ? 'flex' : 'none';
+            if (btn) btn.disabled = false;
             _isLoadingOlder = false;
             insertDateDividers();
             formatAllTimestamps();
         })
         .catch(function () {
             if (indicator) indicator.style.display = 'none';
+            if (wrap) wrap.style.display = _hasMoreOlder ? 'flex' : 'none';
+            if (btn) btn.disabled = false;
             _isLoadingOlder = false;
         });
 }
