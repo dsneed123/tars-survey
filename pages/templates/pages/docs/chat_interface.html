@@ -1,0 +1,148 @@
+{% extends "pages/docs/base.html" %}
+
+{% block title %}Chat Interface | TARS — Autonomous Coding{% endblock %}
+{% block meta_description %}<meta name="description" content="Learn how to use the TARS chat interface — submit tasks, track status, find pull requests, and monitor your queue from the dashboard.">{% endblock %}
+
+{% block docs_content %}
+
+<h1>Chat Interface</h1>
+<p class="docs-lead">TARS uses a ChatGPT-style dashboard where every task becomes a conversation. This page explains each part of the interface so you can submit tasks, track progress, and find your pull requests with confidence.</p>
+
+<h2>Chat Feed</h2>
+<p>The main area of the dashboard is a scrollable conversation feed. Each task you submit appears as a message bubble on the right side of the screen, just like sending a message. TARS's responses — status updates, summaries, and PR links — appear on the left.</p>
+<p>Tasks from all your connected projects appear in a single feed, ordered by the time they were submitted. The project each task belongs to is shown in the message header so you always know which repository is being worked on.</p>
+
+<div class="docs-note info">
+    <i class="bi bi-info-circle-fill"></i>
+    <div><strong>One conversation, all projects.</strong> You don't need to switch between project views — the feed shows everything in one place, and the project selector in the input bar lets you target specific repos when you submit.</div>
+</div>
+
+<h2>Status Bubbles</h2>
+<p>Every task message has a small colored status badge that updates in real time as TARS works. Here is what each status means:</p>
+
+<div style="display:flex; flex-direction:column; gap:0.75rem; margin:1.25rem 0 1.75rem;">
+
+    <div style="display:flex; align-items:flex-start; gap:1rem; padding:0.85rem 1.1rem; background:var(--tars-surface); border:1px solid var(--tars-border); border-radius:10px;">
+        <span style="flex-shrink:0; display:inline-block; padding:0.2rem 0.65rem; border-radius:20px; font-size:0.72rem; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; background:rgba(156,163,175,0.12); color:var(--tars-muted);">Pending</span>
+        <div style="font-size:0.88rem; color:var(--tars-muted); line-height:1.55;">Task received and waiting in the queue. No worker has picked it up yet.</div>
+    </div>
+
+    <div style="display:flex; align-items:flex-start; gap:1rem; padding:0.85rem 1.1rem; background:var(--tars-surface); border:1px solid var(--tars-border); border-radius:10px;">
+        <span style="flex-shrink:0; display:inline-block; padding:0.2rem 0.65rem; border-radius:20px; font-size:0.72rem; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; background:rgba(99,102,241,0.12); color:var(--tars-accent);">Assigned</span>
+        <div style="font-size:0.88rem; color:var(--tars-muted); line-height:1.55;">A worker has claimed the task and is cloning your repository to prepare a working environment.</div>
+    </div>
+
+    <div style="display:flex; align-items:flex-start; gap:1rem; padding:0.85rem 1.1rem; background:var(--tars-surface); border:1px solid var(--tars-border); border-radius:10px;">
+        <span style="flex-shrink:0; display:inline-block; padding:0.2rem 0.65rem; border-radius:20px; font-size:0.72rem; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; background:rgba(99,102,241,0.18); color:var(--tars-accent);">In Progress</span>
+        <div style="font-size:0.88rem; color:var(--tars-muted); line-height:1.55;">TARS is actively writing code. The typing indicator (see below) is visible during this stage.</div>
+    </div>
+
+    <div style="display:flex; align-items:flex-start; gap:1rem; padding:0.85rem 1.1rem; background:var(--tars-surface); border:1px solid var(--tars-border); border-radius:10px;">
+        <span style="flex-shrink:0; display:inline-block; padding:0.2rem 0.65rem; border-radius:20px; font-size:0.72rem; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; background:rgba(245,158,11,0.12); color:#f59e0b;">Reviewing</span>
+        <div style="font-size:0.88rem; color:var(--tars-muted); line-height:1.55;">Code is written and tests have run. TARS is finalizing the branch and opening the pull request on GitHub.</div>
+    </div>
+
+    <div style="display:flex; align-items:flex-start; gap:1rem; padding:0.85rem 1.1rem; background:var(--tars-surface); border:1px solid var(--tars-border); border-radius:10px;">
+        <span style="flex-shrink:0; display:inline-block; padding:0.2rem 0.65rem; border-radius:20px; font-size:0.72rem; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; background:rgba(16,185,129,0.12); color:var(--tars-green);">Completed</span>
+        <div style="font-size:0.88rem; color:var(--tars-muted); line-height:1.55;">The pull request is open on GitHub and ready for your review. A PR card appears in the conversation.</div>
+    </div>
+
+    <div style="display:flex; align-items:flex-start; gap:1rem; padding:0.85rem 1.1rem; background:var(--tars-surface); border:1px solid var(--tars-border); border-radius:10px;">
+        <span style="flex-shrink:0; display:inline-block; padding:0.2rem 0.65rem; border-radius:20px; font-size:0.72rem; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; background:rgba(239,68,68,0.12); color:#f87171;">Failed</span>
+        <div style="font-size:0.88rem; color:var(--tars-muted); line-height:1.55;">Something went wrong — tests failed, the repo was unreachable, or TARS hit an unrecoverable error. The message includes a brief reason. You can resubmit the task.</div>
+    </div>
+
+</div>
+
+<h2>Typing Indicator</h2>
+<p>When a task reaches <strong>In Progress</strong> status, a typing indicator appears beneath it in the feed — three animated dots, identical to a chat app showing someone composing a reply. This confirms that TARS is actively working on your code right now, not just waiting in line.</p>
+<p>The indicator disappears automatically once TARS finishes writing and the status advances to <strong>Reviewing</strong> or <strong>Completed</strong>.</p>
+
+<div class="docs-note tip">
+    <i class="bi bi-lightbulb-fill"></i>
+    <div><strong>No need to refresh.</strong> The dashboard polls for status changes automatically. Leave the tab open and TARS will update the conversation as each stage completes.</div>
+</div>
+
+<h2>PR Cards</h2>
+<p>When a task completes, TARS appends a pull request card directly below the task message in the feed. The card shows:</p>
+<ul>
+    <li>The PR title and number</li>
+    <li>The repository and branch name</li>
+    <li>A direct link to open the PR on GitHub</li>
+    <li>A short summary of what was changed</li>
+</ul>
+<p>Click <strong>View Pull Request</strong> on the card to jump straight to the GitHub PR page where you can review the diff, run CI, and merge.</p>
+
+<div class="docs-note info">
+    <i class="bi bi-info-circle-fill"></i>
+    <div><strong>You always merge manually.</strong> TARS never merges its own PRs. The card is an invitation for you to review the code — not an automatic deployment.</div>
+</div>
+
+<h2>Queue Sidebar</h2>
+<p>The collapsible left panel shows a live view of every task currently queued or in-flight across all your projects. Use it to get a quick read on system load without scrolling through the full chat feed.</p>
+<p>Each entry in the sidebar shows:</p>
+<ul>
+    <li>A truncated task description</li>
+    <li>The target project</li>
+    <li>The current status badge</li>
+    <li>How long ago the task was submitted</li>
+</ul>
+<p>Clicking any entry in the sidebar jumps the main feed to that task's conversation message.</p>
+
+<h2>Input Bar</h2>
+<p>The input bar at the bottom of the screen is where you submit new tasks. It has three parts:</p>
+
+<div class="docs-step">
+    <div class="docs-step-num">1</div>
+    <div class="docs-step-body">
+        <h4>Project selector</h4>
+        <p>The dropdown on the left of the input bar selects which GitHub repository the task targets. It lists all projects you have connected to your account. Select the correct project before submitting — TARS will clone that repo and open the PR there.</p>
+    </div>
+</div>
+
+<div class="docs-step">
+    <div class="docs-step-num">2</div>
+    <div class="docs-step-body">
+        <h4>Task description field</h4>
+        <p>Type your task in plain English. Be specific — describe the feature, bug, or improvement you want. For example: <em>"Add input validation to the signup form so email addresses must be unique"</em> is clearer than <em>"fix signup"</em>. The field expands automatically as you type.</p>
+    </div>
+</div>
+
+<div class="docs-step">
+    <div class="docs-step-num">3</div>
+    <div class="docs-step-body">
+        <h4>Submit button &amp; keyboard shortcuts</h4>
+        <p>Click <strong>Send</strong> or press <kbd style="background:var(--tars-surface); border:1px solid var(--tars-border); border-radius:5px; padding:0.1em 0.45em; font-size:0.85em; color:var(--tars-text);">Enter</kbd> to submit. To insert a newline in your task description without submitting, press <kbd style="background:var(--tars-surface); border:1px solid var(--tars-border); border-radius:5px; padding:0.1em 0.45em; font-size:0.85em; color:var(--tars-text);">Shift + Enter</kbd>.</p>
+    </div>
+</div>
+
+<div class="docs-note warning">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <div><strong>Tasks queue, not cancel.</strong> If you submit a second task for the same project while the first is still running, it queues behind the active task. TARS serializes work per project to prevent merge conflicts.</div>
+</div>
+
+<h2>Queue Page</h2>
+<p>For a full, filterable view of all tasks across all projects, navigate to the <strong>Queue</strong> page from the main navigation. The queue page shows:</p>
+<ul>
+    <li>Every task ever submitted, with pagination</li>
+    <li>Filter controls by project, status, and date range</li>
+    <li>Exact timestamps for each status transition (submitted, started, completed)</li>
+    <li>The full task description, not just a preview</li>
+    <li>Direct links to the GitHub PR for completed tasks</li>
+</ul>
+<p>The queue page is useful for auditing what TARS has done, tracking down a specific task, or reviewing the history of a project.</p>
+
+<div class="docs-note tip">
+    <i class="bi bi-lightbulb-fill"></i>
+    <div><strong>Bookmark filter URLs.</strong> The queue page preserves filter state in the URL, so you can bookmark a filtered view — for example, all failed tasks for a specific project — and return to it directly.</div>
+</div>
+
+<h2>Next Steps</h2>
+<p>Now that you know how to navigate the dashboard, you might want to:</p>
+<ul>
+    <li><a href="{% url 'pages:docs_getting_started' %}">Get started</a> by connecting your first project</li>
+    <li>Review the <a href="{% url 'pages:docs_faq' %}">FAQ</a> for answers to common questions about task results</li>
+    <li><a href="{% url 'inquiries:get_started' %}">Contact us</a> if something isn't working as expected</li>
+</ul>
+
+{% endblock %}

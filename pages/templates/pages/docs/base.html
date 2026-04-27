@@ -413,6 +413,12 @@
                     <span>Worker Setup</span>
                 </a>
 
+                <a href="{% url 'pages:docs_chat_interface' %}"
+                   class="dnav-item {% if current_doc == 'chat-interface' %}active{% endif %}">
+                    <i class="bi bi-chat-dots"></i>
+                    <span>Chat Interface</span>
+                </a>
+
                 <div class="dnav-section" style="margin-top:0.75rem;">Reference</div>
 
                 <a href="{% url 'pages:docs_api_reference' %}"

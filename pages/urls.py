@@ -14,6 +14,7 @@ urlpatterns = [
     path("docs/api-reference/", views.docs_api_reference, name="docs_api_reference"),
     path("docs/faq/", views.docs_faq, name="docs_faq"),
     path("docs/changelog/", views.docs_changelog, name="docs_changelog"),
+    path("docs/chat-interface/", views.docs_chat_interface, name="docs_chat_interface"),
     # Status
     path("status/", views.status, name="status"),
 ]
