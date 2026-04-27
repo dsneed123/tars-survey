@@ -1,7 +1,7 @@
 {% load tz %}
 {% for task in tasks reversed %}
 
-<div class="chat-message" data-timestamp="{{ task.created_at|date:'c' }}">
+<div class="chat-message" data-task-id="{{ task.pk }}" data-timestamp="{{ task.created_at|date:'c' }}">
     <div class="msg-avatar user-avatar-sm">{{ task.created_by.email|first|upper }}</div>
     <div class="msg-body">
         <div class="msg-sender">You</div>
@@ -30,6 +30,11 @@
             {% endif %}
             <div class="status-card">
                 <span class="status-badge badge-{{ task.status }}">{{ task.get_status_display }}</span>
+            </div>
+            <div class="task-delete-confirm" id="delete-confirm-{{ task.pk }}" style="display:none;">
+                <span>Cancel this task?</span>
+                <button class="task-delete-yes-btn" onclick="confirmDeleteTask({{ task.pk }}, this)">Yes, cancel it</button>
+                <button class="task-delete-no-btn" onclick="dismissDeleteConfirm({{ task.pk }})">Keep it</button>
             </div>
 
             {% elif task.status == 'assigned' %}
@@ -90,7 +95,7 @@
             {% endif %}
         </div>
         <div class="task-detail-panel" id="task-detail-panel-{{ task.pk }}"></div>
-        <div class="msg-time">{% if task.completed_at %}<span class="msg-timestamp" data-timestamp="{{ task.completed_at|date:'c' }}">{{ task.completed_at|timesince }} ago</span>{% elif task.started_at %}<span class="msg-timestamp" data-timestamp="{{ task.started_at|date:'c' }}">{{ task.started_at|timesince }} ago</span>{% else %}<span class="msg-timestamp" data-timestamp="{{ task.created_at|date:'c' }}">{{ task.created_at|timesince }} ago</span>{% endif %} &middot; <button class="task-expand-btn" onclick="toggleTaskDetail(this, {{ task.pk }})" aria-expanded="false"><span>Details</span><i class="bi bi-chevron-down"></i></button> &middot; <button class="pin-btn{% if task.is_pinned %} pinned{% endif %}" onclick="togglePin({{ task.pk }}, this); event.stopPropagation();" data-task-id="{{ task.pk }}" title="{% if task.is_pinned %}Unpin task{% else %}Pin task{% endif %}" aria-label="{% if task.is_pinned %}Unpin task{% else %}Pin task{% endif %}"><i class="bi bi-pin{% if task.is_pinned %}-fill{% endif %}"></i></button></div>
+        <div class="msg-time">{% if task.completed_at %}<span class="msg-timestamp" data-timestamp="{{ task.completed_at|date:'c' }}">{{ task.completed_at|timesince }} ago</span>{% elif task.started_at %}<span class="msg-timestamp" data-timestamp="{{ task.started_at|date:'c' }}">{{ task.started_at|timesince }} ago</span>{% else %}<span class="msg-timestamp" data-timestamp="{{ task.created_at|date:'c' }}">{{ task.created_at|timesince }} ago</span>{% endif %} &middot; <button class="task-expand-btn" onclick="toggleTaskDetail(this, {{ task.pk }})" aria-expanded="false"><span>Details</span><i class="bi bi-chevron-down"></i></button> &middot; <button class="pin-btn{% if task.is_pinned %} pinned{% endif %}" onclick="togglePin({{ task.pk }}, this); event.stopPropagation();" data-task-id="{{ task.pk }}" title="{% if task.is_pinned %}Unpin task{% else %}Pin task{% endif %}" aria-label="{% if task.is_pinned %}Unpin task{% else %}Pin task{% endif %}"><i class="bi bi-pin{% if task.is_pinned %}-fill{% endif %}"></i></button>{% if task.status == 'pending' or task.status == 'queued' %} &middot; <button class="task-delete-btn" onclick="promptDeleteTask({{ task.pk }}, this)" data-task-id="{{ task.pk }}" title="Delete this task" aria-label="Delete task"><i class="bi bi-trash"></i></button>{% endif %}</div>
     </div>
 </div>
 
