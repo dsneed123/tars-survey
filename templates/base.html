@@ -559,25 +559,24 @@
 </head>
 <body{% if user.is_authenticated %} class="app-authed"{% endif %}>
 
-{% block navbar %}<nav id="main-nav" class="navbar{% if not user.is_authenticated %} navbar-expand-lg{% endif %} sticky-top">
+{% block navbar %}{% if not user.is_authenticated or '/dashboard/' not in request.path %}<nav id="main-nav" class="navbar navbar-expand-lg sticky-top">
     <div class="container">
         <a class="navbar-brand" href="{% url 'pages:landing' %}">
             T<span>.</span>ARS
         </a>
         {% if user.is_authenticated %}
-        <div class="app-icon-nav d-none d-md-flex">
-            <a href="{% url 'members:dashboard' %}"
-               class="app-icon-nav-item{% if '/dashboard/queue' not in request.path and '/dashboard/settings' not in request.path %} active{% endif %}"
-               title="Chat"><i class="bi bi-chat-dots"></i></a>
-            <a href="{% url 'tasks:queue' %}"
-               class="app-icon-nav-item{% if '/dashboard/queue' in request.path %} active{% endif %}"
-               title="Queue"><i class="bi bi-list-task"></i><span id="queue-nav-badge" class="nav-badge" style="display:none"></span></a>
-            <a href="{% url 'members:settings' %}"
-               class="app-icon-nav-item{% if '/dashboard/settings' in request.path %} active{% endif %}"
-               title="Settings"><i class="bi bi-gear"></i></a>
-            <button class="app-icon-nav-item theme-toggle-btn" title="Toggle theme" aria-label="Toggle dark/light mode">
-                <i class="bi bi-moon-stars theme-icon"></i>
-            </button>
+        <div class="collapse navbar-collapse" id="navMenu">
+            <ul class="navbar-nav ms-auto align-items-center gap-2">
+                <li class="nav-item"><a class="nav-link" href="{% url 'pages:docs_index' %}">Docs</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'members:dashboard' %}">Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="{% url 'members:logout' %}">Sign Out</a></li>
+                <li class="nav-item">
+                    <button class="theme-toggle-btn" title="Toggle theme" aria-label="Toggle dark/light mode"
+                            style="background:none;border:none;padding:0 0.25rem;color:var(--tars-muted);font-size:1rem;cursor:pointer;opacity:0.7;transition:opacity 0.15s,color 0.2s;">
+                        <i class="bi bi-moon-stars theme-icon"></i>
+                    </button>
+                </li>
+            </ul>
         </div>
         {% else %}
         <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
@@ -601,7 +600,7 @@
         </div>
         {% endif %}
     </div>
-</nav>{% endblock %}
+</nav>{% endif %}{% endblock %}
 
 <div id="page-content">{% block content %}{% endblock %}</div>
 
