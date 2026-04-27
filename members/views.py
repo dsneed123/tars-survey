@@ -89,6 +89,62 @@ def dashboard(request):
         key=lambda t: (_WIDGET_STATUS_ORDER[t.status], t.created_at),
     )[:3]
 
+    # Build project-grouped queue data with health indicators for the queue panel.
+    # Group active tasks by project, preserving priority/created_at ordering.
+    _active_sorted = sorted(
+        (t for t in all_tasks if t.status in _WIDGET_STATUS_ORDER),
+        key=lambda t: (_WIDGET_STATUS_ORDER[t.status], t.created_at),
+    )
+    _proj_map: dict = {}
+    for _t in _active_sorted:
+        _pid = _t.project_id
+        if _pid not in _proj_map:
+            _proj_map[_pid] = {"project": _t.project, "tasks": []}
+        _proj_map[_pid]["tasks"].append(_t)
+
+    if _proj_map:
+        _proj_ids = list(_proj_map.keys())
+        _health_rows = (
+            Task.objects.filter(
+                project_id__in=_proj_ids,
+                created_by=request.user,
+                status__in=("completed", "failed"),
+            )
+            .values("project_id")
+            .annotate(
+                completed_cnt=Count("pk", filter=Q(status="completed")),
+                failed_cnt=Count("pk", filter=Q(status="failed")),
+            )
+        )
+        _health_by_proj = {row["project_id"]: row for row in _health_rows}
+        queue_projects = []
+        for _pid, _pdata in _proj_map.items():
+            _row = _health_by_proj.get(_pid, {})
+            _comp = _row.get("completed_cnt", 0)
+            _fail = _row.get("failed_cnt", 0)
+            _total = _comp + _fail
+            if _total == 0:
+                _health = "green"
+            else:
+                _rate = _comp / _total
+                if _rate >= 0.8:
+                    _health = "green"
+                elif _rate >= 0.5:
+                    _health = "yellow"
+                else:
+                    _health = "red"
+            queue_projects.append(
+                {
+                    "project": _pdata["project"],
+                    "tasks": _pdata["tasks"],
+                    "health": _health,
+                    "completed_cnt": _comp,
+                    "failed_cnt": _fail,
+                }
+            )
+    else:
+        queue_projects = []
+
     # Success rate
     total_done = completed_count + failed_count
     success_rate = round((completed_count / total_done * 100) if total_done > 0 else 0)
@@ -118,6 +174,7 @@ def dashboard(request):
         "active_pct": active_pct,
         "pending_pct": pending_pct,
         "queue_widget_tasks": queue_widget_tasks,
+        "queue_projects": queue_projects,
         "in_progress_count": in_progress_count,
         "completed_today": completed_today,
         "has_more": total_tasks > 20,
