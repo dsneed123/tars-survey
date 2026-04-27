@@ -9,6 +9,8 @@ urlpatterns = [
     path("login/", views.accounts_login, name="login"),
     path("register/", views.accounts_register, name="register"),
     path("logout/", views.accounts_logout, name="logout"),
+    path("verify-email/<uidb64>/<token>/", views.verify_email, name="verify_email"),
+    path("verify-email/resend/", views.resend_verification_email, name="resend_verification_email"),
     # Password reset flow (Django built-in views)
     path(
         "password-reset/",

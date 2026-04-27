@@ -1,13 +1,18 @@
+from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
 from django_ratelimit.decorators import ratelimit
 
 from analytics.utils import fire_event
 from members.models import MemberProfile
-from notifications.utils import send_welcome_email
+from notifications.utils import send_verification_email, send_welcome_email
 
 from .forms import LoginForm, RegisterForm
 from .models import CustomUser
+from .tokens import email_verification_token
 
 
 @ratelimit(key="ip", rate="5/m", method=["POST"], block=False)
@@ -52,6 +57,7 @@ def accounts_register(request):
             login(request, user)
             fire_event("signup_completed", user=user, metadata={"plan": user.plan})
             send_welcome_email(user)
+            send_verification_email(user)
             return redirect("members:dashboard")
     else:
         form = RegisterForm()
@@ -61,3 +67,30 @@ def accounts_register(request):
 def accounts_logout(request):
     logout(request)
     return redirect("pages:landing")
+
+
+def verify_email(request, uidb64, token):
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = CustomUser.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
+        user = None
+
+    if user and email_verification_token.check_token(user, token):
+        user.is_email_verified = True
+        user.save(update_fields=["is_email_verified"])
+        messages.success(request, "Email verified successfully!")
+        if request.user.is_authenticated:
+            return redirect("members:dashboard")
+        return redirect("accounts:login")
+    return render(request, "accounts/verify_email_invalid.html", status=400)
+
+
+@login_required
+def resend_verification_email(request):
+    if request.user.is_email_verified:
+        messages.info(request, "Your email is already verified.")
+    else:
+        send_verification_email(request.user)
+        messages.success(request, "Verification email sent. Please check your inbox.")
+    return redirect("members:dashboard")
