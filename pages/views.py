@@ -54,6 +54,10 @@ def docs_chat_interface(request):
     return render(request, "pages/docs/chat_interface.html", {"current_doc": "chat-interface"})
 
 
+def docs_projects(request):
+    return render(request, "pages/docs/projects.html", {"current_doc": "projects"})
+
+
 # ---------------------------------------------------------------------------
 # Status page
 # ---------------------------------------------------------------------------
