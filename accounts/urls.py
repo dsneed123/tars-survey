@@ -12,7 +12,12 @@ urlpatterns = [
     # Password reset flow (Django built-in views)
     path(
         "password-reset/",
-        auth_views.PasswordResetView.as_view(template_name="registration/password_reset_form.html"),
+        auth_views.PasswordResetView.as_view(
+            template_name="registration/password_reset_form.html",
+            email_template_name="registration/password_reset_email.html",
+            html_email_template_name="emails/password_reset_email.html",
+            subject_template_name="registration/password_reset_subject.txt",
+        ),
         name="password_reset",
     ),
     path(
