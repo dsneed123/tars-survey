@@ -744,3 +744,115 @@ class UnauthenticatedAccessTests(TestCase):
         self.assertRedirects(
             resp, "/login/?next=/dashboard/activity/", fetch_redirect_response=False
         )
+
+    def test_complete_tour_redirects_to_login(self):
+        resp = self.client.post("/dashboard/complete-tour/")
+        self.assertRedirects(
+            resp, "/login/?next=/dashboard/complete-tour/", fetch_redirect_response=False
+        )
+
+
+# ---------------------------------------------------------------------------
+# Dashboard show_tour context
+# ---------------------------------------------------------------------------
+
+class DashboardShowTourTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.url = "/dashboard/"
+        self.user = make_user(email="tour@example.com", username="touruser")
+
+    def test_show_tour_true_for_new_user_with_no_tasks(self):
+        profile = MemberProfile.objects.get(user=self.user)
+        profile.tour_completed = False
+        profile.save()
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        self.assertTrue(resp.context["show_tour"])
+
+    def test_show_tour_false_when_tour_already_completed(self):
+        profile = MemberProfile.objects.get(user=self.user)
+        profile.tour_completed = True
+        profile.save()
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        self.assertFalse(resp.context["show_tour"])
+
+    def test_show_tour_false_when_user_has_tasks(self):
+        project = make_project(self.user)
+        make_task(project, self.user)
+        profile = MemberProfile.objects.get(user=self.user)
+        profile.tour_completed = False
+        profile.save()
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        self.assertFalse(resp.context["show_tour"])
+
+    def test_show_tour_false_when_completed_and_has_tasks(self):
+        project = make_project(self.user)
+        make_task(project, self.user)
+        profile = MemberProfile.objects.get(user=self.user)
+        profile.tour_completed = True
+        profile.save()
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        self.assertFalse(resp.context["show_tour"])
+
+
+# ---------------------------------------------------------------------------
+# POST /dashboard/complete-tour/
+# ---------------------------------------------------------------------------
+
+class CompleteTourViewTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.url = "/dashboard/complete-tour/"
+        self.user = make_user(email="completetour@example.com", username="completetour")
+
+    def test_requires_login(self):
+        resp = self.client.post(self.url)
+        self.assertRedirects(resp, f"/login/?next={self.url}", fetch_redirect_response=False)
+
+    def test_get_not_allowed(self):
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, 405)
+
+    def test_post_marks_tour_completed(self):
+        profile = MemberProfile.objects.get(user=self.user)
+        self.assertFalse(profile.tour_completed)
+
+        self.client.force_login(self.user)
+        resp = self.client.post(self.url)
+        self.assertEqual(resp.status_code, 200)
+        profile.refresh_from_db()
+        self.assertTrue(profile.tour_completed)
+
+    def test_post_returns_ok_json(self):
+        self.client.force_login(self.user)
+        resp = self.client.post(self.url)
+        data = resp.json()
+        self.assertTrue(data["ok"])
+
+    def test_post_idempotent_when_already_completed(self):
+        profile = MemberProfile.objects.get(user=self.user)
+        profile.tour_completed = True
+        profile.save()
+
+        self.client.force_login(self.user)
+        resp = self.client.post(self.url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.json()["ok"])
+        profile.refresh_from_db()
+        self.assertTrue(profile.tour_completed)
+
+    def test_creates_profile_if_missing(self):
+        MemberProfile.objects.filter(user=self.user).delete()
+        self.client.force_login(self.user)
+        resp = self.client.post(self.url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(MemberProfile.objects.filter(user=self.user, tour_completed=True).exists())

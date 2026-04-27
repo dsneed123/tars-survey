@@ -122,6 +122,7 @@ def dashboard(request):
         "completed_today": completed_today,
         "has_more": total_tasks > 50,
         "oldest_task_id": all_tasks[-1].pk if all_tasks else None,
+        "show_tour": not profile.tour_completed and total_tasks == 0,
     }
     return render(request, "members/dashboard.html", ctx)
 
@@ -403,4 +404,13 @@ def settings_view(request):
         "prefs": prefs,
         "projects": projects,
     })
+
+
+@login_required
+@require_POST
+def complete_tour(request):
+    profile, _ = MemberProfile.objects.get_or_create(user=request.user)
+    profile.tour_completed = True
+    profile.save(update_fields=["tour_completed"])
+    return JsonResponse({"ok": True})
 
