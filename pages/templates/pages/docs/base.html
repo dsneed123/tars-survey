@@ -367,34 +367,164 @@
         padding: 2rem 1.25rem 5rem;
     }
 }
+
+/* ── Mobile Drawer ───────────────────────────────────────── */
+.docs-mobile-topbar {
+    display: none;
+}
+
+.docs-sidebar-close {
+    display: none;
+}
+
+.docs-drawer-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1040;
+    background: rgba(0, 0, 0, 0.55);
+    opacity: 0;
+    transition: opacity 0.28s ease;
+}
+
+.docs-drawer-backdrop.active {
+    opacity: 1;
+}
+
+@media (max-width: 767px) {
+    /* Mobile topbar */
+    .docs-mobile-topbar {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid var(--tars-border);
+        position: sticky;
+        top: 60px;
+        background: var(--tars-bg);
+        z-index: 1020;
+    }
+
+    .docs-sidebar-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 10px;
+        color: var(--tars-text);
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: background 0.15s;
+    }
+
+    .docs-sidebar-toggle:hover {
+        background: rgba(99, 102, 241, 0.1);
+    }
+
+    .docs-sidebar-toggle i {
+        font-size: 1.25rem;
+    }
+
+    .docs-mobile-topbar-label {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: var(--tars-text);
+    }
+
+    /* Sidebar becomes a fixed drawer */
+    .docs-sidebar {
+        display: flex !important;
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 280px;
+        z-index: 1050;
+        transform: translateX(-100%);
+        transition: transform 0.28s ease;
+        box-shadow: 4px 0 32px rgba(0, 0, 0, 0.5);
+    }
+
+    .docs-sidebar.drawer-open {
+        transform: translateX(0);
+    }
+
+    .docs-sidebar-inner {
+        position: static;
+        height: 100%;
+        width: 100%;
+        padding-top: 0;
+    }
+
+    /* Close button inside drawer */
+    .docs-sidebar-close {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        background: none;
+        border: 1px solid var(--tars-border);
+        border-radius: 8px;
+        color: var(--tars-muted);
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: color 0.15s, background 0.15s;
+        margin-left: auto;
+    }
+
+    .docs-sidebar-close:hover {
+        color: var(--tars-text);
+        background: rgba(99, 102, 241, 0.08);
+    }
+
+    .docs-drawer-backdrop {
+        display: block;
+    }
+
+    .docs-inner {
+        padding: 1.5rem 1.25rem 5rem;
+    }
+}
 </style>
 {% block docs_extra_head %}{% endblock %}
 {% endblock %}
 
 {% block content %}
+<!-- Mobile drawer backdrop -->
+<div class="docs-drawer-backdrop" id="docsDrawerBackdrop"></div>
+
 <div class="docs-wrap">
 
     <!-- ── Docs Sidebar ────────────────────────────────── -->
-    <aside class="docs-sidebar">
+    <aside class="docs-sidebar" id="docsSidebar">
         <div class="docs-sidebar-inner">
-            <div style="padding:0 1.25rem 1.25rem; border-bottom:1px solid var(--tars-border);">
+            <div style="padding:0.85rem 1.25rem 1rem; border-bottom:1px solid var(--tars-border); display:flex; align-items:center;">
                 <a href="{% url 'pages:docs_index' %}" class="text-decoration-none"
                    style="font-family:'Inter',system-ui; font-weight:700; font-size:1.15rem; color:var(--tars-text);">
                     Documentation
                 </a>
+                <button class="docs-sidebar-close" id="docsSidebarClose" aria-label="Close navigation">
+                    <i class="bi bi-x-lg" style="font-size:0.9rem;"></i>
+                </button>
             </div>
 
             <nav style="flex:1; padding:0.75rem 0;">
                 <div class="dnav-section">Overview</div>
 
                 <a href="{% url 'pages:docs_index' %}"
-                   class="dnav-item {% if current_doc == 'index' %}active{% endif %}">
+                   class="dnav-item {% if current_doc == 'index' %}active{% endif %}"
+                   data-close-drawer>
                     <i class="bi bi-house-fill"></i>
                     <span>Introduction</span>
                 </a>
 
                 <a href="{% url 'pages:docs_changelog' %}"
-                   class="dnav-item {% if current_doc == 'changelog' %}active{% endif %}">
+                   class="dnav-item {% if current_doc == 'changelog' %}active{% endif %}"
+                   data-close-drawer>
                     <i class="bi bi-clock-history"></i>
                     <span>Changelog</span>
                 </a>
@@ -402,19 +532,22 @@
                 <div class="dnav-section" style="margin-top:0.75rem;">Guides</div>
 
                 <a href="{% url 'pages:docs_getting_started' %}"
-                   class="dnav-item {% if current_doc == 'getting-started' %}active{% endif %}">
+                   class="dnav-item {% if current_doc == 'getting-started' %}active{% endif %}"
+                   data-close-drawer>
                     <i class="bi bi-rocket-takeoff"></i>
                     <span>Getting Started</span>
                 </a>
 
                 <a href="{% url 'pages:docs_worker_setup' %}"
-                   class="dnav-item {% if current_doc == 'worker-setup' %}active{% endif %}">
+                   class="dnav-item {% if current_doc == 'worker-setup' %}active{% endif %}"
+                   data-close-drawer>
                     <i class="bi bi-cpu"></i>
                     <span>Worker Setup</span>
                 </a>
 
                 <a href="{% url 'pages:docs_chat_interface' %}"
-                   class="dnav-item {% if current_doc == 'chat-interface' %}active{% endif %}">
+                   class="dnav-item {% if current_doc == 'chat-interface' %}active{% endif %}"
+                   data-close-drawer>
                     <i class="bi bi-chat-dots"></i>
                     <span>Chat Interface</span>
                 </a>
@@ -422,13 +555,15 @@
                 <div class="dnav-section" style="margin-top:0.75rem;">Reference</div>
 
                 <a href="{% url 'pages:docs_api_reference' %}"
-                   class="dnav-item {% if current_doc == 'api-reference' %}active{% endif %}">
+                   class="dnav-item {% if current_doc == 'api-reference' %}active{% endif %}"
+                   data-close-drawer>
                     <i class="bi bi-braces"></i>
                     <span>API Reference</span>
                 </a>
 
                 <a href="{% url 'pages:docs_faq' %}"
-                   class="dnav-item {% if current_doc == 'faq' %}active{% endif %}">
+                   class="dnav-item {% if current_doc == 'faq' %}active{% endif %}"
+                   data-close-drawer>
                     <i class="bi bi-question-circle"></i>
                     <span>FAQ</span>
                 </a>
@@ -436,7 +571,8 @@
                 <div class="dnav-section" style="margin-top:0.75rem;">Platform</div>
 
                 <a href="{% url 'pages:status' %}"
-                   class="dnav-item">
+                   class="dnav-item"
+                   data-close-drawer>
                     <i class="bi bi-activity"></i>
                     <span>Status</span>
                 </a>
@@ -453,10 +589,53 @@
 
     <!-- ── Main Content ────────────────────────────────── -->
     <main class="docs-main">
+        <!-- Mobile topbar with hamburger -->
+        <div class="docs-mobile-topbar">
+            <button class="docs-sidebar-toggle" id="docsSidebarToggle" aria-label="Open navigation">
+                <i class="bi bi-list"></i>
+            </button>
+            <span class="docs-mobile-topbar-label">Documentation</span>
+        </div>
         <div class="docs-inner">
             {% block docs_content %}{% endblock %}
         </div>
     </main>
 
 </div>
+
+{% block docs_extra_scripts %}{% endblock %}
+<script>
+(function () {
+    var sidebar = document.getElementById('docsSidebar');
+    var backdrop = document.getElementById('docsDrawerBackdrop');
+    var toggleBtn = document.getElementById('docsSidebarToggle');
+    var closeBtn = document.getElementById('docsSidebarClose');
+
+    function openDrawer() {
+        sidebar.classList.add('drawer-open');
+        backdrop.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeDrawer() {
+        sidebar.classList.remove('drawer-open');
+        backdrop.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    if (toggleBtn) toggleBtn.addEventListener('click', openDrawer);
+    if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+    if (backdrop) backdrop.addEventListener('click', closeDrawer);
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeDrawer();
+    });
+
+    document.querySelectorAll('[data-close-drawer]').forEach(function (el) {
+        el.addEventListener('click', function () {
+            if (window.innerWidth < 768) closeDrawer();
+        });
+    });
+}());
+</script>
 {% endblock %}
