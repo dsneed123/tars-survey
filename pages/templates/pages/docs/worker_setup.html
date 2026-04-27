@@ -141,7 +141,7 @@ cat ~/.ssh/tars_deploy.pub</code></pre>
 </div>
 
 <h2>Monitoring Your Worker</h2>
-<p>View live worker status in the <a href="{% url 'members:dashboard' %}">member dashboard</a> under <strong>Workers</strong> (admin accounts). Workers that miss 5 consecutive heartbeats (25 seconds) are marked offline automatically.</p>
+<p>View live worker status in the <a href="{% url 'members:dashboard' %}">member dashboard</a> under <strong>Workers</strong> (admin accounts). Workers that miss heartbeats for more than 5 minutes are marked offline automatically.</p>
 
 <h3>Useful commands</h3>
 <pre><code># View logs
