@@ -483,9 +483,18 @@ def task_list(request):
 @login_required
 def task_add(request):
     if request.method == "POST":
+        if is_ratelimited(request, group="task_add_per_minute", key="user", rate="5/m", method="POST", increment=True):
+            form = TaskForm(request.user)
+            form.cleaned_data = {}
+            form.add_error(None, "Slow down! Max 5 tasks per minute.")
+            response = render(request, "tasks/task_add.html", {"form": form, "service": request.GET.get("service", "")})
+            response.status_code = 429
+            response["Retry-After"] = "60"
+            return response
         if is_ratelimited(request, group="task_add", key="user", rate="30/h", method="POST", increment=True):
             form = TaskForm(request.user)
-            form.add_error(None, "Rate limit exceeded. You can submit at most 30 tasks per hour.")
+            form.cleaned_data = {}
+            form.add_error(None, "Slow down! Max 30 tasks/hour.")
             response = render(request, "tasks/task_add.html", {"form": form, "service": request.GET.get("service", "")})
             response.status_code = 429
             response["Retry-After"] = "3600"
@@ -790,8 +799,12 @@ def api_task_create(request):
     if not request.user.is_authenticated:
         return JsonResponse({"error": "Authentication required"}, status=401)
 
+    if is_ratelimited(request, group="api_task_create_per_minute", key="user", rate="5/m", method="POST", increment=True):
+        response = JsonResponse({"error": "Slow down! Max 5 tasks per minute."}, status=429)
+        response["Retry-After"] = "60"
+        return response
     if is_ratelimited(request, group="api_task_create", key="user", rate="30/h", method="POST", increment=True):
-        response = JsonResponse({"error": "Rate limit exceeded. Maximum 30 tasks per hour."}, status=429)
+        response = JsonResponse({"error": "Slow down! Max 30 tasks/hour."}, status=429)
         response["Retry-After"] = "3600"
         return response
 
