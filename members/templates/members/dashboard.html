@@ -2369,11 +2369,10 @@ function retryTask(pk, btn) {
     btn.disabled = true;
 
     var tarsBubble = btn.closest('.tars-msg');
-    var title = '';
-    if (tarsBubble && tarsBubble.previousElementSibling) {
-        var titleEl = tarsBubble.previousElementSibling.querySelector('.msg-content p');
-        if (titleEl) title = titleEl.textContent.trim();
-    }
+    var title = (tarsBubble && tarsBubble.dataset.taskTitle) || '';
+
+    appendUserBubble(title || 'task');
+    var pendingBubble = _appendTarsPendingBubble(title);
 
     fetch('/api/tasks/' + pk + '/retry', {
         method: 'POST',
@@ -2385,13 +2384,16 @@ function retryTask(pk, btn) {
         return r.json();
     })
     .then(function(data) {
-        appendUserBubble('Retrying: ' + (title || data.title || 'task'));
+        _resolvePendingBubble(pendingBubble, data.id);
         var retried = document.createElement('span');
         retried.className = 'retry-done';
         retried.textContent = 'Retried';
         btn.parentNode.replaceChild(retried, btn);
     })
     .catch(function() {
+        if (pendingBubble && pendingBubble.parentNode) {
+            pendingBubble.parentNode.removeChild(pendingBubble);
+        }
         btn.disabled = false;
     });
 }
@@ -2662,6 +2664,7 @@ function _appendTarsPendingBubble(title) {
     div.setAttribute('aria-label', title ? 'TARS: ' + title : 'TARS');
     div.setAttribute('tabindex', '-1');
     div.setAttribute('data-timestamp', nowIso);
+    if (title) div.setAttribute('data-task-title', title);
     div.innerHTML =
         _tarsAvatarHtml +
         '<div class="msg-body">' +
