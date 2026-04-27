@@ -19,6 +19,7 @@ from django.core.paginator import EmptyPage, Paginator
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse, StreamingHttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import csrf_exempt
@@ -1432,3 +1433,36 @@ def export_tasks_csv(request):
     )
     response["Content-Disposition"] = 'attachment; filename="task-history.csv"'
     return response
+
+
+@login_required
+@require_GET
+def api_command_palette(request):
+    """Return tasks and projects for the command palette (client-side fuzzy search)."""
+    tasks = (
+        Task.objects.filter(created_by=request.user)
+        .select_related("project")
+        .order_by("-created_at")[:50]
+    )
+    projects = Project.objects.filter(owner=request.user).order_by("name")
+
+    return JsonResponse({
+        "tasks": [
+            {
+                "id": t.pk,
+                "title": t.title,
+                "status": t.status,
+                "project_name": t.project.name if t.project_id else "",
+                "url": reverse("tasks:detail", args=[t.pk]),
+            }
+            for t in tasks
+        ],
+        "projects": [
+            {
+                "id": p.pk,
+                "name": p.name,
+                "url": reverse("projects:detail", args=[p.pk]),
+            }
+            for p in projects
+        ],
+    })
