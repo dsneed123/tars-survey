@@ -2510,6 +2510,10 @@ document.addEventListener('keydown', function(e) {
             .catch(function () {});
     }
 
+    window.updateTabTitle = function (count) {
+        document.title = count > 0 ? '(' + count + ') TARS' : 'TARS';
+    };
+
     function updateWelcomeStats(activeCount, completedToday) {
         var welcomeMsg = document.getElementById('tars-welcome-msg');
         var contentEl = document.getElementById('tars-welcome-stats-content');
@@ -2522,6 +2526,7 @@ document.addEventListener('keydown', function(e) {
         } else {
             if (welcomeMsg) { welcomeMsg.style.display = 'none'; }
         }
+        window.updateTabTitle(activeCount);
     }
 
     function handleMessage(data) {
@@ -2758,6 +2763,9 @@ document.addEventListener('keydown', function(e) {
     var _activeCount = {{ active_count|default:0 }};
     var _inProgressCount = {{ in_progress_count|default:0 }};
 
+    // Set initial tab title from server-rendered count
+    if (typeof window.updateTabTitle === 'function') { window.updateTabTitle(_activeCount); }
+
     function refreshWidget() {
         var labelEl = document.getElementById('queueWidgetLabel');
         if (labelEl) {
@@ -2768,6 +2776,8 @@ document.addEventListener('keydown', function(e) {
 
         var widget = document.getElementById('queueWidget');
         if (widget) widget.style.display = _activeCount > 0 ? '' : 'none';
+
+        if (typeof window.updateTabTitle === 'function') { window.updateTabTitle(_activeCount); }
     }
 
     // Receive status updates from the dashboard WebSocket handler
