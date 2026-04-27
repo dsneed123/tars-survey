@@ -552,6 +552,13 @@
                     <span>Chat Interface</span>
                 </a>
 
+                <a href="{% url 'pages:docs_projects' %}"
+                   class="dnav-item {% if current_doc == 'projects' %}active{% endif %}"
+                   data-close-drawer>
+                    <i class="bi bi-folder2-open"></i>
+                    <span>Project Management</span>
+                </a>
+
                 <div class="dnav-section" style="margin-top:0.75rem;">Reference</div>
 
                 <a href="{% url 'pages:docs_api_reference' %}"

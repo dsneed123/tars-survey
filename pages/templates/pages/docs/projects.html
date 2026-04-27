@@ -1,0 +1,152 @@
+{% extends "pages/docs/base.html" %}
+
+{% block title %}Project Management | TARS — Autonomous Coding{% endblock %}
+{% block meta_description %}<meta name="description" content="Learn how to add, configure, and manage GitHub projects in TARS — including repo access, supported languages, and project settings.">{% endblock %}
+
+{% block docs_content %}
+
+<h1>Project Management</h1>
+<p class="docs-lead">A <strong>project</strong> is a connected GitHub repository. Once connected, TARS can clone it, work on a branch, run your tests, and open pull requests on your behalf.</p>
+
+<h2>Adding a Project</h2>
+<p>From your dashboard, click <strong>Add Project</strong>. You'll be prompted for your GitHub repository URL.</p>
+
+<div class="docs-step">
+    <div class="docs-step-num">1</div>
+    <div class="docs-step-body">
+        <h4>Enter the repository URL</h4>
+        <p>Paste the full GitHub URL for the repo you want to connect. Both HTTPS and SSH formats are accepted:</p>
+        <pre><code>https://github.com/your-org/your-repo
+git@github.com:your-org/your-repo.git</code></pre>
+    </div>
+</div>
+
+<div class="docs-step">
+    <div class="docs-step-num">2</div>
+    <div class="docs-step-body">
+        <h4>Provide a GitHub access token</h4>
+        <p>TARS needs a GitHub token to clone your repository and open pull requests. See the <a href="#github-access">GitHub Access</a> section below for how to create one with the right permissions.</p>
+    </div>
+</div>
+
+<div class="docs-step">
+    <div class="docs-step-num">3</div>
+    <div class="docs-step-body">
+        <h4>Save and verify</h4>
+        <p>TARS will attempt a lightweight clone to verify the token and repo URL are correct. Once verified, the project appears in your dashboard and is ready for tasks.</p>
+    </div>
+</div>
+
+<div class="docs-note tip">
+    <i class="bi bi-lightbulb-fill"></i>
+    <div><strong>Tip:</strong> You can add as many projects as your plan allows. Each project has its own task queue — tasks within a single project run one at a time to prevent merge conflicts.</div>
+</div>
+
+<h2>Supported Languages</h2>
+<p>TARS uses Claude AI to read and write code, so it can work with any language that Claude understands. The following are well-tested and recommended:</p>
+
+<ul>
+    <li><strong>Python</strong> — Django, Flask, FastAPI, scripts, data pipelines</li>
+    <li><strong>JavaScript / TypeScript</strong> — Node.js, React, Next.js, Vue, Express</li>
+    <li><strong>Go</strong> — services, CLIs, APIs</li>
+    <li><strong>Ruby</strong> — Rails, Sinatra</li>
+    <li><strong>Rust</strong> — systems, CLIs, WebAssembly</li>
+    <li><strong>Java / Kotlin</strong> — Spring Boot, Android</li>
+    <li><strong>Shell / Bash</strong> — automation scripts, DevOps tooling</li>
+    <li><strong>HTML / CSS / SCSS</strong> — templates, stylesheets, design systems</li>
+    <li><strong>SQL</strong> — schema migrations, queries, stored procedures</li>
+</ul>
+
+<div class="docs-note info">
+    <i class="bi bi-info-circle-fill"></i>
+    <div>
+        <strong>Mixed-language repos work fine.</strong> Most real-world projects span multiple languages — a Python backend with a TypeScript frontend, for example. TARS analyzes your entire repo before writing any code, so it understands the full context regardless of how many languages are in play.
+    </div>
+</div>
+
+<h2 id="github-access">How TARS Accesses Your Repo</h2>
+<p>TARS uses a GitHub <strong>Personal Access Token (PAT)</strong> or a <strong>fine-grained token</strong> that you provide. The token is stored encrypted and is only used to interact with the specific repository you connect.</p>
+
+<h3>Creating a Fine-Grained Token (Recommended)</h3>
+
+<div class="docs-step">
+    <div class="docs-step-num">1</div>
+    <div class="docs-step-body">
+        <h4>Go to GitHub token settings</h4>
+        <p>Navigate to <strong>GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens</strong> and click <strong>Generate new token</strong>.</p>
+    </div>
+</div>
+
+<div class="docs-step">
+    <div class="docs-step-num">2</div>
+    <div class="docs-step-body">
+        <h4>Set repository access</h4>
+        <p>Under <strong>Repository access</strong>, choose <strong>Only select repositories</strong> and pick the repo you're connecting. This scopes the token to a single repo.</p>
+    </div>
+</div>
+
+<div class="docs-step">
+    <div class="docs-step-num">3</div>
+    <div class="docs-step-body">
+        <h4>Grant the required permissions</h4>
+        <p>Under <strong>Repository permissions</strong>, enable:</p>
+        <ul>
+            <li><strong>Contents</strong> — Read and write (to clone and push branches)</li>
+            <li><strong>Pull requests</strong> — Read and write (to open PRs)</li>
+            <li><strong>Workflows</strong> — Read and write (if your repo uses GitHub Actions)</li>
+        </ul>
+    </div>
+</div>
+
+<div class="docs-step">
+    <div class="docs-step-num">4</div>
+    <div class="docs-step-body">
+        <h4>Copy and save the token</h4>
+        <p>GitHub shows the token once — copy it immediately and paste it into the TARS project form. TARS stores it encrypted; you won't see the plain-text value again.</p>
+    </div>
+</div>
+
+<div class="docs-note warning">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <div><strong>Keep your token safe.</strong> Treat it like a password. If it's ever compromised, revoke it immediately in GitHub's token settings and generate a new one. Update the token in TARS via Project Settings.</div>
+</div>
+
+<h3>Classic Personal Access Tokens</h3>
+<p>If you prefer a classic PAT, grant the <code>repo</code> scope (full repository access). Classic tokens apply to all repos you have access to, so fine-grained tokens are preferred for security.</p>
+
+<h2>Project Settings</h2>
+<p>After a project is created, you can update its settings from the project detail page on your dashboard.</p>
+
+<h3>Default Branch</h3>
+<p>TARS opens pull requests against your repository's default branch (<code>main</code> or <code>master</code>). If you use a different integration branch (e.g. <code>develop</code>), you can override this in Project Settings.</p>
+
+<h3>Test Command</h3>
+<p>Specify the command TARS should run to verify code after it writes changes. Examples:</p>
+<pre><code>pytest
+npm test
+go test ./...
+bundle exec rspec</code></pre>
+<p>If no test command is set, TARS will attempt to detect one automatically from common config files (<code>package.json</code>, <code>Makefile</code>, <code>pyproject.toml</code>, etc.).</p>
+
+<h3>Updating the GitHub Token</h3>
+<p>If your token expires or you need to rotate it, open <strong>Project Settings → GitHub Token</strong>, paste the new token, and save. TARS will use the updated token for all future tasks on that project.</p>
+
+<h3>PR Labels and Assignees</h3>
+<p>You can configure a default label (e.g. <code>tars</code>) and assignee to apply to every pull request TARS opens. This makes it easy to filter TARS-authored PRs in your GitHub repository.</p>
+
+<h2>Removing a Project</h2>
+<p>To disconnect a project, open the project detail page and click <strong>Remove Project</strong> at the bottom of the settings panel.</p>
+
+<div class="docs-note warning">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <div>
+        <strong>Removing a project is permanent.</strong> All associated task history is deleted and cannot be recovered. Any pull requests already opened on GitHub remain open — removing the project from TARS does not close them.
+    </div>
+</div>
+
+<p>Any tasks currently in the queue for that project will be cancelled before the project is removed.</p>
+
+<h2>Next Steps</h2>
+<p>Once your project is connected, you're ready to submit your first task. Head over to the <a href="{% url 'pages:docs_getting_started' %}">Getting Started guide</a> for a full walkthrough.</p>
+
+{% endblock %}
