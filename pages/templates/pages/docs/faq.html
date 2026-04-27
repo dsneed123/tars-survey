@@ -127,21 +127,61 @@
 
 <div class="faq-item">
     <button class="faq-question" onclick="toggleFaq(this)">
-        <span>How long does a task take?</span>
+        <span>How do I submit a task?</span>
         <i class="bi bi-chevron-down"></i>
     </button>
     <div class="faq-answer">
-        Simple tasks (bug fixes, adding a field, writing tests for an existing function) typically complete in 3–8 minutes. Complex tasks (new features spanning multiple files, performance refactors) can take 15–30 minutes. Queue wait time depends on available workers and how many tasks are pending.
+        Open your project and type your request into the chat input bar at the bottom of the screen. Describe what you want in plain English — TARS reads your codebase and figures out the implementation. Press Enter or click the send button to submit.
     </div>
 </div>
 
 <div class="faq-item">
     <button class="faq-question" onclick="toggleFaq(this)">
-        <span>Can I run multiple tasks at the same time?</span>
+        <span>How do I track my tasks?</span>
         <i class="bi bi-chevron-down"></i>
     </button>
     <div class="faq-answer">
-        Tasks for <em>different</em> projects run in parallel. Tasks within the <em>same</em> project are serialized — only one task runs at a time per project. This prevents merge conflicts caused by overlapping changes to the same codebase.
+        The chat feed shows every task you've submitted as a message bubble. Each bubble displays a live status badge: <code>queued</code>, <code>running</code>, <code>done</code>, or <code>failed</code>. Bubbles update in real time as TARS works — no need to refresh the page.
+    </div>
+</div>
+
+<div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+        <span>Can I submit multiple tasks?</span>
+        <i class="bi bi-chevron-down"></i>
+    </button>
+    <div class="faq-answer">
+        Yes. You can send tasks one at a time, or use the <strong>bulk add</strong> feature to paste a list of tasks (one per line) and submit them all at once. Each task gets its own bubble in the chat feed. Tasks for <em>different</em> projects run in parallel; tasks within the <em>same</em> project are serialized to prevent merge conflicts.
+    </div>
+</div>
+
+<div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+        <span>What does the queue sidebar show?</span>
+        <i class="bi bi-chevron-down"></i>
+    </button>
+    <div class="faq-answer">
+        The queue sidebar on the right side of the project view lists all pending and in-progress tasks for that project in order. It shows each task's position in the queue, its current status, and a short preview of the description. Completed and failed tasks drop off the queue and remain visible only in the chat feed.
+    </div>
+</div>
+
+<div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+        <span>How do I see my task's PR?</span>
+        <i class="bi bi-chevron-down"></i>
+    </button>
+    <div class="faq-answer">
+        When a task finishes successfully, its chat bubble updates to <code>done</code> and a <strong>View PR</strong> link appears inside it. Click that link to open the pull request on GitHub. TARS never merges automatically — you review and merge the PR yourself.
+    </div>
+</div>
+
+<div class="faq-item">
+    <button class="faq-question" onclick="toggleFaq(this)">
+        <span>How long does a task take?</span>
+        <i class="bi bi-chevron-down"></i>
+    </button>
+    <div class="faq-answer">
+        Simple tasks (bug fixes, adding a field, writing tests for an existing function) typically complete in 3–8 minutes. Complex tasks (new features spanning multiple files, performance refactors) can take 15–30 minutes. Queue wait time depends on available workers and how many tasks are pending.
     </div>
 </div>
 
