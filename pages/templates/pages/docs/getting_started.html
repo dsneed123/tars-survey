@@ -1,28 +1,28 @@
 {% extends "pages/docs/base.html" %}
 
 {% block title %}Getting Started | TARS — Autonomous Coding{% endblock %}
-{% block meta_description %}<meta name="description" content="Get started with TARS: sign up, connect your first GitHub project, and submit your first autonomous coding task.">{% endblock %}
+{% block meta_description %}<meta name="description" content="Get started with TARS: sign up, connect your first GitHub project, and submit your first autonomous coding task through the chat interface.">{% endblock %}
 
 {% block docs_content %}
 
 <h1>Getting Started</h1>
-<p class="docs-lead">From zero to your first automated pull request in under 10 minutes. Follow these steps to sign up, connect a project, and submit your first task.</p>
+<p class="docs-lead">From zero to your first automated pull request in under 10 minutes. Sign up, connect a GitHub project, and type a task — TARS handles the rest.</p>
 
 <h2>Step 1 — Create an Account</h2>
 
 <div class="docs-step">
     <div class="docs-step-num">1</div>
     <div class="docs-step-body">
-        <h4>Sign up at TARS</h4>
-        <p>Visit the <a href="{% url 'inquiries:get_started' %}">Get Started page</a> and fill in your email and company name. You'll receive a confirmation email with a link to activate your account.</p>
+        <h4>Sign up at tarsai.dev</h4>
+        <p>Visit <a href="{% url 'inquiries:get_started' %}">tarsai.dev</a> and enter your email and company name. You'll receive a confirmation email — click the link inside to activate your account.</p>
     </div>
 </div>
 
 <div class="docs-step">
     <div class="docs-step-num">2</div>
     <div class="docs-step-body">
-        <h4>Verify your email</h4>
-        <p>Click the link in your activation email. This confirms your address and takes you to the member dashboard.</p>
+        <h4>Land on the chat dashboard</h4>
+        <p>After confirming your email you're taken directly to the TARS chat dashboard. You'll see TARS's greeting — <em>"Hi! I'm TARS. Tell me what to code."</em> — and a set of suggestion chips to help you get started quickly.</p>
     </div>
 </div>
 
@@ -31,63 +31,55 @@
     <div>Already have an account? <a href="{% url 'accounts:login' %}">Sign in here</a>.</div>
 </div>
 
-<h2>Step 2 — Add Your First Project</h2>
+<h2>Step 2 — Connect a GitHub Project</h2>
 
 <div class="docs-step">
     <div class="docs-step-num">1</div>
     <div class="docs-step-body">
-        <h4>Go to Projects</h4>
-        <p>From the dashboard sidebar, click <strong>Projects</strong>, then click <strong>Add Project</strong>.</p>
+        <h4>Click "Add a GitHub project" or paste a URL directly</h4>
+        <p>On a fresh account the chat input bar shows a single field with the placeholder <em>"Paste a GitHub repo URL (e.g. github.com/user/repo)"</em>. You can also click the <strong>Add a GitHub project</strong> suggestion chip — it focuses the input for you.</p>
     </div>
 </div>
 
 <div class="docs-step">
     <div class="docs-step-num">2</div>
     <div class="docs-step-body">
-        <h4>Enter your GitHub repository</h4>
-        <p>Provide the repository in <code>owner/repo</code> format — for example, <code>acme-corp/backend-api</code>. The repository must be accessible; for private repos, you'll need to provide a GitHub personal access token or install the TARS GitHub App.</p>
-    </div>
-</div>
-
-<div class="docs-step">
-    <div class="docs-step-num">3</div>
-    <div class="docs-step-body">
-        <h4>Set the default branch</h4>
-        <p>Choose the branch TARS will branch from when creating new PRs. This is typically <code>main</code> or <code>develop</code>.</p>
-    </div>
-</div>
-
-<div class="docs-step">
-    <div class="docs-step-num">4</div>
-    <div class="docs-step-body">
-        <h4>Save the project</h4>
-        <p>Click <strong>Save Project</strong>. TARS will verify it can reach the repository and display a success message.</p>
+        <h4>Paste your repository URL and press Enter</h4>
+        <p>Type or paste the full GitHub URL — for example, <code>github.com/acme-corp/backend-api</code> — and press <kbd>Enter</kbd>. TARS detects that it's a repository link, connects the project, and confirms it in the chat feed.</p>
+        <p>Once connected, the input bar switches to the full task interface with a project selector pill on the left.</p>
     </div>
 </div>
 
 <div class="docs-note info">
     <i class="bi bi-info-circle-fill"></i>
     <div>
+        <strong>Adding more projects later:</strong> With projects already connected, paste any GitHub URL directly into the chat input — TARS automatically detects it as a repository link and adds it rather than treating it as a task.
+    </div>
+</div>
+
+<div class="docs-note warning">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+    <div>
         <strong>Private repositories:</strong> TARS needs read/write access to clone your repo and push branches. We recommend creating a dedicated deploy key or service account with <em>Contents: read &amp; write</em> and <em>Pull requests: read &amp; write</em> permissions.
     </div>
 </div>
 
-<h2>Step 3 — Submit Your First Task</h2>
+<h2>Step 3 — Submit a Task</h2>
 
 <div class="docs-step">
     <div class="docs-step-num">1</div>
     <div class="docs-step-body">
-        <h4>Open the task form</h4>
-        <p>Click the <strong>+</strong> button in the bottom-right corner of the dashboard, or go to <strong>Tasks → New Task</strong> in the sidebar.</p>
+        <h4>Select a project from the project pill</h4>
+        <p>At the left side of the chat input bar you'll see a pill labelled <strong>Select project</strong> with a folder icon. Click it to open a dropdown and choose the repository you want TARS to work on.</p>
     </div>
 </div>
 
 <div class="docs-step">
     <div class="docs-step-num">2</div>
     <div class="docs-step-body">
-        <h4>Select a project and describe your task</h4>
-        <p>Choose the project you just added, then write a clear task title and optional details. The more context you provide, the better TARS performs.</p>
-        <p>Good task titles:</p>
+        <h4>Type your task and press Enter</h4>
+        <p>Click the text area (placeholder: <em>"Ask TARS to code something..."</em>), describe the task, then press <kbd>Enter</kbd> to send. Use <kbd>Shift+Enter</kbd> to add a new line without sending.</p>
+        <p>Good task descriptions:</p>
         <ul>
             <li>"Fix the 500 error when a user resets their password with an expired token"</li>
             <li>"Add pagination to the /api/products/ endpoint (page size 20)"</li>
@@ -96,16 +88,47 @@
     </div>
 </div>
 
-<div class="docs-step">
-    <div class="docs-step-num">3</div>
-    <div class="docs-step-body">
-        <h4>Submit and watch</h4>
-        <p>Click <strong>Submit Task</strong>. The task appears in your task list with a <code>Pending</code> status. When a worker picks it up, the status changes to <code>In Progress</code> and you'll receive an email notification. When the PR is ready, you'll get another notification with a direct link.</p>
+<div class="docs-note tip">
+    <i class="bi bi-lightbulb-fill"></i>
+    <div>
+        Use the <strong>task templates</strong> button (card-list icon, right side of the input bar) to pick from pre-built task starters, or the <strong>bulk add</strong> button (list icon) to queue multiple tasks at once — one per line.
     </div>
 </div>
 
-<h2>What Happens Next</h2>
-<p>Once you submit a task, TARS:</p>
+<h2>Step 4 — Watch TARS Work in Real Time</h2>
+
+<div class="docs-step">
+    <div class="docs-step-num">1</div>
+    <div class="docs-step-body">
+        <h4>Your message appears in the feed</h4>
+        <p>The task you typed shows up as a user message bubble. TARS immediately responds with a status card below it.</p>
+    </div>
+</div>
+
+<div class="docs-step">
+    <div class="docs-step-num">2</div>
+    <div class="docs-step-body">
+        <h4>Watch the status badge update</h4>
+        <p>The TARS reply card displays a live status badge that progresses through:</p>
+        <ul>
+            <li><strong>Pending</strong> — task is queued, waiting for a worker</li>
+            <li><strong>In Progress</strong> — a worker has picked it up and is coding</li>
+            <li><strong>Completed</strong> — the PR is open on GitHub</li>
+        </ul>
+        <p>The badge updates in real time — no refresh needed.</p>
+    </div>
+</div>
+
+<div class="docs-step">
+    <div class="docs-step-num">3</div>
+    <div class="docs-step-body">
+        <h4>Open the pull request</h4>
+        <p>When the task is complete, a green <strong>View PR</strong> link appears inside the TARS message card. Click it to open the pull request on GitHub, review the changes, and merge when ready.</p>
+    </div>
+</div>
+
+<h2>What Happens Under the Hood</h2>
+<p>Once you send a task, TARS:</p>
 <ol>
     <li>Queues the task and waits for an available worker</li>
     <li>Clones your repository on a fresh worker environment</li>
@@ -113,7 +136,7 @@
     <li>Implements the requested changes using Claude AI</li>
     <li>Runs your existing test suite (<code>pytest</code>, <code>jest</code>, etc.) to verify correctness</li>
     <li>Opens a pull request on GitHub with a descriptive title and summary</li>
-    <li>Sends you a notification with the PR link</li>
+    <li>Shows the PR link in the chat feed</li>
 </ol>
 
 <div class="docs-note warning">
