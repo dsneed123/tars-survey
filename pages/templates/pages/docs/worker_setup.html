@@ -11,7 +11,14 @@
 <div class="docs-note info">
     <i class="bi bi-info-circle-fill"></i>
     <div>
-        Self-hosted workers are available on the <strong>Pro</strong> and <strong>Team</strong> plans. Managed workers are included with all accounts.
+        <strong>Managed workers are provided by default</strong> on all plans — you only need this guide if you want to run your own compute. Self-hosted workers are available on <strong>Pro</strong> and <strong>Team</strong> plans.
+    </div>
+</div>
+
+<div class="docs-note info">
+    <i class="bi bi-diagram-3-fill"></i>
+    <div>
+        <strong>Architecture:</strong> Task submissions flow from <code>tarsai.dev</code> (Railway) through a Cloudflare Tunnel to the TARS Controller API on your Mac Mini (port 8421), then to the TARS daemon. Self-hosted workers integrate at the daemon level and poll <code>tarsai.dev</code> for tasks directly.
     </div>
 </div>
 
@@ -26,16 +33,17 @@
 </ul>
 
 <h2>Step 1 — Obtain a Worker API Key</h2>
-<p>Contact TARS support or, if your plan includes self-hosted workers, register one programmatically via the <a href="{% url 'pages:docs_api_reference' %}#register">Worker Register API</a>:</p>
+<p>Register a new worker via the <a href="{% url 'pages:docs_api_reference' %}#register">Worker Register API</a>. This requires your account's <strong>TARS API key</strong>, which is set as the <code>TARS_API_KEY</code> environment variable on Railway and in <code>tars.conf</code> on your Mac Mini controller.</p>
 
 <pre><code>curl -s -X POST https://tarsai.dev/api/workers/register/ \
   -H "Content-Type: application/json" \
+  -H "X-API-Key: &lt;your-TARS_API_KEY&gt;" \
   -d '{
     "hostname": "my-worker-01",
     "capacity": 2
   }'</code></pre>
 
-<p>Save the returned <code>api_key</code> — you'll need it in the next step.</p>
+<p>Save the returned <code>api_key</code> — this is your <strong>worker API key</strong> (different from the account-level <code>TARS_API_KEY</code>) and you'll use it in the next step.</p>
 
 <h2>Step 2 — Install TARS Worker</h2>
 
@@ -43,7 +51,7 @@
     <div class="docs-step-num">1</div>
     <div class="docs-step-body">
         <h4>Clone the TARS worker repository</h4>
-        <pre><code>git clone https://github.com/tarsdev/tars-worker.git
+        <pre><code>git clone https://github.com/dsneed123/tars-worker.git
 cd tars-worker</code></pre>
     </div>
 </div>
@@ -103,6 +111,7 @@ After=network.target
 Type=forking
 User=tars
 WorkingDirectory=/opt/tars-worker
+PIDFile=/opt/tars-worker/state/tars.pid
 ExecStart=/opt/tars-worker/tars.sh start
 ExecStop=/opt/tars-worker/tars.sh stop
 Restart=on-failure
@@ -163,6 +172,19 @@ cat ~/.ssh/tars_deploy.pub</code></pre>
 
 <h3>Claude CLI not found</h3>
 <p>Ensure <code>claude</code> is on the worker's <code>PATH</code> and is authenticated. Run <code>claude --version</code> as the same user that runs the worker process.</p>
+
+<h3>Tunnel issues (Railway → Mac Mini)</h3>
+<p>The Cloudflare Tunnel URL is temporary by default and changes on restart. If task forwarding stops working:</p>
+<ol>
+    <li>Restart the tunnel on your Mac Mini: <code>cloudflared tunnel --url http://localhost:8421</code></li>
+    <li>Copy the new <code>*.trycloudflare.com</code> URL from the output</li>
+    <li>Update <code>TARS_CONTROLLER_URL</code> in your Railway environment variables to the new URL</li>
+    <li>Redeploy (or wait for the next request — Railway picks up env var changes immediately)</li>
+</ol>
+<p>For a permanent URL, set up a named Cloudflare tunnel with a fixed subdomain instead of using the quick-tunnel command above.</p>
+
+<h3>Worker can't reach tarsai.dev</h3>
+<p>Confirm outbound HTTPS from your Mac Mini is not blocked. Test with: <code>curl -I https://tarsai.dev</code>. If you're behind a corporate firewall, port 443 must be open to Railway's IP ranges.</p>
 
 <h2>Next Steps</h2>
 <ul>
