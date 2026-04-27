@@ -28,7 +28,7 @@
 <h2>Step 1 — Obtain a Worker API Key</h2>
 <p>Contact TARS support or, if your plan includes self-hosted workers, register one programmatically via the <a href="{% url 'pages:docs_api_reference' %}#register">Worker Register API</a>:</p>
 
-<pre><code>curl -s -X POST https://tars.dev/api/workers/register/ \
+<pre><code>curl -s -X POST https://tarsai.dev/api/workers/register/ \
   -H "Content-Type: application/json" \
   -d '{
     "hostname": "my-worker-01",
@@ -66,7 +66,7 @@ pip install -r requirements.txt</code></pre>
         <pre><code>cp tars.conf.example tars.conf</code></pre>
         <p>Edit <code>tars.conf</code>:</p>
         <pre><code># Required
-TARS_API_URL=https://tars.dev
+TARS_API_URL=https://tarsai.dev
 TARS_WORKER_KEY=&lt;your-api-key&gt;
 
 # Optional

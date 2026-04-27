@@ -23,7 +23,7 @@
 </div>
 
 <h2>Base URL</h2>
-<pre><code>https://tars.dev</code></pre>
+<pre><code>https://tarsai.dev</code></pre>
 
 <h2>Error Responses</h2>
 <p>All errors return JSON with an <code>error</code> field:</p>
@@ -81,7 +81,7 @@
         </table>
 
         <h3>Example Request</h3>
-        <pre><code>curl -s -X POST https://tars.dev/api/workers/register/ \
+        <pre><code>curl -s -X POST https://tarsai.dev/api/workers/register/ \
   -H "Content-Type: application/json" \
   -d '{
     "hostname": "worker-us-east-01",
@@ -128,7 +128,7 @@
         </table>
 
         <h3>Example Request</h3>
-        <pre><code>curl -s -X POST https://tars.dev/api/workers/heartbeat/ \
+        <pre><code>curl -s -X POST https://tarsai.dev/api/workers/heartbeat/ \
   -H "X-Worker-Key: f47ac10b-58cc-4372-a567-0e02b2c3d479" \
   -H "Content-Type: application/json" \
   -d '{"current_load": 1, "status": "busy"}'</code></pre>
@@ -152,7 +152,7 @@
         <pre><code>X-Worker-Key: &lt;api-key&gt;</code></pre>
 
         <h3>Example Request</h3>
-        <pre><code>curl -s https://tars.dev/api/workers/next-task/ \
+        <pre><code>curl -s https://tarsai.dev/api/workers/next-task/ \
   -H "X-Worker-Key: f47ac10b-58cc-4372-a567-0e02b2c3d479"</code></pre>
 
         <h3>Example Response — task available</h3>
@@ -226,13 +226,13 @@
         <pre><code>pending → assigned → in_progress → failed</code></pre>
 
         <h3>Example Request — starting work</h3>
-        <pre><code>curl -s -X POST https://tars.dev/api/workers/task/1337/update/ \
+        <pre><code>curl -s -X POST https://tarsai.dev/api/workers/task/1337/update/ \
   -H "X-Worker-Key: f47ac10b-58cc-4372-a567-0e02b2c3d479" \
   -H "Content-Type: application/json" \
   -d '{"status": "in_progress"}'</code></pre>
 
         <h3>Example Request — PR opened</h3>
-        <pre><code>curl -s -X POST https://tars.dev/api/workers/task/1337/update/ \
+        <pre><code>curl -s -X POST https://tarsai.dev/api/workers/task/1337/update/ \
   -H "X-Worker-Key: f47ac10b-58cc-4372-a567-0e02b2c3d479" \
   -H "Content-Type: application/json" \
   -d '{
