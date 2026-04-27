@@ -133,36 +133,6 @@
         50%       { transform: translate(-30px, -40px); }
     }
 
-    .hero-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        background: rgba(99, 102, 241, 0.12);
-        border: 1px solid rgba(99, 102, 241, 0.35);
-        border-radius: 999px;
-        padding: 6px 16px;
-        font-size: 0.78rem;
-        font-weight: 600;
-        color: #a5b4fc;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        margin-bottom: 1.75rem;
-    }
-
-    .hero-badge .pulse-dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: var(--tars-green);
-        animation: pulse 2s infinite;
-        flex-shrink: 0;
-    }
-
-    @keyframes pulse {
-        0%, 100% { opacity: 1; transform: scale(1); }
-        50%       { opacity: 0.5; transform: scale(1.5); }
-    }
-
     .hero h1 {
         font-size: clamp(3rem, 7vw, 5.5rem);
         font-weight: 800;
@@ -188,8 +158,8 @@
 
     /* ── Chat Demo ──────────────────────────────────────────── */
     .chat-demo {
-        background: var(--tars-surface);
-        border: 1px solid var(--tars-border);
+        background: #0d0d0d;
+        border: 1px solid #1e1e1e;
         border-radius: 16px;
         overflow: hidden;
         width: 100%;
@@ -198,45 +168,60 @@
         box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(99, 102, 241, 0.08);
         position: relative;
         z-index: 1;
-    }
-
-    .chat-demo-bar {
-        background: #1a1a1a;
-        border-bottom: 1px solid var(--tars-border);
-        padding: 12px 16px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .chat-demo-bar .t-dot {
-        width: 11px;
-        height: 11px;
-        border-radius: 50%;
-    }
-
-    .chat-demo-bar .chat-title {
-        font-size: 0.78rem;
-        color: var(--tars-muted);
-        margin-left: 6px;
-        font-family: "Inter", system-ui, sans-serif;
-        font-weight: 600;
-    }
-
-    .chat-demo-body {
-        padding: 20px 20px 24px;
         display: flex;
         flex-direction: column;
-        gap: 14px;
     }
 
+    /* Topbar — mirrors the real dashboard chat-topbar */
+    .chat-demo-topbar {
+        background: #0a0a0a;
+        border-bottom: 1px solid #141414;
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-shrink: 0;
+    }
+
+    .chat-demo-topbar-title {
+        font-size: 13px;
+        font-weight: 500;
+        color: #666;
+        font-family: "Inter", system-ui, sans-serif;
+    }
+
+    .chat-demo-queue-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: #141414;
+        border: 1px solid #1f1f1f;
+        border-radius: 8px;
+        padding: 5px 10px;
+        color: #777;
+        font-size: 12px;
+        font-family: "Inter", system-ui, sans-serif;
+    }
+
+    .chat-demo-queue-btn i { color: #6366f1; font-size: 13px; }
+
+    /* Message feed */
+    .chat-demo-body {
+        padding: 20px 20px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        min-height: 260px;
+    }
+
+    /* Base message row */
     .chat-msg {
         display: flex;
         gap: 10px;
         align-items: flex-start;
         opacity: 0;
-        transform: translateY(10px);
-        transition: opacity 0.4s ease, transform 0.4s ease;
+        transform: translateY(8px);
+        transition: opacity 0.35s ease, transform 0.35s ease;
     }
 
     .chat-msg.visible {
@@ -244,94 +229,188 @@
         transform: none;
     }
 
+    /* User bubble — right-aligned, no avatar */
     .chat-msg.user {
-        flex-direction: row-reverse;
+        justify-content: flex-end;
     }
 
-    .chat-avatar {
-        width: 30px;
-        height: 30px;
+    .chat-msg.user .chat-bubble {
+        background: #1a3a5c;
+        color: #e0f0ff;
+        border-radius: 16px 16px 4px 16px;
+        padding: 10px 14px;
+        font-size: 14px;
+        line-height: 1.5;
+        max-width: 78%;
+    }
+
+    /* TARS message — avatar + body */
+    .chat-msg.tars { align-items: flex-start; }
+
+    .chat-avatar.tars-avatar {
+        width: 32px;
+        height: 32px;
         border-radius: 50%;
+        background: #141414;
+        border: 1px solid #2a2a2a;
+        color: #6366f1;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 0.7rem;
+        font-size: 11px;
         font-weight: 700;
+        flex-shrink: 0;
+        font-family: "Inter", system-ui, sans-serif;
+        margin-top: 1px;
+    }
+
+    .chat-msg-body { flex: 1; min-width: 0; }
+
+    .chat-msg-sender {
+        font-size: 12px;
+        font-weight: 600;
+        color: #888;
+        margin-bottom: 4px;
+        font-family: "Inter", system-ui, sans-serif;
+    }
+
+    .chat-bubble.tars-bubble {
+        background: transparent;
+        color: #c0c0c0;
+        font-size: 14px;
+        line-height: 1.6;
+        padding: 0;
+    }
+
+    /* Status card — mirrors .status-card in dashboard */
+    .demo-status-card {
+        background: #141414;
+        border: 1px solid #1f1f1f;
+        border-radius: 10px;
+        padding: 11px 14px;
+        margin-top: 8px;
+    }
+
+    .demo-status-badge {
+        font-size: 11px;
+        font-weight: 600;
+        padding: 2px 8px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+
+    .demo-badge-in_progress { background: rgba(59,130,246,0.15); color: #3b82f6; }
+    .demo-badge-completed   { background: rgba(34,197,94,0.15);  color: #22c55e; }
+
+    .demo-status-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: #555;
+        margin-top: 7px;
+    }
+
+    .demo-status-row.done  { color: #22c55e; }
+    .demo-status-row.active { color: #3b82f6; }
+    .demo-status-row i { font-size: 11px; flex-shrink: 0; }
+
+    .demo-pr-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(34,197,94,0.1);
+        border: 1px solid rgba(34,197,94,0.25);
+        color: #22c55e;
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 500;
+        text-decoration: none;
+        margin-top: 9px;
+    }
+
+    /* Typing indicator */
+    .typing-indicator {
+        display: flex;
+        gap: 5px;
+        padding: 6px 0 2px;
+    }
+
+    .typing-dot {
+        width: 6px;
+        height: 6px;
+        background: #444;
+        border-radius: 50%;
+        animation: typing-pulse 1.4s ease-in-out infinite;
+    }
+
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typing-pulse {
+        0%, 100% { transform: scale(1); opacity: 0.3; }
+        50%       { transform: scale(1.35); opacity: 0.85; }
+    }
+
+    /* Input area mockup */
+    .chat-demo-input {
+        padding: 10px 16px 14px;
+        border-top: 1px solid #141414;
+    }
+
+    .chat-demo-input-container {
+        background: #141414;
+        border: 1px solid #272727;
+        border-radius: 16px;
+        padding: 8px 10px 8px 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .chat-demo-project-pill {
+        background: #1a1a1a;
+        border: 1px solid #252525;
+        color: #888;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
         flex-shrink: 0;
         font-family: "Inter", system-ui, sans-serif;
     }
 
-    .chat-avatar.user-avatar {
-        background: var(--tars-user-bubble);
-        color: #93c5fd;
+    .chat-demo-project-pill i { font-size: 10px; }
+
+    .chat-demo-placeholder {
+        flex: 1;
+        font-size: 13px;
+        color: #333;
+        font-family: "Inter", system-ui, sans-serif;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
     }
 
-    .chat-avatar.tars-avatar {
-        background: rgba(99, 102, 241, 0.2);
-        color: #818cf8;
-    }
-
-    .chat-bubble {
-        border-radius: 12px;
-        padding: 10px 14px;
-        font-size: 0.875rem;
-        line-height: 1.55;
-        max-width: 78%;
-    }
-
-    .chat-msg.user .chat-bubble {
-        background: var(--tars-user-bubble);
-        color: #e0f0ff;
-        border-bottom-right-radius: 4px;
-    }
-
-    .chat-msg.tars .chat-bubble {
-        background: var(--tars-tars-bubble);
-        border: 1px solid var(--tars-border);
-        color: var(--tars-text);
-        border-bottom-left-radius: 4px;
-    }
-
-    .chat-bubble .status-line {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 0.8rem;
-        color: var(--tars-muted);
-        margin-top: 4px;
-    }
-
-    .chat-bubble .status-line.done {
-        color: var(--tars-green);
-    }
-
-    .chat-bubble .status-line i {
-        font-size: 0.75rem;
-    }
-
-    /* typing indicator */
-    .typing-indicator {
-        display: flex;
-        gap: 4px;
-        align-items: center;
-        padding: 4px 2px;
-    }
-
-    .typing-indicator span {
-        width: 6px;
-        height: 6px;
+    .chat-demo-send-btn {
+        width: 28px;
+        height: 28px;
         border-radius: 50%;
-        background: var(--tars-muted);
-        animation: typing-bounce 1.2s infinite;
+        background: #2a2a2a;
+        color: #484848;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 13px;
+        transition: background 0.2s, color 0.2s;
     }
 
-    .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-
-    @keyframes typing-bounce {
-        0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-        30% { transform: translateY(-5px); opacity: 1; }
-    }
+    .chat-demo-send-btn.active { background: #6366f1; color: #fff; }
 
     /* ── Responsive ─────────────────────────────────────────── */
     @media (max-width: 767.98px) {
@@ -361,11 +440,6 @@
     </div>
 
     <div class="container position-relative">
-        <div class="hero-badge">
-            <span class="pulse-dot"></span>
-            Now in early access
-        </div>
-
         <h1>
             TARS <span class="gradient-text">codes for you.</span>
         </h1>
@@ -380,14 +454,31 @@
 
         <!-- Chat demo -->
         <div class="chat-demo" id="chat-demo">
-            <div class="chat-demo-bar">
-                <div class="t-dot" style="background:#ef4444;"></div>
-                <div class="t-dot" style="background:#f59e0b;"></div>
-                <div class="t-dot" style="background:#10b981;"></div>
-                <span class="chat-title">TARS Chat</span>
+            <!-- Topbar — mirrors the real dashboard -->
+            <div class="chat-demo-topbar">
+                <span class="chat-demo-topbar-title">TARS</span>
+                <div class="chat-demo-queue-btn" id="chat-demo-queue-btn" style="display:none;">
+                    <i class="bi bi-list-task"></i>
+                    <span id="chat-demo-queue-label">1 task in queue</span>
+                </div>
             </div>
-            <div class="chat-demo-body" id="chat-demo-body">
-                <!-- Messages injected by JS -->
+
+            <!-- Messages injected by JS -->
+            <div class="chat-demo-body" id="chat-demo-body"></div>
+
+            <!-- Input area mockup -->
+            <div class="chat-demo-input">
+                <div class="chat-demo-input-container">
+                    <div class="chat-demo-project-pill">
+                        <i class="bi bi-folder"></i>
+                        <span>my-project</span>
+                        <i class="bi bi-chevron-down" style="font-size:9px;"></i>
+                    </div>
+                    <div class="chat-demo-placeholder">Ask TARS to code something…</div>
+                    <div class="chat-demo-send-btn" id="chat-demo-send-btn">
+                        <i class="bi bi-arrow-up"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -398,6 +489,7 @@
 {% block extra_scripts %}
 <script>
 (function () {
+    /* Each step: role, initial html, optional replaceWith after a delay */
     var messages = [
         {
             role: 'user',
@@ -405,49 +497,96 @@
         },
         {
             role: 'tars',
-            html: '<div class="typing-indicator"><span></span><span></span><span></span></div>',
-            replaceWith: 'On it. Reading your codebase…<div class="status-line"><i class="bi bi-search"></i> Found <code>accounts/templates/registration/login.html</code></div>'
+            /* typing indicator first … */
+            html: '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>',
+            /* … then replace with the actual response */
+            replaceWith: 'On it. Reading your codebase now.​'
+                + '<div class="demo-status-card">'
+                +   '<span class="demo-status-badge demo-badge-in_progress">In progress</span>'
+                +   '<div class="demo-status-row active"><i class="bi bi-search"></i> Found <code>accounts/templates/registration/login.html</code></div>'
+                + '</div>'
         },
         {
             role: 'tars',
-            html: 'Writing the change…<div class="status-line"><i class="bi bi-pencil"></i> Updated <code>login.html</code> + added password reset URLs</div>'
+            html: 'Writing the change and updating routes…'
+                + '<div class="demo-status-card">'
+                +   '<span class="demo-status-badge demo-badge-in_progress">In progress</span>'
+                +   '<div class="demo-status-row done"><i class="bi bi-check-circle-fill"></i> Updated <code>login.html</code> — added forgot-password link</div>'
+                +   '<div class="demo-status-row active"><i class="bi bi-pencil"></i> Added password reset URL routes</div>'
+                + '</div>'
         },
         {
             role: 'tars',
-            html: 'Running tests…<div class="status-line done"><i class="bi bi-check-circle-fill"></i> 38 tests passed</div>'
-        },
-        {
-            role: 'tars',
-            html: 'Done. <a href="#" class="text-accent" style="color:var(--tars-accent);">PR #52 is open</a> and ready for your review.'
+            html: 'All done — tests pass.'
+                + '<div class="demo-status-card">'
+                +   '<span class="demo-status-badge demo-badge-completed">Completed</span>'
+                +   '<div class="demo-status-row done"><i class="bi bi-check-circle-fill"></i> 38 tests passed</div>'
+                +   '<a href="#" class="demo-pr-link" onclick="return false;"><i class="bi bi-git"></i> PR #52 &mdash; ready for review</a>'
+                + '</div>'
         }
     ];
 
-    var body = document.getElementById('chat-demo-body');
-    var index = 0;
-    var timers = [];
+    var body    = document.getElementById('chat-demo-body');
+    var queueBtn  = document.getElementById('chat-demo-queue-btn');
+    var sendBtn   = document.getElementById('chat-demo-send-btn');
+    var index   = 0;
+    var timers  = [];
 
     function buildMsg(msg) {
-        var div = document.createElement('div');
-        div.className = 'chat-msg ' + msg.role;
+        var wrapper = document.createElement('div');
+        wrapper.className = 'chat-msg ' + msg.role;
 
-        var avatar = document.createElement('div');
-        avatar.className = 'chat-avatar ' + (msg.role === 'user' ? 'user-avatar' : 'tars-avatar');
-        avatar.textContent = msg.role === 'user' ? 'You' : 'T';
+        var bubble;
 
-        var bubble = document.createElement('div');
-        bubble.className = 'chat-bubble';
-        bubble.innerHTML = msg.html;
+        if (msg.role === 'user') {
+            bubble = document.createElement('div');
+            bubble.className = 'chat-bubble';
+            bubble.innerHTML = msg.html;
+            wrapper.appendChild(bubble);
+        } else {
+            var avatar = document.createElement('div');
+            avatar.className = 'chat-avatar tars-avatar';
+            avatar.textContent = 'T';
 
-        div.appendChild(avatar);
-        div.appendChild(bubble);
-        return { wrapper: div, bubble: bubble };
+            var msgBody = document.createElement('div');
+            msgBody.className = 'chat-msg-body';
+
+            var sender = document.createElement('div');
+            sender.className = 'chat-msg-sender';
+            sender.textContent = 'TARS';
+
+            bubble = document.createElement('div');
+            bubble.className = 'chat-bubble tars-bubble';
+            bubble.innerHTML = msg.html;
+
+            msgBody.appendChild(sender);
+            msgBody.appendChild(bubble);
+            wrapper.appendChild(avatar);
+            wrapper.appendChild(msgBody);
+        }
+
+        return { wrapper: wrapper, bubble: bubble };
     }
 
     function showNext() {
-        if (index >= messages.length) return;
+        if (index >= messages.length) {
+            /* demo finished — deactivate send button, hide queue */
+            sendBtn.classList.remove('active');
+            return;
+        }
 
         var msg = messages[index];
         index++;
+
+        /* Show queue indicator once TARS starts working */
+        if (msg.role === 'tars' && index === 2) {
+            queueBtn.style.display = 'flex';
+            sendBtn.classList.add('active');
+        }
+        /* Hide queue indicator on last message */
+        if (index === messages.length) {
+            queueBtn.style.display = 'none';
+        }
 
         var el = buildMsg(msg);
         body.appendChild(el.wrapper);
@@ -462,19 +601,19 @@
             var replacement = msg.replaceWith;
             var t = setTimeout(function () {
                 el.bubble.innerHTML = replacement;
-                var t2 = setTimeout(showNext, 900);
+                var t2 = setTimeout(showNext, 1000);
                 timers.push(t2);
-            }, 1100);
+            }, 1200);
             timers.push(t);
         } else {
-            var delay = msg.role === 'user' ? 600 : 700;
+            var delay = msg.role === 'user' ? 700 : 800;
             var t3 = setTimeout(showNext, delay);
             timers.push(t3);
         }
     }
 
-    /* restart the demo when it scrolls into view */
-    var demo = document.getElementById('chat-demo');
+    /* Start when demo scrolls into view */
+    var demo    = document.getElementById('chat-demo');
     var started = false;
 
     function startDemo() {
@@ -487,7 +626,7 @@
     if ('IntersectionObserver' in window) {
         new IntersectionObserver(function (entries) {
             if (entries[0].isIntersecting) startDemo();
-        }, { threshold: 0.3 }).observe(demo);
+        }, { threshold: 0.25 }).observe(demo);
     } else {
         startDemo();
     }
