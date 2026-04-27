@@ -205,6 +205,41 @@
     }
     .task-description a { color: var(--tars-accent); }
 
+    /* WebSocket connection bar */
+    .ws-connection-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 5px 14px;
+        font-size: 0.78rem;
+        font-weight: 500;
+        border-radius: 8px 8px 0 0;
+    }
+    .ws-connection-bar.ws-bar-lost {
+        background: rgba(239, 68, 68, 0.1);
+        border-bottom: 1px solid rgba(239, 68, 68, 0.2);
+        color: #f87171;
+    }
+    .ws-connection-bar.ws-bar-reconnected {
+        background: rgba(34, 197, 94, 0.1);
+        border-bottom: 1px solid rgba(34, 197, 94, 0.2);
+        color: #4ade80;
+    }
+    @keyframes ws-bar-pulse {
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0.4; }
+    }
+    .ws-bar-dot {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #f87171;
+        flex-shrink: 0;
+        animation: ws-bar-pulse 1.2s ease-in-out infinite;
+    }
+
     /* Chat feed */
     .chat-feed {
         display: flex;
@@ -387,6 +422,7 @@
 
             <!-- Conversation -->
             <p class="section-label">Conversation</p>
+            <div id="wsConnectionBar" class="ws-connection-bar" hidden></div>
             <div class="card-surface mb-5">
                 <div class="chat-feed" id="chat-feed">
                     {% if task.status == "in_progress" or task.status == "reviewing" or task.status == "completed" or task.status == "failed" %}
@@ -600,14 +636,15 @@
     var ws = null;
     var heartbeatTimer = null;
     var lastMsgTime = null;
-    var reconnectingBubble = null;
+    var wsBarTimer = null;
+    var wsBarShown = false;
 
     function connect() {
         ws = new WebSocket(WS_URL);
 
         ws.onopen = function () {
             reconnectAttempt = 0;
-            removeReconnectingBubble();
+            if (wsBarShown) { showReconnectedBar(); } else { hideConnectionBar(); }
             startHeartbeat();
             if (lastMsgTime) { fetchMissedUpdates(lastMsgTime); }
         };
@@ -622,7 +659,7 @@
 
         ws.onclose = function () {
             stopHeartbeat();
-            showReconnectingBubble();
+            showConnectionLostBar();
             var delay = RECONNECT_DELAYS[Math.min(reconnectAttempt, RECONNECT_DELAYS.length - 1)];
             reconnectAttempt++;
             setTimeout(connect, delay);
@@ -644,22 +681,44 @@
         if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
     }
 
-    function showReconnectingBubble() {
-        if (reconnectingBubble) { return; }
-        var feed = document.getElementById('chat-feed');
-        if (!feed) { return; }
-        reconnectingBubble = document.createElement('div');
-        reconnectingBubble.className = 'chat-bubble';
-        reconnectingBubble.innerHTML =
-            '<div class="chat-avatar"><i class="bi bi-wifi-off"></i></div>' +
-            '<div class="chat-content"><div class="chat-sender">System</div>' +
-            '<p style="color:var(--tars-muted,#888);font-style:italic;margin:0;">Reconnecting…</p></div>';
-        feed.appendChild(reconnectingBubble);
-        feed.scrollTop = feed.scrollHeight;
+    function showConnectionLostBar() {
+        var bar = document.getElementById('wsConnectionBar');
+        if (!bar || wsBarShown) { return; }
+        clearTimeout(wsBarTimer);
+        bar.className = 'ws-connection-bar ws-bar-lost';
+        bar.innerHTML = '<span class="ws-bar-dot"></span><span>Connection lost — reconnecting…</span>';
+        bar.style.opacity = '';
+        bar.hidden = false;
+        wsBarShown = true;
     }
 
-    function removeReconnectingBubble() {
-        if (reconnectingBubble) { reconnectingBubble.remove(); reconnectingBubble = null; }
+    function showReconnectedBar() {
+        var bar = document.getElementById('wsConnectionBar');
+        if (!bar) { return; }
+        clearTimeout(wsBarTimer);
+        bar.className = 'ws-connection-bar ws-bar-reconnected';
+        bar.innerHTML = '<i class="bi bi-wifi"></i><span>Reconnected</span>';
+        bar.style.opacity = '';
+        bar.hidden = false;
+        wsBarShown = false;
+        wsBarTimer = setTimeout(function () {
+            bar.style.transition = 'opacity 0.6s';
+            bar.style.opacity = '0';
+            setTimeout(function () {
+                bar.hidden = true;
+                bar.style.transition = '';
+                bar.style.opacity = '';
+            }, 600);
+        }, 2000);
+    }
+
+    function hideConnectionBar() {
+        var bar = document.getElementById('wsConnectionBar');
+        if (!bar) { return; }
+        clearTimeout(wsBarTimer);
+        bar.hidden = true;
+        bar.style.opacity = '';
+        wsBarShown = false;
     }
 
     function fetchMissedUpdates(since) {
