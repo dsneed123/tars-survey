@@ -2366,11 +2366,6 @@ function _esc(str) {
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function getCsrfToken() {
-    var el = document.querySelector('[name=csrfmiddlewaretoken]');
-    return el ? el.value : '';
-}
-
 function retryTask(pk, btn) {
     btn.disabled = true;
 

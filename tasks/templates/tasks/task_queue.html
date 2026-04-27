@@ -1180,11 +1180,6 @@
 
     var CANCELLABLE_STATUSES = ['pending', 'queued'];
 
-    function getCsrfToken() {
-        var match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
-        return match ? decodeURIComponent(match[1]) : '';
-    }
-
     function showCancelConfirm(card) {
         var badge     = card.querySelector('.status-badge');
         var cancelBtn = card.querySelector('.cancel-btn');
