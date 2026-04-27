@@ -46,6 +46,10 @@ def docs_changelog(request):
     return render(request, "pages/docs/changelog.html", {"current_doc": "changelog"})
 
 
+def docs_chat_interface(request):
+    return render(request, "pages/docs/chat_interface.html", {"current_doc": "chat-interface"})
+
+
 # ---------------------------------------------------------------------------
 # Status page
 # ---------------------------------------------------------------------------
