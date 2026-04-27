@@ -586,8 +586,6 @@
         <div class="collapse navbar-collapse" id="navMenu">
             <ul class="navbar-nav ms-auto align-items-center gap-2">
                 <li class="nav-item"><a class="nav-link" href="{% url 'pages:services' %}">Services</a></li>
-                <li class="nav-item"><a class="nav-link" href="#benefits">Benefits</a></li>
-                <li class="nav-item"><a class="nav-link" href="#how-it-works">How It Works</a></li>
                 <li class="nav-item"><a class="nav-link" href="{% url 'pages:docs_index' %}">Docs</a></li>
                 <li class="nav-item"><a class="nav-link" href="{% url 'accounts:login' %}">Sign In</a></li>
                 <li class="nav-item">
@@ -618,8 +616,7 @@
                 <p class="fw-semibold mb-2">Product</p>
                 <ul class="list-unstyled small">
                     <li><a href="{% url 'pages:services' %}">Services</a></li>
-                    <li><a href="#benefits">Benefits</a></li>
-                    <li><a href="#how-it-works">How It Works</a></li>
+                    <li><a href="{% url 'pages:docs_index' %}">How It Works</a></li>
                     <li><a href="{% url 'inquiries:get_started' %}">Get Started</a></li>
                 </ul>
             </div>
@@ -635,9 +632,7 @@
             <div class="col-md-2">
                 <p class="fw-semibold mb-2">Company</p>
                 <ul class="list-unstyled small">
-                    <li><a href="#">About</a></li>
-                    <li><a href="#">Blog</a></li>
-                    <li><a href="#">Contact</a></li>
+                    <li><a href="{% url 'inquiries:get_started' %}">Contact</a></li>
                 </ul>
             </div>
             <div class="col-md-4 text-md-end">
