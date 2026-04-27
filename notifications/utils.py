@@ -190,3 +190,25 @@ def send_task_failed_email(task):
         message="A task encountered an error. View details to retry or update the task.",
         link=f"/dashboard/tasks/{task.pk}/",
     )
+
+
+def send_verification_email(user):
+    """Send email verification link to user."""
+    from django.utils.encoding import force_bytes
+    from django.utils.http import urlsafe_base64_encode
+    from accounts.tokens import email_verification_token
+
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = email_verification_token.make_token(user)
+    verify_url = f"{settings.SITE_URL}/verify-email/{uid}/{token}/"
+    context = {
+        "user": user,
+        "site_url": settings.SITE_URL,
+        "verify_url": verify_url,
+    }
+    send_html_email(
+        subject="Verify your TARS email address",
+        template_name="emails/email_verification.html",
+        context=context,
+        recipient_email=user.email,
+    )
