@@ -11,7 +11,7 @@ class TaskAttachmentInline(admin.TabularInline):
 
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
-    list_display = ("title", "project", "created_by", "status", "priority", "created_at")
+    list_display = ("title", "project", "created_by", "status", "pr_url", "priority", "created_at")
     list_filter = ("status",)
     search_fields = ("title", "description", "created_by__email", "project__name")
     raw_id_fields = ("created_by", "project")
