@@ -1152,12 +1152,21 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 .task-expand-btn[aria-expanded="true"] .bi-chevron-down { transform: rotate(180deg); }
 
 .task-detail-panel {
-    display: none;
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+.task-detail-panel.open { max-height: 900px; }
+.tdp-inner {
     margin-top: 10px;
     padding-top: 10px;
     border-top: 1px solid #1a1a1a;
 }
-.task-detail-panel.open { display: block; }
+
+/* Clicking the bubble body toggles the detail panel */
+.tars-msg .msg-content { cursor: pointer; }
+.tars-msg .msg-content a,
+.tars-msg .msg-content button { cursor: auto; }
 
 .tdp-section { margin-bottom: 10px; }
 .tdp-label {
@@ -1186,6 +1195,8 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
 .tdp-tl-label.current { color: #ccc; font-weight: 500; }
 .tdp-tl-label.pending { color: #333; }
 .tdp-tl-label.failed { color: #ef4444; }
+.tdp-tl-ts { color: #3a3a3a; font-size: 11px; margin-left: auto; white-space: nowrap; }
+.tdp-diff-count { font-size: 11px; color: #555; margin-left: 6px; }
 .tdp-worker { font-size: 12px; color: #555; font-family: monospace; }
 .tdp-attachment { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #555; margin-bottom: 3px; }
 .tdp-attachment a { color: #6366f1; text-decoration: none; }
@@ -3193,6 +3204,7 @@ function toggleTaskDetail(btn, pk) {
     if (_taskDetailCache[pk]) {
         panel.classList.add('open');
         btn.setAttribute('aria-expanded', 'true');
+        if (_taskDetailCache[pk].pr_url) _loadDiffCount(pk);
         return;
     }
 
@@ -3211,6 +3223,7 @@ function toggleTaskDetail(btn, pk) {
             _taskDetailCache[pk] = data;
             panel.innerHTML = buildDetailPanelHtml(data, pk);
             btn.disabled = false;
+            if (data.pr_url) _loadDiffCount(pk);
         })
         .catch(function() {
             panel.innerHTML = '';
@@ -3218,6 +3231,16 @@ function toggleTaskDetail(btn, pk) {
             btn.setAttribute('aria-expanded', 'false');
             btn.disabled = false;
         });
+}
+
+function _fmtTs(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    var diff = Date.now() - d;
+    if (diff < 60000) return 'just now';
+    if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+    if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+    return d.toLocaleDateString(undefined, {month: 'short', day: 'numeric'});
 }
 
 function buildDetailSkeletonHtml() {
@@ -3228,7 +3251,8 @@ function buildDetailSkeletonHtml() {
                 (opacity ? 'opacity:' + opacity + ';' : '') + '"></div>' +
             '</div>';
     };
-    return '<div class="tdp-section">' +
+    return '<div class="tdp-inner">' +
+           '<div class="tdp-section">' +
                '<div class="skeleton skeleton-text" style="width:80px;height:0.6em;margin-bottom:8px;"></div>' +
                '<div class="skeleton skeleton-text" style="width:92%;"></div>' +
                '<div class="skeleton skeleton-text" style="width:74%;"></div>' +
@@ -3240,11 +3264,12 @@ function buildDetailSkeletonHtml() {
                    row('85px', '0.65') +
                    row('60px', '0.4') +
                '</div>' +
+           '</div>' +
            '</div>';
 }
 
 function buildDetailPanelHtml(data, pk) {
-    var html = '';
+    var html = '<div class="tdp-inner">';
 
     if (data.description && data.description !== data.title) {
         html += '<div class="tdp-section">' +
@@ -3253,29 +3278,9 @@ function buildDetailPanelHtml(data, pk) {
             '</div>';
     }
 
-    if (data.timeline && data.timeline.length) {
-        html += '<div class="tdp-section">' +
-            '<div class="tdp-label">Timeline</div>' +
-            '<ul class="tdp-timeline">';
-        data.timeline.forEach(function(step) {
-            html += '<li>' +
-                '<span class="tdp-dot ' + _esc(step.state) + '"></span>' +
-                '<span class="tdp-tl-label ' + _esc(step.state) + '">' + _esc(step.label) + '</span>' +
-                '</li>';
-        });
-        html += '</ul></div>';
-    }
-
-    if (data.pr_url) {
-        html += '<div class="tdp-section">' +
-            '<a href="' + _esc(data.pr_url) + '" target="_blank" rel="noopener" class="pr-link">' +
-            '<i class="bi bi-git"></i> View Pull Request</a>' +
-            '</div>';
-    }
-
     if (data.attachments && data.attachments.length) {
         html += '<div class="tdp-section">' +
-            '<div class="tdp-label">Attachments</div>';
+            '<div class="tdp-label">Attachments (' + data.attachments.length + ')</div>';
         data.attachments.forEach(function(a) {
             html += '<div class="tdp-attachment"><i class="bi bi-paperclip"></i>' +
                 (a.url
@@ -3284,6 +3289,34 @@ function buildDetailPanelHtml(data, pk) {
                 '</div>';
         });
         html += '</div>';
+    }
+
+    if (data.pr_url) {
+        html += '<div class="tdp-section">' +
+            '<div class="tdp-label">Pull Request</div>' +
+            '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;">' +
+            '<a href="' + _esc(data.pr_url) + '" target="_blank" rel="noopener" class="pr-link">' +
+            '<i class="bi bi-git"></i> View Pull Request</a>' +
+            '<span class="tdp-diff-count" id="tdp-diff-' + parseInt(pk, 10) + '"></span>' +
+            '</div>' +
+            '</div>';
+    }
+
+    if (data.timeline && data.timeline.length) {
+        html += '<div class="tdp-section">' +
+            '<div class="tdp-label">Timeline</div>' +
+            '<ul class="tdp-timeline">';
+        data.timeline.forEach(function(step) {
+            var tsHtml = step.timestamp
+                ? '<span class="tdp-tl-ts">' + _fmtTs(step.timestamp) + '</span>'
+                : '';
+            html += '<li>' +
+                '<span class="tdp-dot ' + _esc(step.state) + '"></span>' +
+                '<span class="tdp-tl-label ' + _esc(step.state) + '">' + _esc(step.label) + '</span>' +
+                tsHtml +
+                '</li>';
+        });
+        html += '</ul></div>';
     }
 
     if (data.worker_id) {
@@ -3297,7 +3330,33 @@ function buildDetailPanelHtml(data, pk) {
         'Full details <i class="bi bi-arrow-right"></i>' +
         '</a>';
 
+    html += '</div>';
     return html;
+}
+
+function _loadDiffCount(pk) {
+    var el = document.getElementById('tdp-diff-' + pk);
+    if (!el) return;
+    if (typeof _prDiffCache !== 'undefined' && _prDiffCache[pk]) {
+        _renderDiffCount(el, _prDiffCache[pk]);
+        return;
+    }
+    fetch('/api/tasks/' + pk + '/pr_diff', { credentials: 'same-origin' })
+        .then(function(r) { return r.ok ? r.json() : null; })
+        .then(function(d) {
+            if (!d || d.error) return;
+            if (typeof _prDiffCache !== 'undefined') _prDiffCache[pk] = d;
+            _renderDiffCount(el, d);
+        })
+        .catch(function() {});
+}
+
+function _renderDiffCount(el, d) {
+    var txt = parseInt(d.changed_files, 10) + ' file' + (d.changed_files !== 1 ? 's' : '') + ' changed';
+    if (d.additions > 0 || d.deletions > 0) {
+        txt += ' (+' + parseInt(d.additions, 10) + ' −' + parseInt(d.deletions, 10) + ')';
+    }
+    el.textContent = txt;
 }
 
 // Called by the WS handler when a task status changes so the panel stays current.
@@ -3311,12 +3370,26 @@ window._onTaskDetailCacheInvalidate = function(taskId) {
                 if (!data) return;
                 _taskDetailCache[taskId] = data;
                 panel.innerHTML = buildDetailPanelHtml(data, taskId);
+                if (data.pr_url) _loadDiffCount(taskId);
             })
             .catch(function() {});
     } else {
         delete _taskDetailCache[taskId];
     }
 };
+
+// Clicking anywhere on the TARS bubble body toggles the detail panel.
+document.addEventListener('click', function(e) {
+    var content = e.target.closest('.tars-msg .msg-content');
+    if (!content) return;
+    if (e.target.closest('a, button, [role="button"]')) return;
+    var bubble = content.closest('.tars-msg');
+    if (!bubble) return;
+    var pk = parseInt(bubble.dataset.taskId, 10);
+    if (!pk) return;
+    var btn = bubble.querySelector('.task-expand-btn');
+    if (btn) toggleTaskDetail(btn, pk);
+});
 </script>
 
 <script>

@@ -1171,6 +1171,128 @@ class ApiTaskStatusTests(TestCase):
 
 
 # ---------------------------------------------------------------------------
+# GET /api/tasks/<pk>/detail
+# ---------------------------------------------------------------------------
+
+class ApiTaskDetailTests(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = make_user()
+        self.project = make_project(self.user)
+        self.task = make_task(
+            self.project,
+            self.user,
+            title="Fix the login bug",
+            description="The login button is broken on mobile.",
+        )
+        self.url = f"/api/tasks/{self.task.pk}/detail"
+
+    def test_requires_authentication(self):
+        resp = self.client.get(self.url)
+        self.assertNotEqual(resp.status_code, 200)
+
+    def test_returns_200_for_owner(self):
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, 200)
+
+    def test_returns_404_for_other_users_task(self):
+        other = make_user(email="other@example.com", username="other")
+        self.client.force_login(other)
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.status_code, 404)
+
+    def test_post_not_allowed(self):
+        self.client.force_login(self.user)
+        resp = self.client.post(self.url)
+        self.assertEqual(resp.status_code, 405)
+
+    def test_response_contains_core_fields(self):
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        data = resp.json()
+        self.assertEqual(data["id"], self.task.pk)
+        self.assertEqual(data["title"], "Fix the login bug")
+        self.assertEqual(data["description"], "The login button is broken on mobile.")
+        self.assertEqual(data["status"], "pending")
+        self.assertIn("status_display", data)
+        self.assertIn("pr_url", data)
+        self.assertIn("branch_name", data)
+        self.assertIn("worker_id", data)
+        self.assertIn("error_message", data)
+        self.assertIn("created_at", data)
+        self.assertIn("started_at", data)
+        self.assertIn("completed_at", data)
+
+    def test_response_contains_attachments_and_timeline(self):
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        data = resp.json()
+        self.assertIn("attachments", data)
+        self.assertIsInstance(data["attachments"], list)
+        self.assertIn("timeline", data)
+        self.assertIsInstance(data["timeline"], list)
+        self.assertTrue(len(data["timeline"]) > 0)
+
+    def test_timeline_steps_include_timestamp_field(self):
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        timeline = resp.json()["timeline"]
+        for step in timeline:
+            self.assertIn("timestamp", step)
+            self.assertIn("state", step)
+            self.assertIn("label", step)
+            self.assertIn("status", step)
+
+    def test_pending_task_timeline_has_created_at_timestamp(self):
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        timeline = resp.json()["timeline"]
+        pending_step = next((s for s in timeline if s["status"] == "pending"), None)
+        self.assertIsNotNone(pending_step)
+        self.assertEqual(pending_step["state"], "current")
+        self.assertIsNotNone(pending_step["timestamp"])
+
+    def test_future_steps_have_null_timestamp(self):
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        timeline = resp.json()["timeline"]
+        future_steps = [s for s in timeline if s["state"] == "pending"]
+        for step in future_steps:
+            self.assertIsNone(step["timestamp"])
+
+    def test_completed_task_timeline_timestamps(self):
+        from django.utils import timezone
+        self.task.status = "completed"
+        self.task.started_at = timezone.now()
+        self.task.completed_at = timezone.now()
+        self.task.save()
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        timeline = resp.json()["timeline"]
+        completed_step = next((s for s in timeline if s["status"] == "completed"), None)
+        self.assertIsNotNone(completed_step)
+        self.assertIsNotNone(completed_step["timestamp"])
+
+    def test_failed_task_has_failed_step_with_timestamp(self):
+        self.task.status = "failed"
+        self.task.save()
+
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        timeline = resp.json()["timeline"]
+        failed_step = next((s for s in timeline if s["state"] == "failed"), None)
+        self.assertIsNotNone(failed_step)
+        self.assertIsNotNone(failed_step["timestamp"])
+
+    def test_attachments_list_with_no_attachments(self):
+        self.client.force_login(self.user)
+        resp = self.client.get(self.url)
+        self.assertEqual(resp.json()["attachments"], [])
+
+
+# ---------------------------------------------------------------------------
 # GET /api/tasks/<pk>/pr_diff
 # ---------------------------------------------------------------------------
 
