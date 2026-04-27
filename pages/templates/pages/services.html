@@ -2,14 +2,14 @@
 
 {% block title %}Services | TARS — Autonomous Coding{% endblock %}
 
-{% block meta_description %}<meta name="description" content="Explore TARS services — autonomous code generation, test execution, pull request automation, and 24/7 continuous development for your software projects.">{% endblock %}
+{% block meta_description %}<meta name="description" content="Explore TARS services — describe tasks in plain English, TARS reads your codebase, writes the code, and opens a pull request for your review.">{% endblock %}
 
 {% block meta_og %}
 <meta property="og:type" content="website">
 <meta property="og:locale" content="en_US">
 <meta property="og:site_name" content="TARS">
 <meta property="og:title" content="Services | TARS — Autonomous Coding">
-<meta property="og:description" content="Explore TARS services — autonomous code generation, test execution, pull request automation, and 24/7 continuous development for your software projects.">
+<meta property="og:description" content="Explore TARS services — describe tasks in plain English, TARS reads your codebase, writes the code, and opens a pull request for your review.">
 <meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
 <meta property="og:image" content="{{ SITE_URL }}/static/img/og-image.png">
 <meta property="og:image:type" content="image/png">
@@ -18,7 +18,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@usetarsdev">
 <meta name="twitter:title" content="Services | TARS — Autonomous Coding">
-<meta name="twitter:description" content="Explore TARS services — autonomous code generation, test execution, pull request automation, and 24/7 continuous development.">
+<meta name="twitter:description" content="Describe tasks in plain English, TARS reads your codebase, writes the code, and opens a pull request for your review.">
 <meta name="twitter:image" content="{{ SITE_URL }}/static/img/og-image.png">
 {% endblock %}
 
@@ -251,54 +251,50 @@
 <!-- ── Page Header ─────────────────────────────────────────── -->
 <div class="page-header">
     <div class="container">
-        <div class="section-label mb-3">What We Offer</div>
+        <div class="section-label mb-3">How It Works</div>
         <h1>
-            Everything you need,<br>
-            <span class="gradient-text">handled autonomously.</span>
+            Describe the task.<br>
+            <span class="gradient-text">Get back a pull request.</span>
         </h1>
         <p class="page-header-sub">
-            From feature development to bug fixes, new project scaffolding to pre-PR code review — TARS covers the full software delivery lifecycle, around the clock.
+            Submit tasks in plain English via the chat interface. TARS reads your codebase, writes the code, and opens a PR — you just review and merge.
         </p>
     </div>
 </div>
 
-<!-- ── Service 1: Autonomous Development ─────────────────────── -->
+<!-- ── Service 1: Chat-Based Task Submission ─────────────────── -->
 <section class="service-section">
     <div class="container">
         <div class="row align-items-center gy-5">
             <div class="col-lg-6">
                 <div class="service-icon-wrap" style="background:rgba(99,102,241,0.15);">
-                    <i class="bi bi-cpu-fill" style="color:#818cf8;"></i>
+                    <i class="bi bi-chat-left-text-fill" style="color:#818cf8;"></i>
                 </div>
-                <div class="section-label">Service 01</div>
-                <h2 class="service-title">Autonomous Development</h2>
+                <div class="section-label">Step 01</div>
+                <h2 class="service-title">Submit Tasks via Chat</h2>
                 <p class="service-lead">
-                    TARS reads your entire codebase, picks up tasks directly from GitHub Issues, implements features end-to-end, runs your test suite, and opens a pull request — all without a developer in the loop.
+                    Describe what you want in plain English through the TARS chat interface. No issue tracker, no spec doc, no template — just tell TARS what needs to be done.
                 </p>
                 <ul class="feature-list">
                     <li>
                         <span class="check-icon"><i class="bi bi-check"></i></span>
-                        <span>Reads and understands your existing codebase before writing a single line</span>
+                        <span>Plain English descriptions — no special syntax or format required</span>
                     </li>
                     <li>
                         <span class="check-icon"><i class="bi bi-check"></i></span>
-                        <span>Picks up tasks from GitHub Issues — labels, milestones, and priorities respected</span>
+                        <span>Connect your GitHub repository so TARS knows where to work</span>
                     </li>
                     <li>
                         <span class="check-icon"><i class="bi bi-check"></i></span>
-                        <span>Implements features following your existing conventions and style</span>
+                        <span>Submit feature requests, bug reports, or refactoring tasks</span>
                     </li>
                     <li>
                         <span class="check-icon"><i class="bi bi-check"></i></span>
-                        <span>Writes accompanying tests for every change, targeting your coverage thresholds</span>
+                        <span>Tasks are queued immediately and picked up in order</span>
                     </li>
                     <li>
                         <span class="check-icon"><i class="bi bi-check"></i></span>
-                        <span>Opens a pull request with a descriptive summary and links back to the source issue</span>
-                    </li>
-                    <li>
-                        <span class="check-icon"><i class="bi bi-check"></i></span>
-                        <span>Runs 24/7 — nights, weekends, and holidays included</span>
+                        <span>Submit from anywhere — the dashboard is always available</span>
                     </li>
                 </ul>
             </div>
@@ -308,22 +304,18 @@
                         <div class="dot" style="background:#ef4444;"></div>
                         <div class="dot" style="background:#f59e0b;"></div>
                         <div class="dot" style="background:#10b981;"></div>
-                        <span class="panel-header-label">tars — autonomous agent</span>
+                        <span class="panel-header-label">tarsai.dev — task submission</span>
                     </div>
                     <div class="panel-mono">
-                        <div><span class="prompt">tars@agent</span>: <span class="cmd">Scanning issues…</span></div>
-                        <div class="out">  → dsneed123/my-app: 4 open issues</div>
-                        <div class="out">  → Selected: "Add OAuth login endpoint"</div>
-                        <div><span class="prompt">tars@agent</span>: <span class="cmd">Reading codebase…</span></div>
-                        <div class="out">  → Indexed 142 files, 18 modules</div>
-                        <div><span class="prompt">tars@agent</span>: <span class="cmd">Implementing…</span></div>
-                        <div class="out">  → Writing src/auth/oauth.py</div>
-                        <div class="out">  → Writing tests/test_oauth.py</div>
-                        <div><span class="prompt">tars@agent</span>: <span class="cmd">Running tests…</span></div>
-                        <div class="success">  ✓ 56 tests passed (0 failed)</div>
-                        <div><span class="prompt">tars@agent</span>: <span class="cmd">Opening PR…</span></div>
-                        <div class="success">  ✓ PR #83 opened → review ready</div>
-                        <div class="out" style="margin-top:8px;">  Next task in 8 seconds…</div>
+                        <div class="out">  Project: dsneed123/my-app</div>
+                        <div style="margin-top:0.5rem;" class="out">  Task description:</div>
+                        <div style="margin:0.4rem 0; padding:0.6rem 0.8rem; background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.2); border-radius:6px; color:#d1d5db; font-size:0.8rem; line-height:1.6;">
+                            Add a password reset flow. Users should be<br>
+                            able to request a reset link via email and<br>
+                            set a new password from the link.
+                        </div>
+                        <div style="margin-top:0.75rem;" class="success">  ✓ Task queued — position #1</div>
+                        <div class="out">  TARS will pick this up shortly…</div>
                     </div>
                 </div>
             </div>
@@ -331,43 +323,43 @@
     </div>
 </section>
 
-<!-- ── Service 2: Bug Fixing & Maintenance ─────────────────── -->
+<!-- ── Service 2: Autonomous Coding ──────────────────────────── -->
 <section class="service-section alt-bg">
     <div class="container">
         <div class="row align-items-center gy-5 flex-lg-row-reverse">
             <div class="col-lg-6">
                 <div class="service-icon-wrap" style="background:rgba(16,185,129,0.12);">
-                    <i class="bi bi-bug-fill" style="color:#10b981;"></i>
+                    <i class="bi bi-cpu-fill" style="color:#10b981;"></i>
                 </div>
-                <div class="section-label">Service 02</div>
-                <h2 class="service-title">Bug Fixing &amp; Maintenance</h2>
+                <div class="section-label">Step 02</div>
+                <h2 class="service-title">TARS Reads &amp; Codes</h2>
                 <p class="service-lead">
-                    TARS auto-detects failing tests, error reports, and regression issues. It diagnoses the root cause, patches the code, verifies the fix passes CI, and ships a PR — before a human has even opened Slack.
+                    TARS clones your repository, reads the existing codebase, then implements the task — following your conventions, matching your file structure, and working within the context of what's already there.
                 </p>
                 <ul class="feature-list">
                     <li>
                         <span class="check-icon"><i class="bi bi-check"></i></span>
-                        <span>Monitors your CI pipeline for failing builds and flaky tests</span>
+                        <span>Reads your existing files before writing anything</span>
                     </li>
                     <li>
                         <span class="check-icon"><i class="bi bi-check"></i></span>
-                        <span>Reads stack traces and error logs to pinpoint root causes</span>
+                        <span>Follows the patterns and conventions already in your codebase</span>
                     </li>
                     <li>
                         <span class="check-icon"><i class="bi bi-check"></i></span>
-                        <span>Applies targeted patches — no unnecessary side effects or scope creep</span>
+                        <span>Implements features, fixes bugs, and refactors existing code</span>
                     </li>
                     <li>
                         <span class="check-icon"><i class="bi bi-check"></i></span>
-                        <span>Re-runs the full test suite to confirm the fix and catch regressions</span>
+                        <span>Runs your existing test suite if one is present</span>
                     </li>
                     <li>
                         <span class="check-icon"><i class="bi bi-check"></i></span>
-                        <span>Adds a regression test so the same bug never slips through again</span>
+                        <span>Works on a dedicated branch — your main branch is never touched directly</span>
                     </li>
                     <li>
                         <span class="check-icon"><i class="bi bi-check"></i></span>
-                        <span>Logs every action to Discord so your team stays informed in real time</span>
+                        <span>Powered by Claude — one of the most capable coding models available</span>
                     </li>
                 </ul>
             </div>
@@ -377,20 +369,19 @@
                         <div class="dot" style="background:#ef4444;"></div>
                         <div class="dot" style="background:#f59e0b;"></div>
                         <div class="dot" style="background:#10b981;"></div>
-                        <span class="panel-header-label">tars — bug patrol</span>
+                        <span class="panel-header-label">tars — coding</span>
                     </div>
                     <div class="panel-mono">
-                        <div><span class="prompt">tars@agent</span>: <span class="cmd">CI check failed</span></div>
-                        <div class="error">  ✗ tests/test_payment.py::test_refund — FAILED</div>
-                        <div class="out">  → AssertionError: expected 200, got 500</div>
-                        <div><span class="prompt">tars@agent</span>: <span class="cmd">Diagnosing…</span></div>
-                        <div class="out">  → Trace: src/payments/refund.py:47</div>
-                        <div class="out">  → Cause: missing null-check on order_id</div>
-                        <div><span class="prompt">tars@agent</span>: <span class="cmd">Patching…</span></div>
-                        <div class="out">  → src/payments/refund.py +3 / -1 lines</div>
-                        <div><span class="prompt">tars@agent</span>: <span class="cmd">Re-running CI…</span></div>
-                        <div class="success">  ✓ 74 tests passed (0 failed)</div>
-                        <div class="success">  ✓ PR #84 opened → fix verified</div>
+                        <div><span class="prompt">tars@agent</span>: <span class="cmd">Reading codebase…</span></div>
+                        <div class="out">  → Cloned dsneed123/my-app</div>
+                        <div class="out">  → Read 86 files across 12 modules</div>
+                        <div class="out">  → Auth pattern: Django allauth</div>
+                        <div><span class="prompt">tars@agent</span>: <span class="cmd">Implementing…</span></div>
+                        <div class="out">  → accounts/views.py (modified)</div>
+                        <div class="out">  → accounts/templates/password_reset.html</div>
+                        <div class="out">  → accounts/urls.py (modified)</div>
+                        <div><span class="prompt">tars@agent</span>: <span class="cmd">Running tests…</span></div>
+                        <div class="success">  ✓ 41 tests passed</div>
                     </div>
                 </div>
             </div>
@@ -398,43 +389,39 @@
     </div>
 </section>
 
-<!-- ── Service 3: New Project Scaffolding ─────────────────────── -->
+<!-- ── Service 3: Pull Request Delivery ──────────────────────── -->
 <section class="service-section">
     <div class="container">
         <div class="row align-items-center gy-5">
             <div class="col-lg-6">
                 <div class="service-icon-wrap" style="background:rgba(251,191,36,0.12);">
-                    <i class="bi bi-box-fill" style="color:#fbbf24;"></i>
+                    <i class="bi bi-git" style="color:#fbbf24;"></i>
                 </div>
-                <div class="section-label">Service 03</div>
-                <h2 class="service-title">New Project Scaffolding</h2>
+                <div class="section-label">Step 03</div>
+                <h2 class="service-title">Get a Pull Request</h2>
                 <p class="service-lead">
-                    Describe your idea in plain English. TARS creates the GitHub repository, generates a production-ready project structure, wires up CI/CD, writes an initial test suite, and has the first commit pushed before your coffee finishes brewing.
+                    When TARS finishes, it pushes a branch and opens a pull request on GitHub. The PR includes a clear description of what was done and why — ready for your team to review and merge.
                 </p>
                 <ul class="feature-list">
                     <li>
                         <span class="check-icon"><i class="bi bi-check"></i></span>
-                        <span>Creates and initializes the GitHub repository with sensible defaults</span>
+                        <span>Changes pushed to a dedicated branch — never directly to main</span>
                     </li>
                     <li>
                         <span class="check-icon"><i class="bi bi-check"></i></span>
-                        <span>Generates best-practice folder structure for your chosen stack</span>
+                        <span>PR opened on GitHub with a plain-English summary of the changes</span>
                     </li>
                     <li>
                         <span class="check-icon"><i class="bi bi-check"></i></span>
-                        <span>Sets up CI/CD pipelines (GitHub Actions) with lint, test, and deploy stages</span>
+                        <span>You review, request changes, or merge — full control stays with you</span>
                     </li>
                     <li>
                         <span class="check-icon"><i class="bi bi-check"></i></span>
-                        <span>Writes a baseline test suite so coverage starts at day one</span>
+                        <span>Works with your existing GitHub review workflow</span>
                     </li>
                     <li>
                         <span class="check-icon"><i class="bi bi-check"></i></span>
-                        <span>Configures linters, formatters, and pre-commit hooks for code quality</span>
-                    </li>
-                    <li>
-                        <span class="check-icon"><i class="bi bi-check"></i></span>
-                        <span>Drops a TARS config so autonomous development can begin immediately</span>
+                        <span>Nothing is merged automatically — human approval always required</span>
                     </li>
                 </ul>
             </div>
@@ -444,22 +431,18 @@
                         <div class="dot" style="background:#ef4444;"></div>
                         <div class="dot" style="background:#f59e0b;"></div>
                         <div class="dot" style="background:#10b981;"></div>
-                        <span class="panel-header-label">tars — scaffold</span>
+                        <span class="panel-header-label">github.com — pull request</span>
                     </div>
-                    <div class="file-tree">
-                        <div class="dir">📁 my-saas-app/</div>
-                        <div class="dir">  ├── 📁 .github/workflows/</div>
-                        <div class="new">  │   ├── ci.yml &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;✨ new</div>
-                        <div class="new">  │   └── deploy.yml &nbsp;&nbsp;&nbsp;✨ new</div>
-                        <div class="dir">  ├── 📁 src/</div>
-                        <div class="new">  │   ├── app.py &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;✨ new</div>
-                        <div class="new">  │   └── config.py &nbsp;&nbsp;&nbsp;&nbsp;✨ new</div>
-                        <div class="dir">  ├── 📁 tests/</div>
-                        <div class="new">  │   └── test_app.py &nbsp;&nbsp;✨ new</div>
-                        <div class="new">  ├── .pre-commit-config &nbsp;✨ new</div>
-                        <div class="new">  ├── pyproject.toml &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;✨ new</div>
-                        <div class="new">  └── tars.conf &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;✨ new</div>
-                        <div style="margin-top:0.75rem;" class="success">✓ Repository ready — 14 files created</div>
+                    <div class="panel-mono">
+                        <div class="success">  ✓ Branch: tars/password-reset-flow</div>
+                        <div style="margin-top:0.5rem; color:#a5b4fc; font-weight:600;">  Add password reset flow</div>
+                        <div style="margin-top:0.4rem;" class="out">  Implements email-based password reset:</div>
+                        <div class="out">  • Reset request view + email template</div>
+                        <div class="out">  • Token-gated confirm + set-password view</div>
+                        <div class="out">  • URL routes wired to existing auth prefix</div>
+                        <div class="out">  • Follows existing allauth session patterns</div>
+                        <div style="margin-top:0.75rem;" class="out">  3 files changed, +124 / -0 lines</div>
+                        <div class="success">  ✓ Ready for review</div>
                     </div>
                 </div>
             </div>
@@ -467,43 +450,39 @@
     </div>
 </section>
 
-<!-- ── Service 4: Code Review & Quality ──────────────────────── -->
+<!-- ── Service 4: Queue & Progress Tracking ──────────────────── -->
 <section class="service-section alt-bg">
     <div class="container">
         <div class="row align-items-center gy-5 flex-lg-row-reverse">
             <div class="col-lg-6">
                 <div class="service-icon-wrap" style="background:rgba(236,72,153,0.12);">
-                    <i class="bi bi-shield-check-fill" style="color:#ec4899;"></i>
+                    <i class="bi bi-list-check" style="color:#ec4899;"></i>
                 </div>
-                <div class="section-label">Service 04</div>
-                <h2 class="service-title">Code Review &amp; Quality</h2>
+                <div class="section-label">Step 04</div>
+                <h2 class="service-title">Track Your Queue</h2>
                 <p class="service-lead">
-                    Every pull request TARS opens is self-reviewed before it reaches your team. TARS catches security vulnerabilities, enforces your style guide, flags complexity hotspots, and annotates the diff so reviewers can merge with confidence.
+                    The dashboard shows every task you've submitted — what's waiting, what's in progress, and what's been completed. Each completed task links directly to the PR on GitHub.
                 </p>
                 <ul class="feature-list">
                     <li>
                         <span class="check-icon"><i class="bi bi-check"></i></span>
-                        <span>Self-review pass before every PR — catches obvious mistakes before humans see them</span>
+                        <span>See all submitted tasks and their current status at a glance</span>
                     </li>
                     <li>
                         <span class="check-icon"><i class="bi bi-check"></i></span>
-                        <span>Scans for OWASP Top 10 security issues: injection, broken auth, XSS, and more</span>
+                        <span>Track how many tasks are queued, in progress, and done</span>
                     </li>
                     <li>
                         <span class="check-icon"><i class="bi bi-check"></i></span>
-                        <span>Enforces your linting and formatting rules — no style debates in review</span>
+                        <span>Completed tasks link directly to the GitHub pull request</span>
                     </li>
                     <li>
                         <span class="check-icon"><i class="bi bi-check"></i></span>
-                        <span>Flags cyclomatic complexity spikes and suggests targeted refactors</span>
+                        <span>Submit new tasks any time — they join the queue automatically</span>
                     </li>
                     <li>
                         <span class="check-icon"><i class="bi bi-check"></i></span>
-                        <span>Annotates the PR diff with inline explanations so reviewers merge faster</span>
-                    </li>
-                    <li>
-                        <span class="check-icon"><i class="bi bi-check"></i></span>
-                        <span>Blocks the PR if critical issues are found — no shortcuts past quality gates</span>
+                        <span>View task history per project to see everything TARS has shipped</span>
                     </li>
                 </ul>
             </div>
@@ -513,29 +492,24 @@
                         <div class="dot" style="background:#ef4444;"></div>
                         <div class="dot" style="background:#f59e0b;"></div>
                         <div class="dot" style="background:#10b981;"></div>
-                        <span class="panel-header-label">tars — code review</span>
+                        <span class="panel-header-label">tarsai.dev — task dashboard</span>
                     </div>
-                    <div class="diff-line">
-                        <div class="ctx">  src/api/users.py</div>
-                        <div class="add">+ &nbsp;query = db.execute(</div>
-                        <div class="add">+ &nbsp;&nbsp;&nbsp;"SELECT * FROM users WHERE id = ?", [user_id]</div>
-                        <div class="add">+ &nbsp;)</div>
-                        <div class="del">- &nbsp;query = db.execute(</div>
-                        <div class="del">- &nbsp;&nbsp;&nbsp;f"SELECT * FROM users WHERE id = {user_id}"</div>
-                        <div class="del">- &nbsp;)</div>
-                    </div>
-                    <div style="margin-top:1rem; padding: 0.65rem 0.85rem; background:rgba(251,191,36,0.07); border:1px solid rgba(251,191,36,0.25); border-radius:8px;">
-                        <div style="font-size:0.8rem; color:#fbbf24; font-weight:600; margin-bottom:0.35rem;">
-                            <i class="bi bi-shield-exclamation"></i>&nbsp; TARS Review — SQL Injection Risk
+                    <div class="panel-mono">
+                        <div class="out">  my-app &nbsp;— 3 tasks</div>
+                        <div style="margin-top:0.5rem; display:flex; gap:0.5rem; align-items:center;">
+                            <span style="background:rgba(16,185,129,0.15); color:#10b981; border-radius:4px; padding:1px 7px; font-size:0.74rem; font-weight:600;">done</span>
+                            <span class="out">Add password reset flow &nbsp;→ PR #91</span>
                         </div>
-                        <div style="font-size:0.78rem; color:var(--tars-muted); line-height:1.6;">
-                            String interpolation in SQL query allows injection. Replaced with parameterized query. Issue resolved before PR opened.
+                        <div style="margin-top:0.35rem; display:flex; gap:0.5rem; align-items:center;">
+                            <span style="background:rgba(99,102,241,0.15); color:#818cf8; border-radius:4px; padding:1px 7px; font-size:0.74rem; font-weight:600;">active</span>
+                            <span class="out">Add CSV export to reports page</span>
                         </div>
-                    </div>
-                    <div style="margin-top:0.85rem;">
-                        <div class="panel-mono success">✓ Security scan passed (after fix)</div>
-                        <div class="panel-mono success">✓ Style check passed</div>
-                        <div class="panel-mono success">✓ Complexity within threshold</div>
+                        <div style="margin-top:0.35rem; display:flex; gap:0.5rem; align-items:center;">
+                            <span style="background:rgba(107,114,128,0.15); color:#9ca3af; border-radius:4px; padding:1px 7px; font-size:0.74rem; font-weight:600;">queued</span>
+                            <span class="out">Fix pagination on /users list</span>
+                        </div>
+                        <div style="margin-top:0.85rem;" class="out">  Completed this month: 14 tasks</div>
+                        <div class="success">  ✓ 14 PRs opened and ready to merge</div>
                     </div>
                 </div>
             </div>
@@ -548,10 +522,10 @@
     <div class="container">
         <div class="section-label mb-3">Ready to ship faster?</div>
         <h2 class="section-title mb-3">
-            Put your entire delivery pipeline<br>on autopilot.
+            Describe the task.<br>Get back a pull request.
         </h2>
         <p class="text-muted mb-5 mx-auto" style="max-width:500px;">
-            Join early-access teams already shipping faster with TARS. Tell us about your project and we'll get you set up.
+            Connect your GitHub project and start submitting tasks today. TARS handles the coding — you handle the reviews.
         </p>
         <a href="{% url 'inquiries:get_started' %}" class="btn btn-accent btn-lg px-5">
             Get Started &rarr;
