@@ -18,6 +18,8 @@ _PAGES = [
     ("pages:docs_api_reference", 0.5, _SITE_LAUNCH),
     ("pages:docs_faq",           0.5, _SITE_LAUNCH),
     ("pages:docs_changelog",     0.4, _SITE_LAUNCH),
+    ("accounts:login",           0.3, _SITE_LAUNCH),
+    ("accounts:register",        0.3, _SITE_LAUNCH),
 ]
 
 
