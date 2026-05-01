@@ -1,5 +1,6 @@
 import json
 
+import bleach
 from django.contrib import messages
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth.decorators import login_required
@@ -269,6 +270,159 @@ def quick_add_task(request):
         messages.error(request, "Project not found.")
 
     return redirect("members:dashboard")
+
+
+def _is_vague_task(title):
+    """Return True if the task description is too vague to act on."""
+    words = title.split()
+    if len(words) <= 3:
+        return True
+    vague_phrases = [
+        "fix it", "make it work", "improve", "update", "change",
+        "do something", "fix bug", "add feature", "make better",
+        "clean up", "refactor", "optimize", "handle", "set up",
+    ]
+    lower = title.lower()
+    if any(lower.strip() == phrase for phrase in vague_phrases):
+        return True
+    if len(words) <= 5 and not any(c in title for c in [".", "/", "_", "(", ")", ":"]):
+        return True
+    return False
+
+
+def _generate_questions(title):
+    """Generate clarifying questions based on the task description."""
+    lower = title.lower()
+    questions = []
+
+    questions.append({
+        "id": "what",
+        "label": "What specifically should TARS do?",
+        "placeholder": "e.g., Add a loading spinner to the dashboard when tasks are being fetched",
+    })
+
+    if any(w in lower for w in ["fix", "bug", "error", "broken", "issue", "crash"]):
+        questions.append({
+            "id": "reproduce",
+            "label": "How can TARS reproduce this issue?",
+            "placeholder": "e.g., Go to /dashboard, click Submit with no project selected — you'll see a 500 error",
+        })
+        questions.append({
+            "id": "expected",
+            "label": "What should happen instead?",
+            "placeholder": "e.g., Show a validation error message instead of crashing",
+        })
+    elif any(w in lower for w in ["add", "create", "build", "new", "implement"]):
+        questions.append({
+            "id": "where",
+            "label": "Where in the app should this appear?",
+            "placeholder": "e.g., On the dashboard page, below the task list",
+        })
+        questions.append({
+            "id": "behavior",
+            "label": "How should it behave?",
+            "placeholder": "e.g., Show a modal with a form, save on submit, close on cancel",
+        })
+    else:
+        questions.append({
+            "id": "where",
+            "label": "Which part of the app is this about?",
+            "placeholder": "e.g., The settings page, the task queue, the login flow",
+        })
+
+    questions.append({
+        "id": "constraints",
+        "label": "Any constraints or preferences?",
+        "placeholder": "e.g., Must work on mobile, use existing dark theme, no new dependencies",
+    })
+
+    return questions
+
+
+@login_required
+@require_POST
+def clarify_task(request):
+    """Conversational task clarification — asks follow-up questions for vague tasks."""
+    is_ajax = request.headers.get("X-Requested-With") == "XMLHttpRequest"
+    if not is_ajax:
+        return redirect("members:dashboard")
+
+    try:
+        data = json.loads(request.body)
+    except (json.JSONDecodeError, ValueError):
+        return JsonResponse({"ok": False, "error": "Invalid request."}, status=400)
+
+    step = data.get("step", "check")
+
+    if step == "check":
+        title = bleach.clean(data.get("title", "").strip(), tags=[], strip=True)
+        if not title:
+            return JsonResponse({"ok": False, "error": "Task title is required."}, status=400)
+
+        if _is_vague_task(title):
+            questions = _generate_questions(title)
+            return JsonResponse({
+                "ok": True,
+                "needs_clarification": True,
+                "questions": questions,
+                "original_title": title,
+            })
+        return JsonResponse({"ok": True, "needs_clarification": False})
+
+    elif step == "submit":
+        title = bleach.clean(data.get("title", "").strip(), tags=[], strip=True)
+        answers = data.get("answers", {})
+        project_id = data.get("project_id")
+
+        if not title or not project_id:
+            return JsonResponse(
+                {"ok": False, "error": "Task title and project are required."}, status=400
+            )
+
+        # Build enriched description from answers
+        parts = [title]
+        answer_labels = {
+            "what": "Details",
+            "reproduce": "Steps to reproduce",
+            "expected": "Expected behavior",
+            "where": "Location",
+            "behavior": "Behavior",
+            "constraints": "Constraints",
+        }
+        for key, label in answer_labels.items():
+            val = answers.get(key, "").strip()
+            if val:
+                parts.append(f"\n{label}: {bleach.clean(val, tags=[], strip=True)}")
+
+        description = "\n".join(parts)
+
+        try:
+            project = Project.objects.get(pk=project_id, owner=request.user)
+        except Project.DoesNotExist:
+            return JsonResponse({"ok": False, "error": "Project not found."}, status=400)
+
+        task = Task.objects.create(
+            title=title,
+            description=description,
+            project=project,
+            created_by=request.user,
+            status="pending",
+            priority=50,
+        )
+        _forward_to_controller(task)
+        fire_event(
+            "task_submitted",
+            user=request.user,
+            metadata={"task_id": task.pk, "project": project.github_repo},
+        )
+        return JsonResponse({
+            "ok": True,
+            "task_id": task.pk,
+            "title": task.title,
+            "status": task.status,
+        })
+
+    return JsonResponse({"ok": False, "error": "Invalid step."}, status=400)
 
 
 @login_required

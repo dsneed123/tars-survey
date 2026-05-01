@@ -3011,6 +3011,7 @@ var _tarsAvatarHtml = '<div class="msg-avatar tars-avatar"><i class="bi bi-robot
 var _detectUrl = "{% url 'projects:detect' %}";
 var _addChatUrl = "{% url 'projects:add_chat' %}";
 var _quickTaskUrl = "{% url 'members:quick_task' %}";
+var _clarifyTaskUrl = "{% url 'members:clarify_task' %}";
 var _bulkTaskUrl = "{% url 'members:bulk_add_tasks' %}";
 var GH_URL_RE = /^(?:https?:\/\/)?(?:www\.)?github\.com\/([A-Za-z0-9_.\-]+\/[A-Za-z0-9_.\-]+?)(?:\.git)?(?:[\/\?#].*)?$/i;
 
@@ -3319,8 +3320,114 @@ function interceptTaskSubmit(e) {
     input.value = '';
     autoGrow(input);
     updateSend();
-    submitTaskAjax(text, projectId);
+    clarifyAndSubmit(text, projectId);
     return false;
+}
+
+function clarifyAndSubmit(title, projectId) {
+    var bubbleEl = _appendTarsPendingBubble(title);
+    fetch(_clarifyTaskUrl, {
+        method: 'POST',
+        body: JSON.stringify({ step: 'check', title: title }),
+        credentials: 'same-origin',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.ok && data.needs_clarification) {
+            _showClarificationQuestions(bubbleEl, title, projectId, data.questions);
+        } else {
+            submitTaskAjax(title, projectId, bubbleEl);
+        }
+    })
+    .catch(function() {
+        submitTaskAjax(title, projectId, bubbleEl);
+    });
+}
+
+function _showClarificationQuestions(bubbleEl, title, projectId, questions) {
+    if (!bubbleEl) return;
+    var contentEl = bubbleEl.querySelector('.msg-content');
+    if (!contentEl) return;
+
+    var html = '<p>I want to make sure I understand what you need. Can you clarify a few things?</p>';
+    html += '<div class="clarify-form" style="margin-top:12px;">';
+    for (var i = 0; i < questions.length; i++) {
+        var q = questions[i];
+        html += '<div class="clarify-question" style="margin-bottom:14px;">';
+        html += '<label style="display:block;font-size:13px;color:#a1a1aa;margin-bottom:4px;" for="clarify-' + q.id + '">' + _esc(q.label) + '</label>';
+        html += '<input type="text" id="clarify-' + q.id + '" data-qid="' + q.id + '" class="clarify-input" placeholder="' + _esc(q.placeholder) + '" style="width:100%;padding:8px 12px;background:#1e1e1e;border:1px solid #333;border-radius:8px;color:#e4e4e7;font-size:14px;outline:none;" />';
+        html += '</div>';
+    }
+    html += '<div style="display:flex;gap:8px;margin-top:8px;">';
+    html += '<button class="clarify-submit-btn" style="padding:8px 20px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;">Submit</button>';
+    html += '<button class="clarify-skip-btn" style="padding:8px 16px;background:transparent;color:#a1a1aa;border:1px solid #333;border-radius:8px;font-size:14px;cursor:pointer;">Skip &amp; submit as-is</button>';
+    html += '</div>';
+    html += '</div>';
+    contentEl.innerHTML = html;
+
+    contentEl.querySelector('.clarify-submit-btn').addEventListener('click', function() {
+        var answers = {};
+        var inputs = contentEl.querySelectorAll('.clarify-input');
+        for (var j = 0; j < inputs.length; j++) {
+            var val = inputs[j].value.trim();
+            if (val) answers[inputs[j].getAttribute('data-qid')] = val;
+        }
+        contentEl.innerHTML =
+            '<div class="typing-indicator">' +
+                '<div class="typing-dot"></div>' +
+                '<div class="typing-dot"></div>' +
+                '<div class="typing-dot"></div>' +
+            '</div>';
+        _submitClarifiedTask(bubbleEl, title, projectId, answers);
+    });
+
+    contentEl.querySelector('.clarify-skip-btn').addEventListener('click', function() {
+        contentEl.innerHTML =
+            '<div class="typing-indicator">' +
+                '<div class="typing-dot"></div>' +
+                '<div class="typing-dot"></div>' +
+                '<div class="typing-dot"></div>' +
+            '</div>';
+        submitTaskAjax(title, projectId, bubbleEl);
+    });
+
+    var firstInput = contentEl.querySelector('.clarify-input');
+    if (firstInput) firstInput.focus();
+    if (typeof scrollToBottom === 'function') scrollToBottom(true);
+}
+
+function _submitClarifiedTask(bubbleEl, title, projectId, answers) {
+    fetch(_clarifyTaskUrl, {
+        method: 'POST',
+        body: JSON.stringify({
+            step: 'submit',
+            title: title,
+            project_id: projectId,
+            answers: answers
+        }),
+        credentials: 'same-origin',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.ok) {
+            _resolvePendingBubble(bubbleEl, data.task_id);
+        } else {
+            _rejectPendingBubble(bubbleEl, data.error || "Couldn't submit that task.", title, projectId);
+        }
+    })
+    .catch(function() {
+        _rejectPendingBubble(bubbleEl, "Couldn't submit — check your connection.", title, projectId);
+    });
 }
 
 function handleGithubKey(e) {
