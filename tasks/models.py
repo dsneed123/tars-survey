@@ -15,6 +15,12 @@ class Task(models.Model):
         ("failed", "Failed"),
     ]
 
+    PRIORITY_LEVEL_CHOICES = [
+        ("high", "High"),
+        ("normal", "Normal"),
+        ("low", "Low"),
+    ]
+
     project = models.ForeignKey(
         "projects.Project",
         on_delete=models.CASCADE,
@@ -29,6 +35,9 @@ class Task(models.Model):
     description = models.TextField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending", db_index=True)
     priority = models.IntegerField(default=50)
+    priority_level = models.CharField(
+        max_length=10, choices=PRIORITY_LEVEL_CHOICES, default="normal", db_index=True
+    )
     worker_id = models.CharField(max_length=200, blank=True, null=True)
     branch_name = models.CharField(max_length=200, blank=True, null=True)
     pr_url = models.URLField(blank=True, null=True)

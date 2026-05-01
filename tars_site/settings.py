@@ -181,6 +181,10 @@ TARS_API_KEY = os.environ.get("TARS_API_KEY", "")
 # GitHub personal access token used for API calls (commits, branches, PRs, diffs)
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
 
+# GitHub OAuth app credentials for "Sign in with GitHub"
+GITHUB_CLIENT_ID = os.environ.get("GITHUB_CLIENT_ID", "")
+GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET", "")
+
 # Google reCAPTCHA v3 — leave empty to disable verification
 RECAPTCHA_SITE_KEY = os.environ.get("RECAPTCHA_SITE_KEY", "")
 RECAPTCHA_SECRET_KEY = os.environ.get("RECAPTCHA_SECRET_KEY", "")

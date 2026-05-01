@@ -17,7 +17,7 @@ from notifications.models import NotificationPreference
 from projects.models import Project
 from tasks.models import Task
 from tasks.templates import TASK_TEMPLATES
-from tasks.views import _forward_to_controller, _get_queue_positions, _get_wait_times
+from tasks.views import _forward_to_controller, _get_queue_positions, _get_wait_times, _parse_priority_prefix
 
 from .models import MemberProfile
 
@@ -239,6 +239,12 @@ def quick_add_task(request):
 
     try:
         project = Project.objects.get(pk=project_id, owner=request.user)
+        priority_level_raw = request.POST.get("priority_level", "normal").strip().lower()
+        priority_level = priority_level_raw if priority_level_raw in ("high", "normal", "low") else "normal"
+        cleaned_title, level_from_prefix = _parse_priority_prefix(title)
+        if level_from_prefix != "normal":
+            title = cleaned_title
+            priority_level = level_from_prefix
         task = Task.objects.create(
             title=title,
             description=title,
@@ -246,6 +252,7 @@ def quick_add_task(request):
             created_by=request.user,
             status="pending",
             priority=50,
+            priority_level=priority_level,
         )
         _forward_to_controller(task)
         fire_event(

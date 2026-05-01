@@ -409,3 +409,162 @@ class UnauthenticatedAccessTests(TestCase):
 
     def test_notification_settings_requires_login(self):
         self._assert_redirects_to_login("/dashboard/settings/notifications/")
+
+
+class GitHubOAuthFlowTests(TestCase):
+    """GitHub OAuth login and registration flow."""
+
+    def setUp(self):
+        self.client = Client()
+
+    def test_github_login_redirects_to_github_authorize(self):
+        with self.settings(GITHUB_CLIENT_ID="test_client_id"):
+            resp = self.client.get("/accounts/github/login/")
+        self.assertEqual(resp.status_code, 302)
+        self.assertIn("github.com/login/oauth/authorize", resp["Location"])
+        self.assertIn("test_client_id", resp["Location"])
+        self.assertIn("user", resp["Location"])
+
+    def test_github_login_without_client_id_redirects_to_login(self):
+        with self.settings(GITHUB_CLIENT_ID=""):
+            resp = self.client.get("/accounts/github/login/")
+        self.assertRedirects(resp, "/login/", fetch_redirect_response=False)
+
+    def test_github_login_stores_state_in_session(self):
+        with self.settings(GITHUB_CLIENT_ID="test_client_id"):
+            self.client.get("/accounts/github/login/")
+        self.assertIn("github_oauth_state", self.client.session)
+
+    def test_github_callback_with_missing_state_redirects_to_login(self):
+        resp = self.client.get("/accounts/github/callback/?code=abc")
+        self.assertRedirects(resp, "/login/", fetch_redirect_response=False)
+
+    def test_github_callback_with_wrong_state_redirects_to_login(self):
+        session = self.client.session
+        session["github_oauth_state"] = "correct_state"
+        session.save()
+        resp = self.client.get("/accounts/github/callback/?code=abc&state=wrong_state")
+        self.assertRedirects(resp, "/login/", fetch_redirect_response=False)
+
+    def test_github_callback_without_code_redirects_to_login(self):
+        session = self.client.session
+        session["github_oauth_state"] = "mystate"
+        session.save()
+        resp = self.client.get("/accounts/github/callback/?state=mystate")
+        self.assertRedirects(resp, "/login/", fetch_redirect_response=False)
+
+    @patch("accounts.views.send_welcome_email")
+    @patch("accounts.views.requests.get")
+    @patch("accounts.views.requests.post")
+    def test_github_callback_creates_new_user(self, mock_post, mock_get, _mock_email):
+        mock_post.return_value.json.return_value = {"access_token": "gh_token_123"}
+        mock_get.return_value.json.return_value = {
+            "id": 99999,
+            "login": "ghuser",
+            "avatar_url": "https://avatars.githubusercontent.com/u/99999",
+            "email": "ghuser@example.com",
+        }
+
+        session = self.client.session
+        session["github_oauth_state"] = "validstate"
+        session.save()
+
+        with self.settings(GITHUB_CLIENT_ID="cid", GITHUB_CLIENT_SECRET="csecret"):
+            resp = self.client.get("/accounts/github/callback/?code=abc&state=validstate")
+
+        self.assertRedirects(resp, "/dashboard/", fetch_redirect_response=False)
+        user = User.objects.get(github_id=99999)
+        self.assertEqual(user.github_username, "ghuser")
+        self.assertEqual(user.github_avatar_url, "https://avatars.githubusercontent.com/u/99999")
+        self.assertEqual(user.email, "ghuser@example.com")
+        self.assertTrue(user.is_email_verified)
+        self.assertTrue(MemberProfile.objects.filter(user=user).exists())
+
+    @patch("accounts.views.send_welcome_email")
+    @patch("accounts.views.requests.get")
+    @patch("accounts.views.requests.post")
+    def test_github_callback_links_existing_email_account(self, mock_post, mock_get, _mock_email):
+        existing = User.objects.create_user(
+            username="emailuser",
+            email="shared@example.com",
+            password="pass",
+        )
+        MemberProfile.objects.get_or_create(user=existing)
+
+        mock_post.return_value.json.return_value = {"access_token": "gh_token_456"}
+        mock_get.return_value.json.return_value = {
+            "id": 88888,
+            "login": "ghlinker",
+            "avatar_url": "https://avatars.githubusercontent.com/u/88888",
+            "email": "shared@example.com",
+        }
+
+        session = self.client.session
+        session["github_oauth_state"] = "linkstate"
+        session.save()
+
+        with self.settings(GITHUB_CLIENT_ID="cid", GITHUB_CLIENT_SECRET="csecret"):
+            resp = self.client.get("/accounts/github/callback/?code=abc&state=linkstate")
+
+        self.assertRedirects(resp, "/dashboard/", fetch_redirect_response=False)
+        existing.refresh_from_db()
+        self.assertEqual(existing.github_id, 88888)
+        self.assertEqual(existing.github_username, "ghlinker")
+        self.assertTrue(existing.is_email_verified)
+        self.assertEqual(User.objects.filter(email="shared@example.com").count(), 1)
+
+    @patch("accounts.views.requests.get")
+    @patch("accounts.views.requests.post")
+    def test_github_callback_logs_in_existing_github_user(self, mock_post, mock_get):
+        existing = User.objects.create_user(
+            username="ghreturner",
+            email="returner@example.com",
+            password=None,
+            github_id=77777,
+            github_username="oldname",
+            github_avatar_url="https://old.url/",
+        )
+        MemberProfile.objects.get_or_create(user=existing)
+
+        mock_post.return_value.json.return_value = {"access_token": "gh_token_789"}
+        mock_get.return_value.json.return_value = {
+            "id": 77777,
+            "login": "newname",
+            "avatar_url": "https://new.url/",
+            "email": "returner@example.com",
+        }
+
+        session = self.client.session
+        session["github_oauth_state"] = "returnstate"
+        session.save()
+
+        with self.settings(GITHUB_CLIENT_ID="cid", GITHUB_CLIENT_SECRET="csecret"):
+            resp = self.client.get("/accounts/github/callback/?code=abc&state=returnstate")
+
+        self.assertRedirects(resp, "/dashboard/", fetch_redirect_response=False)
+        self.assertEqual(User.objects.filter(github_id=77777).count(), 1)
+        existing.refresh_from_db()
+        self.assertEqual(existing.github_username, "newname")
+        self.assertEqual(existing.github_avatar_url, "https://new.url/")
+
+    @patch("accounts.views.requests.post")
+    def test_github_callback_handles_token_exchange_failure(self, mock_post):
+        mock_post.return_value.json.return_value = {"error": "bad_verification_code"}
+
+        session = self.client.session
+        session["github_oauth_state"] = "errstate"
+        session.save()
+
+        with self.settings(GITHUB_CLIENT_ID="cid", GITHUB_CLIENT_SECRET="csecret"):
+            resp = self.client.get("/accounts/github/callback/?code=bad&state=errstate")
+
+        self.assertRedirects(resp, "/login/", fetch_redirect_response=False)
+        self.assertFalse(resp.wsgi_request.user.is_authenticated)
+
+    def test_authenticated_user_github_login_redirects_to_dashboard(self):
+        user = User.objects.create_user(username="loggedin", email="li@example.com", password="pass")
+        MemberProfile.objects.get_or_create(user=user)
+        self.client.force_login(user)
+        with self.settings(GITHUB_CLIENT_ID="cid"):
+            resp = self.client.get("/accounts/github/login/")
+        self.assertRedirects(resp, "/dashboard/", fetch_redirect_response=False)

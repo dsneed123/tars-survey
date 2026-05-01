@@ -36,6 +36,19 @@ from .models import Task, TaskAttachment
 
 logger = logging.getLogger(__name__)
 
+_PREFIX_RE = re.compile(r'^\[(urgent|high|low)\]\s*', re.IGNORECASE)
+_PRIORITY_LEVEL_CHOICES = {v for v, _ in Task.PRIORITY_LEVEL_CHOICES}
+
+
+def _parse_priority_prefix(title):
+    """Strip [urgent]/[high]/[low] prefix from title and return (cleaned_title, priority_level)."""
+    m = _PREFIX_RE.match(title)
+    if not m:
+        return title, "normal"
+    tag = m.group(1).lower()
+    level = "high" if tag in ("urgent", "high") else "low"
+    return title[m.end():].strip() or title, level
+
 
 _TARS_STATUS_CHOICES = {s for s, _ in Task.STATUS_CHOICES}
 
@@ -198,6 +211,7 @@ def _broadcast_task_update(task):
         "title": task.title,
         "status": task.status,
         "status_display": task.get_status_display(),
+        "priority_level": task.priority_level,
         "branch_name": task.branch_name,
         "pr_url": task.pr_url,
         "error_message": task.error_message,
@@ -271,6 +285,7 @@ def _broadcast_queue_task_added(task):
         "title": task.title,
         "status": task.status,
         "status_display": task.get_status_display(),
+        "priority_level": task.priority_level,
         "queue_position": queue_positions.get(task.pk),
         "estimated_wait": wait_times.get(task.pk),
         "project_name": project_name,
@@ -504,8 +519,11 @@ def task_add(request):
         if form.is_valid():
             task = form.save(commit=False)
             task.created_by = request.user
-            task.description = task.title
+            cleaned_title, priority_level = _parse_priority_prefix(task.title)
+            task.title = cleaned_title
+            task.description = cleaned_title
             task.priority = 50
+            task.priority_level = priority_level
             task.save()
 
             # Handle multiple file uploads
@@ -841,12 +859,21 @@ def api_task_create(request):
     if not title:
         return JsonResponse({"error": "title is required"}, status=400)
 
+    cleaned_title, level_from_prefix = _parse_priority_prefix(title)
+    if level_from_prefix != "normal":
+        title = cleaned_title
+        priority_level = level_from_prefix
+    else:
+        raw_level = (data.get("priority_level") or "normal").strip().lower()
+        priority_level = raw_level if raw_level in _PRIORITY_LEVEL_CHOICES else "normal"
+
     task = Task.objects.create(
         project=project,
         created_by=request.user,
         title=title,
         description=description or title,
         priority=50,
+        priority_level=priority_level,
     )
 
     _forward_to_controller(task)
@@ -866,6 +893,7 @@ def api_task_create(request):
             "description": task.description,
             "status": task.status,
             "status_display": task.get_status_display(),
+            "priority_level": task.priority_level,
             "project": task.project.name,
             "created_at": task.created_at.isoformat(),
         },

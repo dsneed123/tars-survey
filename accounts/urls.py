@@ -11,6 +11,8 @@ urlpatterns = [
     path("logout/", views.accounts_logout, name="logout"),
     path("verify-email/<uidb64>/<token>/", views.verify_email, name="verify_email"),
     path("verify-email/resend/", views.resend_verification_email, name="resend_verification_email"),
+    path("accounts/github/login/", views.github_login, name="github_login"),
+    path("accounts/github/callback/", views.github_callback, name="github_callback"),
     # Password reset flow (Django built-in views)
     path(
         "password-reset/",

@@ -14,6 +14,9 @@ class CustomUser(AbstractUser):
     plan = models.CharField(max_length=20, choices=PLAN_CHOICES, default="free")
     created_at = models.DateTimeField(auto_now_add=True)
     is_email_verified = models.BooleanField(default=False)
+    github_id = models.BigIntegerField(null=True, blank=True, unique=True)
+    github_username = models.CharField(max_length=100, blank=True)
+    github_avatar_url = models.URLField(blank=True)
 
     def __str__(self):
         return self.email or self.username
