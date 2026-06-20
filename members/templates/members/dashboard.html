@@ -16,6 +16,37 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
     background: #0a0a0a;
 }
 
+/* ── Persistent queue rail — split view: tasks (left) / queue (right) ─── */
+.queue-rail {
+    width: 330px;
+    flex-shrink: 0;
+    border-left: 1px solid #141414;
+    background: #0a0a0a;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    min-height: 0;
+}
+/* In the rail the queue is always expanded — no dropdown button/toggle. */
+.queue-rail .queue-widget { position: static; width: 100%; }
+.queue-rail .queue-widget-btn { display: none; }
+.queue-rail .queue-panel {
+    position: static;
+    display: block;
+    width: auto;
+    min-width: 0;
+    margin: 0;
+    max-height: none;
+    box-shadow: none;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+}
+.queue-rail .queue-panel-header { position: sticky; top: 0; background: #0a0a0a; z-index: 1; }
+@media (max-width: 768px) {
+    .queue-rail { display: none; } /* mobile: use the Queue tab instead */
+}
+
 /* ── Main chat area ────────────────────────────────────── */
 .chat-main {
     flex: 1;
@@ -1620,67 +1651,7 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
                 <i class="bi bi-volume-mute-fill" id="soundIcon"></i>
             </button>
 
-            <!-- Queue mini widget -->
-            {% if active_count > 0 %}
-            <div class="queue-widget" id="queueWidget">
-                <button class="queue-widget-btn" id="queueWidgetBtn" type="button"
-                        onclick="toggleQueueWidget(event)">
-                    <i class="bi bi-list-task" style="font-size:1rem;color:var(--tars-accent);"></i>
-                    <span class="queue-widget-label" id="queueWidgetLabel">
-                        {{ active_count }} task{{ active_count|pluralize }} in queue
-                    </span>
-                    <i class="bi bi-chevron-down" id="queueChevron" style="font-size:9px;"></i>
-                </button>
-                <div class="queue-panel" id="queuePanel">
-                    <div class="queue-panel-header">
-                        <div style="display:flex;align-items:center;gap:6px;">
-                            <span class="queue-panel-title">Queue</span>
-                            <span class="help-tip">
-                                <span class="help-tip-btn" tabindex="0" aria-label="About the queue">?</span>
-                                <span class="help-tip-text" role="tooltip">Your task queue — tasks are processed top to bottom</span>
-                            </span>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:6px;">
-                            <span style="font-size:11px;color:#444;" id="queuePanelMeta">
-                                {{ active_count }} active
-                            </span>
-                            <span class="help-tip">
-                                <span class="help-tip-btn" tabindex="0" aria-label="Status color guide">?</span>
-                                <span class="help-tip-text" role="tooltip">Green = done, Blue = working, Gray = waiting</span>
-                            </span>
-                        </div>
-                    </div>
-                    {% for proj_data in queue_projects %}
-                    <div class="qp-project-section" id="qp-project-{{ proj_data.project.pk }}" data-project-id="{{ proj_data.project.pk }}">
-                        <button class="qp-project-header"
-                                onclick="toggleQueueProject('{{ proj_data.project.pk }}', this)"
-                                aria-expanded="true"
-                                aria-controls="qp-tasks-{{ proj_data.project.pk }}">
-                            <span class="health-dot health-dot-{{ proj_data.health }}"
-                                  id="health-dot-{{ proj_data.project.pk }}"
-                                  title="{{ proj_data.health }} health"></span>
-                            <span class="qp-project-name" title="{{ proj_data.project.name }}">{{ proj_data.project.name }}</span>
-                            <span class="qp-task-count" id="qp-count-{{ proj_data.project.pk }}">{{ proj_data.tasks|length }}</span>
-                            <i class="bi bi-chevron-down qp-chevron"></i>
-                        </button>
-                        <div class="qp-project-tasks" id="qp-tasks-{{ proj_data.project.pk }}">
-                            {% for task in proj_data.tasks %}
-                            <div class="queue-panel-task" id="widget-task-{{ task.pk }}" data-task-id="{{ task.pk }}" data-project-id="{{ proj_data.project.pk }}">
-                                <span class="status-badge badge-{{ task.status }} flex-shrink-0">{{ task.get_status_display }}</span>
-                                <span class="queue-panel-task-title" title="{{ task.title }}">{{ task.title|truncatechars:42 }}</span>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                    <div class="queue-panel-footer">
-                        <a href="{% url 'tasks:queue' %}" class="queue-panel-link">
-                            View full queue <i class="bi bi-arrow-right"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
+            <!-- Queue relocated to the persistent right rail (.queue-rail) for the split view -->
 
             <div class="app-icon-nav d-none d-md-flex">
                 <a href="{% url 'members:dashboard' %}" class="app-icon-nav-item active" aria-label="Chat" aria-current="page">
@@ -2069,6 +2040,70 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
     </div>
 
 </main>
+
+<!-- ── Persistent queue rail (split view: tasks left, queue right) ─────── -->
+{% if active_count > 0 %}
+<aside class="queue-rail" aria-label="Task queue">
+    <div class="queue-widget" id="queueWidget">
+        <button class="queue-widget-btn" id="queueWidgetBtn" type="button"
+                onclick="toggleQueueWidget(event)">
+            <i class="bi bi-list-task" style="font-size:1rem;color:var(--tars-accent);"></i>
+            <span class="queue-widget-label" id="queueWidgetLabel">
+                {{ active_count }} task{{ active_count|pluralize }} in queue
+            </span>
+            <i class="bi bi-chevron-down" id="queueChevron" style="font-size:9px;"></i>
+        </button>
+        <div class="queue-panel" id="queuePanel">
+            <div class="queue-panel-header">
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <span class="queue-panel-title">Queue</span>
+                    <span class="help-tip">
+                        <span class="help-tip-btn" tabindex="0" aria-label="About the queue">?</span>
+                        <span class="help-tip-text" role="tooltip">Your task queue — tasks are processed top to bottom</span>
+                    </span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <span style="font-size:11px;color:#444;" id="queuePanelMeta">
+                        {{ active_count }} active
+                    </span>
+                    <span class="help-tip">
+                        <span class="help-tip-btn" tabindex="0" aria-label="Status color guide">?</span>
+                        <span class="help-tip-text" role="tooltip">Green = done, Blue = working, Gray = waiting</span>
+                    </span>
+                </div>
+            </div>
+            {% for proj_data in queue_projects %}
+            <div class="qp-project-section" id="qp-project-{{ proj_data.project.pk }}" data-project-id="{{ proj_data.project.pk }}">
+                <button class="qp-project-header"
+                        onclick="toggleQueueProject('{{ proj_data.project.pk }}', this)"
+                        aria-expanded="true"
+                        aria-controls="qp-tasks-{{ proj_data.project.pk }}">
+                    <span class="health-dot health-dot-{{ proj_data.health }}"
+                          id="health-dot-{{ proj_data.project.pk }}"
+                          title="{{ proj_data.health }} health"></span>
+                    <span class="qp-project-name" title="{{ proj_data.project.name }}">{{ proj_data.project.name }}</span>
+                    <span class="qp-task-count" id="qp-count-{{ proj_data.project.pk }}">{{ proj_data.tasks|length }}</span>
+                    <i class="bi bi-chevron-down qp-chevron"></i>
+                </button>
+                <div class="qp-project-tasks" id="qp-tasks-{{ proj_data.project.pk }}">
+                    {% for task in proj_data.tasks %}
+                    <div class="queue-panel-task" id="widget-task-{{ task.pk }}" data-task-id="{{ task.pk }}" data-project-id="{{ proj_data.project.pk }}">
+                        <span class="status-badge badge-{{ task.status }} flex-shrink-0">{{ task.get_status_display }}</span>
+                        <span class="queue-panel-task-title" title="{{ task.title }}">{{ task.title|truncatechars:42 }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+            <div class="queue-panel-footer">
+                <a href="{% url 'tasks:queue' %}" class="queue-panel-link">
+                    View full queue <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</aside>
+{% endif %}
 </div>
 
 {% if show_tour %}

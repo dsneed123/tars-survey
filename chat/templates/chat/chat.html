@@ -6,86 +6,101 @@
 <style>
   footer{display:none !important}
   #page-content{margin:0}
-  body{overflow:hidden}
   :root{--c-bg:#0d0e10;--c-panel:#16181c;--c-panel2:#1c1f24;--c-border:#2a2e35;
         --c-text:#e6e7e9;--c-muted:#9aa0a8;--c-accent:#c96442;--c-accent2:#e0795a;}
-  .chat-app{display:flex;height:100vh;height:100dvh;background:var(--c-bg);color:var(--c-text)}
-  .chat-side{width:260px;flex-shrink:0;background:var(--c-panel);border-right:1px solid var(--c-border);
-    display:flex;flex-direction:column;padding:14px 10px}
-  .chat-side h6{color:var(--c-muted);font-size:11px;letter-spacing:1px;text-transform:uppercase;margin:14px 8px 6px}
-  .newbtn{display:flex;align-items:center;gap:8px;justify-content:center;background:var(--c-accent);color:#fff;
-    border:none;border-radius:10px;padding:10px;font-weight:600;cursor:pointer}
+  /* Full-screen app. On mobile leave room for the fixed bottom tab bar (~60px). */
+  .chat-app{display:flex;flex-direction:column;height:100dvh;background:var(--c-bg);color:var(--c-text);overflow:hidden}
+  @media(max-width:768px){ .chat-app{height:calc(100dvh - 60px)} }
+
+  /* ── Header bar ─────────────────────────────────────── */
+  .chat-header{display:flex;align-items:center;gap:14px;padding:10px 18px;border-bottom:1px solid var(--c-border);background:var(--c-panel);flex-shrink:0}
+  .chat-header .brand{display:flex;align-items:center;gap:9px;font-weight:700;letter-spacing:2px;color:var(--c-text);text-decoration:none}
+  .chat-header .brand .logo{width:26px;height:26px;border-radius:7px;background:var(--c-accent);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px}
+  .chat-header .back{color:var(--c-muted);text-decoration:none;font-size:13px;display:flex;align-items:center;gap:5px}
+  .chat-header .back:hover{color:var(--c-text)}
+  .chat-header .spacer{flex:1}
+  .chat-header .lbl{color:var(--c-muted);font-size:12px}
+  .chat-header select{background:var(--c-panel2);border:1px solid var(--c-border);color:var(--c-text);border-radius:8px;padding:7px 10px;max-width:230px}
+  .mbtn{border:1px solid var(--c-border);background:transparent;color:var(--c-text);border-radius:8px;padding:7px 11px;font-size:12px;cursor:pointer}
+  .mbtn:hover{border-color:var(--c-accent)}
+  .dot{width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:5px}
+  .dot.on{background:#3fb950}
+
+  /* ── Body: sidebar + main ───────────────────────────── */
+  .chat-body{flex:1;display:flex;min-height:0}
+  .chat-side{width:250px;flex-shrink:0;background:var(--c-panel);border-right:1px solid var(--c-border);display:flex;flex-direction:column;padding:14px 10px;min-height:0}
+  .newbtn{display:flex;align-items:center;gap:8px;justify-content:center;background:var(--c-accent);color:#fff;border:none;border-radius:10px;padding:10px;font-weight:600;cursor:pointer}
   .newbtn:hover{background:var(--c-accent2)}
-  .convos{flex:1;overflow:auto;margin-top:8px;display:flex;flex-direction:column;gap:2px}
+  .chat-side h6{color:var(--c-muted);font-size:11px;letter-spacing:1px;text-transform:uppercase;margin:14px 8px 6px}
+  .convos{flex:1;overflow:auto;display:flex;flex-direction:column;gap:2px;min-height:0}
   .convo{display:flex;align-items:center;gap:6px;padding:9px 10px;border-radius:8px;color:var(--c-muted);cursor:pointer;font-size:13px}
-  .convo:hover{background:var(--c-panel2);color:var(--c-text)}
-  .convo.active{background:var(--c-panel2);color:var(--c-text)}
+  .convo:hover,.convo.active{background:var(--c-panel2);color:var(--c-text)}
   .convo .t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .convo .x{opacity:0;border:none;background:transparent;color:var(--c-muted);cursor:pointer}
   .convo:hover .x{opacity:1}
   .clearall{border:none;background:transparent;color:var(--c-muted);font-size:12px;cursor:pointer;padding:8px;text-align:left}
   .clearall:hover{color:var(--c-accent2)}
 
-  .chat-main{flex:1;display:flex;flex-direction:column;min-width:0}
-  .chat-top{display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--c-border);background:var(--c-panel)}
-  .chat-top .lbl{color:var(--c-muted);font-size:12px}
-  .chat-top select{background:var(--c-panel2);border:1px solid var(--c-border);color:var(--c-text);border-radius:8px;padding:7px 10px;max-width:240px}
-  .mbtn{border:1px solid var(--c-border);background:transparent;color:var(--c-text);border-radius:8px;padding:7px 11px;font-size:12px;cursor:pointer}
-  .mbtn:hover{border-color:var(--c-accent)}
-  .dot{width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;margin-right:5px}
-  .dot.on{background:#3fb950}
-  .thread{flex:1;overflow:auto;padding:24px 18px;display:flex;flex-direction:column;gap:14px}
+  .chat-main{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+  .thread{flex:1;overflow:auto;padding:24px 18px;display:flex;flex-direction:column;gap:14px;min-height:0}
   .msg{display:flex}
   .msg.user{justify-content:flex-end}
   .msg .b{max-width:740px;padding:12px 15px;border-radius:14px;background:var(--c-panel);border:1px solid var(--c-border);white-space:pre-wrap;word-wrap:break-word;line-height:1.55}
   .msg.user .b{background:var(--c-accent);border-color:var(--c-accent);color:#fff}
   .empty{margin:auto;text-align:center;color:var(--c-muted)}
   .empty .big{font-size:42px;margin-bottom:8px}
-  .composer{display:flex;gap:10px;align-items:flex-end;padding:14px 18px;border-top:1px solid var(--c-border);background:var(--c-panel)}
-  .composer textarea{flex:1;resize:none;max-height:160px;background:var(--c-panel2);border:1px solid var(--c-border);
-    color:var(--c-text);border-radius:12px;padding:12px 14px;outline:none;font:inherit}
+  .err{color:#f85149;font-size:12px;padding:2px 18px;min-height:0}
+  .composer{display:flex;gap:10px;align-items:flex-end;padding:14px 18px;border-top:1px solid var(--c-border);background:var(--c-panel);flex-shrink:0}
+  .composer textarea{flex:1;resize:none;max-height:160px;background:var(--c-panel2);border:1px solid var(--c-border);color:var(--c-text);border-radius:12px;padding:12px 14px;outline:none;font:inherit}
   .composer textarea:focus{border-color:var(--c-accent)}
   .sendbtn{background:var(--c-accent);color:#fff;border:none;border-radius:12px;padding:12px 18px;font-weight:600;cursor:pointer}
   .sendbtn:hover{background:var(--c-accent2)}
-  .err{color:#f85149;font-size:12px;padding:0 18px}
-  @media(max-width:720px){.chat-side{display:none}}
+  @media(max-width:768px){ .chat-side{display:none} .chat-header select{max-width:130px} }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="chat-app">
-  <aside class="chat-side">
-    <button class="newbtn" onclick="newChat()"><i class="bi bi-plus-lg"></i> New chat</button>
-    <h6>Conversations</h6>
-    <div class="convos" id="convos">
-      {% for c in conversations %}
-      <div class="convo" data-id="{{ c.pk }}" onclick="openConvo({{ c.pk }})">
-        <i class="bi bi-chat-left-text"></i>
-        <span class="t">{{ c.title }}</span>
-        <button class="x" title="Clear" onclick="event.stopPropagation();clearConvo({{ c.pk }})"><i class="bi bi-trash"></i></button>
-      </div>
-      {% endfor %}
-    </div>
-    <button class="clearall" onclick="clearAll()"><i class="bi bi-trash3"></i> Clear all chats</button>
-  </aside>
+  <!-- Header -->
+  <header class="chat-header">
+    <a class="brand" href="{% url 'chat:home' %}"><span class="logo">T</span>CHAT</a>
+    <a class="back" href="{% url 'members:dashboard' %}"><i class="bi bi-arrow-left"></i> Dashboard</a>
+    <span class="spacer"></span>
+    <span class="lbl">Model</span>
+    <select id="modelSel"></select>
+    <button class="mbtn" onclick="spin('load')" title="Load model into memory">Spin up</button>
+    <button class="mbtn" onclick="spin('unload')" title="Unload model to free VRAM">Spin down</button>
+    <span id="modelState" class="lbl"><span class="dot"></span>—</span>
+    <button class="mbtn" onclick="refreshModels()" title="Refresh"><i class="bi bi-arrow-clockwise"></i></button>
+  </header>
 
-  <section class="chat-main">
-    <div class="chat-top">
-      <span class="lbl">Model</span>
-      <select id="modelSel"></select>
-      <button class="mbtn" onclick="spin('load')">Spin up</button>
-      <button class="mbtn" onclick="spin('unload')">Spin down</button>
-      <span id="modelState" class="lbl"><span class="dot"></span>—</span>
-      <span style="flex:1"></span>
-      <button class="mbtn" onclick="refreshModels()"><i class="bi bi-arrow-clockwise"></i></button>
-    </div>
-    <div class="err" id="err"></div>
-    <div class="thread" id="thread"></div>
-    <div class="composer">
-      <textarea id="input" rows="1" placeholder="Message TARS…" onkeydown="onKey(event)"></textarea>
-      <button class="sendbtn" onclick="send()">Send</button>
-    </div>
-  </section>
+  <div class="chat-body">
+    <!-- Conversation sidebar -->
+    <aside class="chat-side">
+      <button class="newbtn" onclick="newChat()"><i class="bi bi-plus-lg"></i> New chat</button>
+      <h6>Conversations</h6>
+      <div class="convos" id="convos">
+        {% for c in conversations %}
+        <div class="convo" data-id="{{ c.pk }}" onclick="openConvo({{ c.pk }})">
+          <i class="bi bi-chat-left-text"></i>
+          <span class="t">{{ c.title }}</span>
+          <button class="x" title="Clear" onclick="event.stopPropagation();clearConvo({{ c.pk }})"><i class="bi bi-trash"></i></button>
+        </div>
+        {% endfor %}
+      </div>
+      <button class="clearall" onclick="clearAll()"><i class="bi bi-trash3"></i> Clear all chats</button>
+    </aside>
+
+    <!-- Main -->
+    <section class="chat-main">
+      <div class="err" id="err"></div>
+      <div class="thread" id="thread"></div>
+      <div class="composer">
+        <textarea id="input" rows="1" placeholder="Message TARS…" onkeydown="onKey(event)"></textarea>
+        <button class="sendbtn" onclick="send()">Send</button>
+      </div>
+    </section>
+  </div>
 </div>
 {% endblock %}
 
