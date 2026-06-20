@@ -15,6 +15,10 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
     height: 100dvh; /* dynamic viewport height: shrinks with iOS keyboard */
     background: #0a0a0a;
 }
+/* Desktop: leave room for the 48px app top-nav so the composer stays on screen. */
+@media (min-width: 769px) {
+    .chat-app { height: calc(100vh - 48px); height: calc(100dvh - 48px); }
+}
 
 /* ── Persistent queue rail — split view: tasks (left) / queue (right) ─── */
 .queue-rail {

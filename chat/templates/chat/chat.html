@@ -10,7 +10,8 @@
         --c-text:#e6e7e9;--c-muted:#9aa0a8;--c-accent:#c96442;--c-accent2:#e0795a;}
   /* Full-screen app. On mobile leave room for the fixed bottom tab bar (~60px). */
   .chat-app{display:flex;flex-direction:column;height:100dvh;background:var(--c-bg);color:var(--c-text);overflow:hidden}
-  @media(max-width:768px){ .chat-app{height:calc(100dvh - 60px)} }
+  @media(max-width:768px){ .chat-app{height:calc(100dvh - 60px)} }   /* mobile bottom tab bar */
+  @media(min-width:769px){ .chat-app{height:calc(100dvh - 48px)} }   /* desktop app top-nav */
 
   /* ── Header bar ─────────────────────────────────────── */
   .chat-header{display:flex;align-items:center;gap:14px;padding:10px 18px;border-bottom:1px solid var(--c-border);background:var(--c-panel);flex-shrink:0}

@@ -722,6 +722,41 @@
         #page-content.page-visible {
             opacity: 1;
         }
+
+        /* ── App top nav (desktop) ───────────────────────────────── */
+        .app-top-nav { display: none; }
+        @media (min-width: 769px) {
+            .app-top-nav {
+                height: 48px;
+                display: flex;
+                align-items: center;
+                gap: 18px;
+                padding: 0 18px;
+                background: var(--tars-surface);
+                border-bottom: 1px solid var(--tars-border);
+                position: relative;
+                z-index: 50;
+                flex-shrink: 0;
+            }
+        }
+        .app-top-nav-brand {
+            font-weight: 800; letter-spacing: 1px; font-size: 18px;
+            color: var(--tars-text, #e6e7e9); text-decoration: none;
+        }
+        .app-top-nav-links { display: flex; gap: 4px; flex: 1; }
+        .app-top-nav-item {
+            display: flex; align-items: center; gap: 6px;
+            padding: 7px 12px; border-radius: 8px;
+            color: var(--tars-muted); text-decoration: none;
+            font-size: 13px; font-weight: 500;
+        }
+        .app-top-nav-item:hover { background: rgba(255,255,255,0.05); color: var(--tars-text, #e6e7e9); }
+        .app-top-nav-item.active { background: rgba(255,255,255,0.07); color: var(--tars-accent); }
+        .app-top-nav-signout {
+            display: flex; align-items: center; gap: 6px;
+            color: var(--tars-muted); text-decoration: none; font-size: 13px;
+        }
+        .app-top-nav-signout:hover { color: var(--tars-accent); }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -771,6 +806,27 @@
 </nav>{% endif %}{% endblock %}
 
 {# Email-verification banner removed — accounts are auto-verified (no 2FA / email gate). #}
+
+{% if user.is_authenticated and '/dashboard/' in request.path or user.is_authenticated and '/chat' in request.path %}
+<nav class="app-top-nav" aria-label="App navigation">
+    <a href="{% url 'members:dashboard' %}" class="app-top-nav-brand">T<span style="color:var(--tars-accent)">.</span>ARS</a>
+    <div class="app-top-nav-links">
+        <a href="{% url 'members:dashboard' %}" class="app-top-nav-item{% if '/dashboard/' in request.path and '/queue' not in request.path and '/settings' not in request.path %} active{% endif %}">
+            <i class="bi bi-grid-1x2"></i><span>Dashboard</span>
+        </a>
+        <a href="{% url 'chat:home' %}" class="app-top-nav-item{% if '/chat' in request.path %} active{% endif %}">
+            <i class="bi bi-stars"></i><span>Chat</span>
+        </a>
+        <a href="{% url 'tasks:queue' %}" class="app-top-nav-item{% if '/dashboard/queue' in request.path %} active{% endif %}">
+            <i class="bi bi-list-task"></i><span>Queue</span>
+        </a>
+        <a href="{% url 'members:settings' %}" class="app-top-nav-item{% if '/dashboard/settings' in request.path %} active{% endif %}">
+            <i class="bi bi-gear"></i><span>Settings</span>
+        </a>
+    </div>
+    <a href="{% url 'members:logout' %}" class="app-top-nav-signout"><i class="bi bi-box-arrow-right"></i><span>Sign out</span></a>
+</nav>
+{% endif %}
 
 <div id="page-content">{% block content %}{% endblock %}</div>
 
