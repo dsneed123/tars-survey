@@ -1176,6 +1176,25 @@ def api_task_delete(request, pk):
 
 
 # ---------------------------------------------------------------------------
+# POST /api/tasks/clear
+#
+# Clear the caller's queue: hard-delete all of their pending + queued tasks
+# (work that hasn't started). In-progress/completed/failed history is kept.
+# Protected by Django's standard session auth + CSRF.
+# ---------------------------------------------------------------------------
+
+
+@login_required
+@require_POST
+def api_tasks_clear(request):
+    qs = Task.objects.filter(created_by=request.user, status__in=("pending", "queued"))
+    count = qs.count()
+    qs.delete()
+    logger.info("Cleared %d queued task(s) for user %s", count, request.user.id)
+    return JsonResponse({"ok": True, "cleared": count})
+
+
+# ---------------------------------------------------------------------------
 # POST /api/tasks/<pk>/pin
 #
 # Toggle the pinned state of a task.  At most 5 tasks can be pinned per user;

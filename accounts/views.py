@@ -66,11 +66,14 @@ def accounts_register(request):
         form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save()
+            # Accounts are auto-verified — no email-verification gate ("2FA").
+            if not user.is_email_verified:
+                user.is_email_verified = True
+                user.save(update_fields=["is_email_verified"])
             MemberProfile.objects.create(user=user)
             login(request, user)
             fire_event("signup_completed", user=user, metadata={"plan": user.plan})
             send_welcome_email(user)
-            send_verification_email(user)
             return redirect("members:dashboard")
     else:
         form = RegisterForm()

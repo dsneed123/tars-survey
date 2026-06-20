@@ -43,6 +43,24 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
     background: transparent;
 }
 .queue-rail .queue-panel-header { position: sticky; top: 0; background: #0a0a0a; z-index: 1; }
+.queue-clear-btn {
+    margin-top: 8px;
+    width: 100%;
+    background: transparent;
+    border: 1px solid #3a1f1f;
+    color: #e06a5a;
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background .15s, border-color .15s;
+}
+.queue-clear-btn:hover { background: #2a1414; border-color: #e06a5a; }
 @media (max-width: 768px) {
     .queue-rail { display: none; } /* mobile: use the Queue tab instead */
 }
@@ -2099,10 +2117,25 @@ body { overflow: hidden; height: 100vh; height: 100dvh; }
                 <a href="{% url 'tasks:queue' %}" class="queue-panel-link">
                     View full queue <i class="bi bi-arrow-right"></i>
                 </a>
+                <button type="button" class="queue-clear-btn" onclick="clearQueue()">
+                    <i class="bi bi-trash3"></i> Clear queue
+                </button>
             </div>
         </div>
     </div>
 </aside>
+<script>
+function clearQueue() {
+    if (!confirm('Clear your queue? This deletes all pending and queued tasks.')) return;
+    var m = document.cookie.match(/csrftoken=([^;]+)/);
+    fetch("{% url 'tasks:api_clear' %}", {
+        method: 'POST',
+        headers: {'X-CSRFToken': m ? m[1] : '', 'Content-Type': 'application/json'}
+    }).then(function (r) { return r.json(); })
+      .then(function (j) { if (j.ok) { location.reload(); } else { alert(j.error || 'Failed to clear queue'); } })
+      .catch(function () { alert('Failed to clear queue'); });
+}
+</script>
 {% endif %}
 </div>
 
