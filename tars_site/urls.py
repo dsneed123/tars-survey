@@ -31,6 +31,7 @@ urlpatterns = [
     path("", include("members.urls")),
     path("", include("projects.urls")),
     path("", include("tasks.urls")),
+    path("", include("chat.urls")),
     path("", include("workers.urls")),
     path("", include("analytics.urls")),
     path("", include("billing.urls")),
