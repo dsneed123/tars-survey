@@ -1189,11 +1189,34 @@ ACTIVE_STATUSES = ("pending", "queued", "assigned", "in_progress", "reviewing")
 @login_required
 @require_POST
 def api_tasks_clear(request):
-    qs = Task.objects.filter(created_by=request.user, status__in=ACTIVE_STATUSES)
-    count = qs.count()
-    qs.delete()
-    logger.info("Cleared %d active task(s) for user %s", count, request.user.id)
-    return JsonResponse({"ok": True, "cleared": count})
+    user = request.user
+
+    # Not started yet — just remove them from the queue.
+    not_started = Task.objects.filter(created_by=user, status__in=("pending", "queued"))
+    deleted = not_started.count()
+    not_started.delete()
+
+    # Already running — cancel them (keep the record, mark stopped) rather than
+    # silently deleting work in flight.
+    running = list(
+        Task.objects.filter(created_by=user, status__in=("assigned", "in_progress", "reviewing"))
+    )
+    for task in running:
+        task.status = "failed"
+        task.error_message = "Cancelled by user"
+        task.completed_at = timezone.now()
+        task.save(update_fields=["status", "error_message", "completed_at"])
+        _broadcast_task_update(task)
+
+    logger.info(
+        "Queue cleared for user %s: %d deleted, %d cancelled", user.id, deleted, len(running)
+    )
+    return JsonResponse({
+        "ok": True,
+        "cleared": deleted + len(running),
+        "deleted": deleted,
+        "cancelled": len(running),
+    })
 
 
 # ---------------------------------------------------------------------------
