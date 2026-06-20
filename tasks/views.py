@@ -1178,19 +1178,21 @@ def api_task_delete(request, pk):
 # ---------------------------------------------------------------------------
 # POST /api/tasks/clear
 #
-# Clear the caller's queue: hard-delete all of their pending + queued tasks
-# (work that hasn't started). In-progress/completed/failed history is kept.
-# Protected by Django's standard session auth + CSRF.
+# Clear the caller's queue: hard-delete all of their active tasks — anything
+# not yet finished (pending, queued, assigned, in_progress, reviewing).
+# Completed/failed history is kept. Session auth + CSRF.
 # ---------------------------------------------------------------------------
+
+ACTIVE_STATUSES = ("pending", "queued", "assigned", "in_progress", "reviewing")
 
 
 @login_required
 @require_POST
 def api_tasks_clear(request):
-    qs = Task.objects.filter(created_by=request.user, status__in=("pending", "queued"))
+    qs = Task.objects.filter(created_by=request.user, status__in=ACTIVE_STATUSES)
     count = qs.count()
     qs.delete()
-    logger.info("Cleared %d queued task(s) for user %s", count, request.user.id)
+    logger.info("Cleared %d active task(s) for user %s", count, request.user.id)
     return JsonResponse({"ok": True, "cleared": count})
 
 

@@ -2427,6 +2427,12 @@ function selectProject(id, name, el, e) {
             if (opt) { selectProject(parseInt(lastId, 10), opt.textContent.trim(), opt, null); return; }
         }
     } catch(e) {}
+    // Fallback: nothing remembered — auto-select the first project so the
+    // Send button can activate (it requires a selected project + text).
+    var first = document.querySelector('.project-option');
+    if (first) {
+        selectProject(parseInt(first.getAttribute('data-project-id'), 10), first.textContent.trim(), first, null);
+    }
 }());
 
 // Close dropdown on outside click or overlay tap
