@@ -50,6 +50,12 @@
   .msg.user .b{background:var(--c-accent);border-color:var(--c-accent);color:#fff}
   .empty{margin:auto;text-align:center;color:var(--c-muted)}
   .empty .big{font-size:42px;margin-bottom:8px}
+  /* Typing indicator (shown while the model is responding) */
+  .typing{display:inline-flex;align-items:center;gap:5px;padding:2px 0}
+  .typing span{width:7px;height:7px;border-radius:50%;background:var(--c-muted);display:inline-block;animation:tbounce 1.2s infinite ease-in-out}
+  .typing span:nth-child(2){animation-delay:.18s}
+  .typing span:nth-child(3){animation-delay:.36s}
+  @keyframes tbounce{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-5px);opacity:1}}
   .err{color:#f85149;font-size:12px;padding:2px 18px;min-height:0}
   .composer{display:flex;gap:10px;align-items:flex-end;padding:14px 18px;border-top:1px solid var(--c-border);background:var(--c-panel);flex-shrink:0}
   .composer textarea{flex:1;resize:none;max-height:160px;background:var(--c-panel2);border:1px solid var(--c-border);color:var(--c-text);border-radius:12px;padding:12px 14px;outline:none;font:inherit}
@@ -122,7 +128,10 @@ function showErr(m){document.getElementById('err').textContent=m||''}
 function render(){
   const t=document.getElementById('thread');
   if(!THREAD.length){t.innerHTML='<div class="empty"><div class="big">✦</div>Chat with a local model.<br>Spin one up, then say hello.</div>';return}
-  t.innerHTML=THREAD.map(m=>'<div class="msg '+m.role+'"><div class="b">'+esc(m.content)+'</div></div>').join('');
+  t.innerHTML=THREAD.map(function(m){
+    var inner=m.typing ? '<span class="typing"><span></span><span></span><span></span></span>' : esc(m.content);
+    return '<div class="msg '+m.role+'"><div class="b">'+inner+'</div></div>';
+  }).join('');
   t.scrollTop=t.scrollHeight;
 }
 function setActive(id){document.querySelectorAll('.convo').forEach(c=>c.classList.toggle('active',c.dataset.id==String(id)))}
@@ -137,7 +146,7 @@ async function openConvo(id){
 async function send(){
   const inp=document.getElementById('input');const msg=inp.value.trim();if(!msg)return;
   showErr('');inp.value='';
-  THREAD.push({role:'user',content:msg});THREAD.push({role:'assistant',content:'…'});render();
+  THREAD.push({role:'user',content:msg});THREAD.push({role:'assistant',content:'',typing:true});render();
   const model=document.getElementById('modelSel').value;
   const {ok,j}=await post(U.send,{message:msg,conversation_id:CID,model});
   if(!ok){THREAD.pop();THREAD[THREAD.length-1]={role:'assistant',content:'⚠ '+(j.error||'failed')};render();return}
