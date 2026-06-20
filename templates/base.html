@@ -927,8 +927,13 @@ window.getCsrfToken = function () {
 {% if user.is_authenticated %}
 <nav class="app-bottom-nav" aria-label="Main navigation">
     <a href="{% url 'members:dashboard' %}"
-       class="app-bottom-nav-item{% if '/dashboard/queue' not in request.path and '/dashboard/settings' not in request.path %} active{% endif %}">
-        <i class="bi bi-chat-dots"></i>
+       class="app-bottom-nav-item{% if '/dashboard/' in request.path and '/dashboard/queue' not in request.path and '/dashboard/settings' not in request.path %} active{% endif %}">
+        <i class="bi bi-grid-1x2"></i>
+        <span>Dashboard</span>
+    </a>
+    <a href="{% url 'chat:home' %}"
+       class="app-bottom-nav-item{% if '/chat' in request.path %} active{% endif %}">
+        <i class="bi bi-stars"></i>
         <span>Chat</span>
     </a>
     <a href="{% url 'tasks:queue' %}"

@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "members",
     "projects",
     "tasks",
+    "chat",
     "workers",
     "analytics",
     "billing",
