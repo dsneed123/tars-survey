@@ -466,10 +466,19 @@
                         <i class="bi bi-stars me-1"></i> Auto-populate tasks
                     </button>
                 </form>
+                <button type="button" class="btn btn-outline-accent btn-sm" onclick="var f=document.getElementById('shareRow');f.style.display=f.style.display==='flex'?'none':'flex';" title="Share this repo with someone to work together">
+                    <i class="bi bi-people me-1"></i> Share
+                </button>
                 <a href="{% url 'projects:settings' pk=project.pk %}" class="btn btn-outline-accent btn-sm">
                     <i class="bi bi-gear me-1"></i> Settings
                 </a>
             </div>
+            <form method="post" action="{% url 'projects:share' pk=project.pk %}" id="shareRow" style="display:none;gap:8px;align-items:center;margin-top:12px;">
+                {% csrf_token %}
+                <input type="email" name="email" placeholder="teammate@email.com" required
+                       style="flex:1;max-width:320px;background:var(--tars-bg,#0d0e10);border:1px solid var(--tars-border,#2a2e35);color:var(--tars-text,#e6e7e9);border-radius:8px;padding:9px 12px;">
+                <button type="submit" class="btn btn-accent btn-sm"><i class="bi bi-send me-1"></i> Share project</button>
+            </form>
         </div>
     </div>
 </div>

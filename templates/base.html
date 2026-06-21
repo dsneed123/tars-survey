@@ -817,8 +817,8 @@
         <a href="{% url 'chat:home' %}" class="app-top-nav-item{% if '/chat' in request.path %} active{% endif %}">
             <i class="bi bi-stars"></i><span>Chat</span>
         </a>
-        <a href="{% url 'tasks:queue' %}" class="app-top-nav-item{% if '/dashboard/queue' in request.path %} active{% endif %}">
-            <i class="bi bi-list-task"></i><span>Queue</span>
+        <a href="{% url 'projects:list' %}" class="app-top-nav-item{% if '/dashboard/projects' in request.path %} active{% endif %}">
+            <i class="bi bi-folder2-open"></i><span>Projects</span>
         </a>
         <a href="{% url 'members:settings' %}" class="app-top-nav-item{% if '/dashboard/settings' in request.path %} active{% endif %}">
             <i class="bi bi-gear"></i><span>Settings</span>
@@ -986,10 +986,10 @@ window.getCsrfToken = function () {
         <i class="bi bi-stars"></i>
         <span>Chat</span>
     </a>
-    <a href="{% url 'tasks:queue' %}"
-       class="app-bottom-nav-item{% if '/dashboard/queue' in request.path %} active{% endif %}">
-        <span class="nav-badge-wrap"><i class="bi bi-list-task"></i><span id="queue-bottom-badge" class="nav-badge" style="display:none"></span></span>
-        <span>Queue</span>
+    <a href="{% url 'projects:list' %}"
+       class="app-bottom-nav-item{% if '/dashboard/projects' in request.path %} active{% endif %}">
+        <i class="bi bi-folder2-open"></i>
+        <span>Projects</span>
     </a>
     <a href="{% url 'members:settings' %}"
        class="app-bottom-nav-item{% if '/dashboard/settings' in request.path %} active{% endif %}">

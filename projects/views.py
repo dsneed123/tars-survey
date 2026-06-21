@@ -206,6 +206,49 @@ def project_autopopulate(request, pk):
 
 
 @login_required
+@require_POST
+def project_share(request, pk):
+    """Share a project (repo) with another user by email, so you can work on it
+    together. Backed by a team — collaborators see it via _visible_projects."""
+    project = get_object_or_404(_visible_projects(request.user), pk=pk)
+    if project.owner_id != request.user.id and not (
+        project.team and project.team.is_admin(request.user)
+    ):
+        messages.error(request, "Only the project owner can share it.")
+        return redirect("projects:detail", pk=pk)
+
+    email = (request.POST.get("email") or "").strip().lower()
+    if not email:
+        messages.error(request, "Enter an email to share with.")
+        return redirect("projects:detail", pk=pk)
+
+    from django.contrib.auth import get_user_model
+    from teams.models import Team, TeamMembership, TeamInvite
+
+    team = project.team
+    if not team:
+        team = Team(name=project.name, owner=request.user)
+        team.save()
+        project.team = team
+        project.save(update_fields=["team"])
+
+    User = get_user_model()
+    target = User.objects.filter(email__iexact=email).first()
+    if target and target.id == request.user.id:
+        messages.info(request, "That's your own account.")
+    elif target:
+        TeamMembership.objects.get_or_create(
+            team=team, user=target,
+            defaults={"role": "member", "invited_by": request.user},
+        )
+        messages.success(request, f"Shared with {email} — they can now see and work on this project.")
+    else:
+        TeamInvite.objects.create(team=team, email=email, invited_by=request.user)
+        messages.success(request, f"Invited {email} — they'll get access when they sign up.")
+    return redirect("projects:detail", pk=pk)
+
+
+@login_required
 def project_detail(request, pk):
     project = get_object_or_404(_visible_projects(request.user), pk=pk)
     token = getattr(settings, "GITHUB_TOKEN", "")
