@@ -27,7 +27,7 @@
 <div class="np-wrap">
   <div class="np-card">
     <h1>Create a new project</h1>
-    <p class="sub">TARS creates a fresh GitHub repo, turns your design docs into a task list, and starts building.</p>
+    <p class="sub">Enter a name and TARS creates a fresh GitHub repo. Add design docs (optional) and it'll also generate a task list to start building.</p>
 
     {% if messages %}{% for m in messages %}
       <div style="padding:10px 14px;border-radius:8px;margin-bottom:14px;background:rgba(248,81,73,.1);color:#f85149;font-size:13px">{{ m }}</div>
@@ -40,8 +40,8 @@
         <input type="text" id="name" name="name" placeholder="my-new-app" value="{{ name|default:'' }}" required>
       </div>
       <div class="np-field">
-        <label for="design_docs">Design documents — describe what to build</label>
-        <textarea id="design_docs" name="design_docs" placeholder="A web app that lets users track their scuba dives, with a booking calendar and a gallery..." required>{{ design_docs|default:'' }}</textarea>
+        <label for="design_docs">Design documents — describe what to build <span style="opacity:.7">(optional)</span></label>
+        <textarea id="design_docs" name="design_docs" placeholder="Optional — describe what to build and TARS will generate a task list. Leave blank to just create the repo.">{{ design_docs|default:'' }}</textarea>
       </div>
       <div class="np-actions">
         <button type="submit" class="np-btn" id="npSubmit">Create repo &amp; generate tasks</button>

@@ -129,8 +129,8 @@ def project_new(request):
     if request.method == "POST":
         name = (request.POST.get("name") or "").strip()
         docs = (request.POST.get("design_docs") or "").strip()
-        if not name or not docs:
-            messages.error(request, "Project name and design docs are required.")
+        if not name:
+            messages.error(request, "Project name is required.")
             return render(request, "projects/project_new.html",
                           {"name": name, "design_docs": docs})
 
