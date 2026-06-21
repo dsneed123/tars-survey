@@ -66,6 +66,12 @@ def create_fresh_project(name, design_docs, visibility="private"):
     )
 
 
+def discover_tasks(name):
+    """Auto-populate: ask the controller to analyze a repo and suggest tasks.
+    Returns {ok, tasks:[{title,description}]}. `name` is the repo short name."""
+    return _request("POST", f"/api/projects/{name}/discover", timeout=600)
+
+
 def list_models():
     return _request("GET", "/api/models", timeout=15)
 

@@ -168,6 +168,44 @@ def project_new(request):
 
 
 @login_required
+@require_POST
+def project_autopopulate(request, pk):
+    """Ask TARS to analyze the repo and auto-populate the queue with suggested
+    improvement tasks (created pending for review)."""
+    project = get_object_or_404(_visible_projects(request.user), pk=pk)
+    short = (project.github_repo or "").split("/")[-1]
+    if not short:
+        messages.error(request, "This project has no GitHub repo.")
+        return redirect("projects:detail", pk=pk)
+
+    from chat.controller import discover_tasks, ControllerError
+    try:
+        res = discover_tasks(short)
+    except ControllerError as e:
+        messages.error(request, f"Auto-populate failed: {e}")
+        return redirect("projects:detail", pk=pk)
+
+    from tasks.views import _forward_to_controller
+    tasks = res.get("tasks", []) or []
+    for i, t in enumerate(tasks):
+        task = Task.objects.create(
+            title=(t.get("title") or "Task")[:200],
+            description=t.get("description") or "",
+            project=project, created_by=request.user,
+            status="pending", priority=max(1, 70 - i),
+        )
+        try:
+            _forward_to_controller(task)
+        except Exception:  # noqa: BLE001
+            logger.warning("forward failed for auto task %s", task.pk)
+    if tasks:
+        messages.success(request, f"Auto-populated {len(tasks)} task(s).")
+    else:
+        messages.info(request, "TARS didn't find anything new to add right now.")
+    return redirect("projects:detail", pk=pk)
+
+
+@login_required
 def project_detail(request, pk):
     project = get_object_or_404(_visible_projects(request.user), pk=pk)
     token = getattr(settings, "GITHUB_TOKEN", "")
