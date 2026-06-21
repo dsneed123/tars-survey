@@ -466,6 +466,12 @@
                         <i class="bi bi-stars me-1"></i> Auto-populate tasks
                     </button>
                 </form>
+                <form method="post" action="{% url 'projects:pages' pk=project.pk %}" style="display:inline" onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').innerHTML='<i class=&quot;bi bi-globe me-1&quot;></i> Enabling…';">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-outline-accent btn-sm" title="Publish this repo as a website on GitHub Pages">
+                        <i class="bi bi-globe me-1"></i> GitHub Pages
+                    </button>
+                </form>
                 <button type="button" class="btn btn-outline-accent btn-sm" onclick="var f=document.getElementById('shareRow');f.style.display=f.style.display==='flex'?'none':'flex';" title="Share this repo with someone to work together">
                     <i class="bi bi-people me-1"></i> Share
                 </button>

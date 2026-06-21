@@ -72,6 +72,11 @@ def discover_tasks(name):
     return _request("POST", f"/api/projects/{name}/discover", timeout=600)
 
 
+def enable_pages(name):
+    """Enable GitHub Pages for the repo. Returns {ok, enabled, url}."""
+    return _request("POST", f"/api/projects/{name}/pages", timeout=60)
+
+
 def list_models():
     return _request("GET", "/api/models", timeout=15)
 

@@ -10,6 +10,7 @@ urlpatterns = [
     path("dashboard/projects/new/", views.project_new, name="new"),
     path("dashboard/projects/<int:pk>/autopopulate/", views.project_autopopulate, name="autopopulate"),
     path("dashboard/projects/<int:pk>/share/", views.project_share, name="share"),
+    path("dashboard/projects/<int:pk>/pages/", views.project_pages, name="pages"),
     path("dashboard/projects/detect/", views.project_detect, name="detect"),
     path("dashboard/projects/add-chat/", views.project_add_chat, name="add_chat"),
     path("dashboard/projects/<int:pk>/", views.project_detail, name="detail"),

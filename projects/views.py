@@ -207,6 +207,30 @@ def project_autopopulate(request, pk):
 
 @login_required
 @require_POST
+def project_pages(request, pk):
+    """Enable GitHub Pages for this repo (so the static site goes live) and show
+    the published URL."""
+    project = get_object_or_404(_visible_projects(request.user), pk=pk)
+    short = (project.github_repo or "").split("/")[-1]
+    if not short:
+        messages.error(request, "This project has no GitHub repo.")
+        return redirect("projects:detail", pk=pk)
+    from chat.controller import enable_pages, ControllerError
+    try:
+        res = enable_pages(short)
+    except ControllerError as e:
+        messages.error(request, f"GitHub Pages: {e}")
+        return redirect("projects:detail", pk=pk)
+    url = res.get("url", "")
+    if res.get("already"):
+        messages.info(request, f"GitHub Pages is already live: {url}")
+    else:
+        messages.success(request, f"GitHub Pages enabled — your site will be live at {url} shortly.")
+    return redirect("projects:detail", pk=pk)
+
+
+@login_required
+@require_POST
 def project_share(request, pk):
     """Share a project (repo) with another user by email, so you can work on it
     together. Backed by a team — collaborators see it via _visible_projects."""
