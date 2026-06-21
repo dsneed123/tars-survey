@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}New project — TARS{% endblock %}
+{% block meta_description %}<meta name="description" content="Create a new repo with TARS.">{% endblock %}
+
+{% block extra_head %}
+<style>
+  .np-wrap{max-width:680px;margin:32px auto;padding:0 18px}
+  .np-card{background:var(--tars-surface,#16181c);border:1px solid var(--tars-border,#2a2e35);border-radius:14px;padding:26px}
+  .np-card h1{font-size:22px;margin:0 0 6px}
+  .np-card p.sub{color:var(--tars-muted,#9aa0a8);margin:0 0 20px;font-size:14px}
+  .np-field{display:flex;flex-direction:column;gap:7px;margin-bottom:18px}
+  .np-field label{font-size:13px;color:var(--tars-muted,#9aa0a8)}
+  .np-field input,.np-field textarea{background:var(--tars-bg,#0d0e10);border:1px solid var(--tars-border,#2a2e35);
+    color:var(--tars-text,#e6e7e9);border-radius:10px;padding:12px 14px;font:inherit;outline:none;width:100%}
+  .np-field input:focus,.np-field textarea:focus{border-color:var(--tars-accent,#c96442)}
+  .np-field textarea{resize:vertical;min-height:160px}
+  .np-actions{display:flex;gap:10px;align-items:center}
+  .np-btn{background:var(--tars-accent,#c96442);color:#fff;border:none;border-radius:10px;padding:12px 20px;font-weight:600;cursor:pointer;font:inherit}
+  .np-btn:hover{filter:brightness(1.08)}
+  .np-cancel{color:var(--tars-muted,#9aa0a8);text-decoration:none;font-size:14px}
+  .np-note{font-size:12px;color:var(--tars-muted,#9aa0a8);margin-top:14px}
+  .np-spin{display:none}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="np-wrap">
+  <div class="np-card">
+    <h1>Create a new project</h1>
+    <p class="sub">TARS creates a fresh GitHub repo, turns your design docs into a task list, and starts building.</p>
+
+    {% if messages %}{% for m in messages %}
+      <div style="padding:10px 14px;border-radius:8px;margin-bottom:14px;background:rgba(248,81,73,.1);color:#f85149;font-size:13px">{{ m }}</div>
+    {% endfor %}{% endif %}
+
+    <form method="post" id="npForm">
+      {% csrf_token %}
+      <div class="np-field">
+        <label for="name">Project name</label>
+        <input type="text" id="name" name="name" placeholder="my-new-app" value="{{ name|default:'' }}" required>
+      </div>
+      <div class="np-field">
+        <label for="design_docs">Design documents — describe what to build</label>
+        <textarea id="design_docs" name="design_docs" placeholder="A web app that lets users track their scuba dives, with a booking calendar and a gallery..." required>{{ design_docs|default:'' }}</textarea>
+      </div>
+      <div class="np-actions">
+        <button type="submit" class="np-btn" id="npSubmit">Create repo &amp; generate tasks</button>
+        <a href="{% url 'projects:list' %}" class="np-cancel">Cancel</a>
+      </div>
+      <div class="np-note">The repo is created on GitHub, then TARS generates the task list — this can take a moment.</div>
+    </form>
+  </div>
+</div>
+<script>
+document.getElementById('npForm').addEventListener('submit', function(){
+  var b=document.getElementById('npSubmit');
+  b.disabled=true; b.textContent='Creating repo & generating tasks…';
+});
+</script>
+{% endblock %}

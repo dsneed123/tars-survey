@@ -123,6 +123,51 @@ def project_add(request):
 
 
 @login_required
+def project_new(request):
+    """Create a BRAND-NEW GitHub repo via TARS from design docs, generate a task
+    list, and show the project. Repo is created under the controller's gh account."""
+    if request.method == "POST":
+        name = (request.POST.get("name") or "").strip()
+        docs = (request.POST.get("design_docs") or "").strip()
+        if not name or not docs:
+            messages.error(request, "Project name and design docs are required.")
+            return render(request, "projects/project_new.html",
+                          {"name": name, "design_docs": docs})
+
+        from chat.controller import create_fresh_project, ControllerError
+        try:
+            res = create_fresh_project(name, docs)
+        except ControllerError as e:
+            messages.error(request, f"Couldn't create the repo: {e}")
+            return render(request, "projects/project_new.html",
+                          {"name": name, "design_docs": docs})
+
+        repo = res.get("repo", "")
+        project = Project.objects.create(
+            owner=request.user, name=name, github_repo=repo, description=docs[:500],
+        )
+        from tasks.views import _forward_to_controller
+        tasks = res.get("tasks", []) or []
+        for i, t in enumerate(tasks):
+            task = Task.objects.create(
+                title=(t.get("title") or "Task")[:200],
+                description=t.get("description") or "",
+                project=project, created_by=request.user,
+                status="pending", priority=max(1, 100 - i),
+            )
+            try:
+                _forward_to_controller(task)
+            except Exception:  # noqa: BLE001
+                logger.warning("forward failed for new task %s", task.pk)
+        fire_event("project_created_fresh", user=request.user,
+                   metadata={"project_id": project.pk, "repo": repo, "tasks": len(tasks)})
+        messages.success(request, f'Created {repo} with {len(tasks)} tasks — TARS is on it!')
+        return redirect("projects:detail", pk=project.pk)
+
+    return render(request, "projects/project_new.html", {})
+
+
+@login_required
 def project_detail(request, pk):
     project = get_object_or_404(_visible_projects(request.user), pk=pk)
     token = getattr(settings, "GITHUB_TOKEN", "")

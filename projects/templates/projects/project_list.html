@@ -126,8 +126,11 @@
                     {{ projects.count }} connected repositor{{ projects.count|pluralize:"y,ies" }}
                 </p>
             </div>
-            <a href="{% url 'projects:add' %}" class="btn btn-accent">
-                <i class="bi bi-plus-lg me-1"></i> Add Project
+            <a href="{% url 'projects:new' %}" class="btn btn-accent me-2">
+                <i class="bi bi-stars me-1"></i> New repo with TARS
+            </a>
+            <a href="{% url 'projects:add' %}" class="btn btn-outline-accent">
+                <i class="bi bi-plus-lg me-1"></i> Connect existing
             </a>
         </div>
     </div>

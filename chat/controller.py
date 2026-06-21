@@ -54,6 +54,18 @@ def generate_reply(messages, model=None):
     return data.get("reply", "")
 
 
+def create_fresh_project(name, design_docs, visibility="private"):
+    """Ask the controller to create a NEW GitHub repo and generate a task list
+    from design docs. Returns {ok, name, repo, tasks:[{title,description}]}.
+    auto_queue=False — the website persists tasks itself (Django) and forwards them."""
+    return _request(
+        "POST", "/api/projects/fresh",
+        json={"name": name, "design_docs": design_docs,
+              "visibility": visibility, "auto_queue": False},
+        timeout=600,
+    )
+
+
 def list_models():
     return _request("GET", "/api/models", timeout=15)
 
