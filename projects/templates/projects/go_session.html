@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+
+{% block title %}TARS Go — {{ project.name }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .go-hero {
+        background: linear-gradient(135deg, var(--tars-surface) 0%, rgba(99,102,241,0.08) 100%);
+        border-bottom: 1px solid var(--tars-border);
+        padding: 2rem 0 1.5rem;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 0.3rem 0.75rem;
+        border-radius: 999px;
+    }
+    .status-badge.planning  { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    .status-badge.working   { background: rgba(99,102,241,0.15); color: var(--tars-accent); }
+    .status-badge.reviewing { background: rgba(139,92,246,0.15); color: #a78bfa; }
+    .status-badge.done      { background: rgba(16,185,129,0.15); color: var(--tars-green); }
+    .status-badge.failed    { background: rgba(239,68,68,0.15);  color: #fca5a5; }
+
+    .pulse-dot {
+        width: 7px; height: 7px; border-radius: 50%; background: currentColor;
+        animation: tars-pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes tars-pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50%       { opacity: 0.4; transform: scale(1.6); }
+    }
+
+    /* Kanban */
+    .kanban-board {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.25rem;
+        align-items: start;
+    }
+    @media (max-width: 768px) {
+        .kanban-board { grid-template-columns: 1fr; }
+    }
+
+    .kanban-col {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 16px;
+        overflow: hidden;
+    }
+
+    .kanban-col-header {
+        padding: 0.85rem 1.1rem;
+        border-bottom: 1px solid var(--tars-border);
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .kanban-col-title {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--tars-muted);
+    }
+
+    .kanban-count {
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 0.1rem 0.45rem;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.06);
+        color: var(--tars-muted);
+        margin-left: auto;
+    }
+
+    .kanban-cards {
+        padding: 0.75rem;
+        min-height: 80px;
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+
+    .task-card {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid var(--tars-border);
+        border-radius: 10px;
+        padding: 0.75rem 0.9rem;
+        font-size: 0.82rem;
+        transition: border-color 0.15s;
+        cursor: default;
+    }
+
+    .task-card.in_progress {
+        border-color: var(--tars-accent);
+        background: rgba(99,102,241,0.06);
+    }
+
+    .task-card.done {
+        opacity: 0.7;
+    }
+
+    .task-card.failed {
+        border-color: rgba(239,68,68,0.4);
+        background: rgba(239,68,68,0.05);
+    }
+
+    .task-title {
+        font-weight: 600;
+        color: var(--tars-text);
+        margin-bottom: 0.35rem;
+        line-height: 1.35;
+    }
+
+    .task-iter {
+        font-size: 0.65rem;
+        color: var(--tars-muted);
+        margin-bottom: 0.3rem;
+    }
+
+    .task-summary {
+        font-size: 0.75rem;
+        color: var(--tars-muted);
+        margin-top: 0.4rem;
+        line-height: 1.4;
+    }
+
+    .in-progress-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.7rem;
+        color: var(--tars-accent);
+        margin-top: 0.35rem;
+        font-weight: 600;
+    }
+
+    /* Review panel */
+    .review-panel {
+        background: var(--tars-surface);
+        border: 1px solid var(--tars-border);
+        border-radius: 16px;
+        padding: 1.25rem 1.5rem;
+    }
+
+    .score-ring {
+        width: 72px; height: 72px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.3rem; font-weight: 800; color: var(--tars-text);
+        flex-shrink: 0;
+    }
+
+    .empty-col {
+        padding: 1.5rem 1rem;
+        text-align: center;
+        font-size: 0.78rem;
+        color: var(--tars-muted);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="go-hero">
+    <div class="container">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <a href="{% url 'projects:detail' pk=project.pk %}" style="color:var(--tars-muted); font-size:0.82rem; text-decoration:none">
+                <i class="bi bi-chevron-left me-1"></i>{{ project.name }}
+            </a>
+        </div>
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-1">
+                    <span style="font-size:0.7rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--tars-accent)">
+                        <i class="bi bi-lightning-charge-fill me-1"></i>TARS Go
+                    </span>
+                </div>
+                <h1 class="h4 fw-bold mb-0" style="color:var(--tars-text)" id="go-description">Loading…</h1>
+                <p class="small mt-1 mb-0" style="color:var(--tars-muted); font-family:monospace">{{ session_id }}</p>
+            </div>
+            <div id="status-area">
+                <span class="status-badge planning"><span class="pulse-dot"></span> Planning</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-4">
+
+    <!-- Progress bar -->
+    <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+            <span style="font-size:0.72rem; font-weight:600; color:var(--tars-muted); text-transform:uppercase; letter-spacing:0.07em">Progress</span>
+            <span id="progress-label" style="font-size:0.72rem; color:var(--tars-muted)">0 / 0 tasks done</span>
+        </div>
+        <div style="height:6px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden">
+            <div id="progress-bar" style="height:100%; width:0%; background:linear-gradient(90deg,var(--tars-accent),var(--tars-green)); border-radius:3px; transition:width 0.5s ease"></div>
+        </div>
+    </div>
+
+    <!-- Kanban board -->
+    <div class="kanban-board mb-5">
+
+        <!-- Queued -->
+        <div class="kanban-col">
+            <div class="kanban-col-header">
+                <span style="width:8px;height:8px;border-radius:50%;background:var(--tars-muted);display:inline-block"></span>
+                <span class="kanban-col-title">Queued</span>
+                <span class="kanban-count" id="count-queued">0</span>
+            </div>
+            <div class="kanban-cards" id="col-queued">
+                <div class="empty-col" id="empty-queued"><i class="bi bi-hourglass me-1"></i>Waiting for plan…</div>
+            </div>
+        </div>
+
+        <!-- In Progress -->
+        <div class="kanban-col">
+            <div class="kanban-col-header">
+                <span style="width:8px;height:8px;border-radius:50%;background:var(--tars-accent);display:inline-block;animation:tars-pulse 1.4s ease-in-out infinite"></span>
+                <span class="kanban-col-title">In Progress</span>
+                <span class="kanban-count" id="count-in_progress">0</span>
+            </div>
+            <div class="kanban-cards" id="col-in_progress">
+                <div class="empty-col" id="empty-in_progress"><i class="bi bi-cpu me-1"></i>Nothing running yet</div>
+            </div>
+        </div>
+
+        <!-- Done -->
+        <div class="kanban-col">
+            <div class="kanban-col-header">
+                <span style="width:8px;height:8px;border-radius:50%;background:var(--tars-green);display:inline-block"></span>
+                <span class="kanban-col-title">Done</span>
+                <span class="kanban-count" id="count-done">0</span>
+            </div>
+            <div class="kanban-cards" id="col-done">
+                <div class="empty-col" id="empty-done"><i class="bi bi-check2-circle me-1"></i>Completed tasks will appear here</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Review history -->
+    <div id="reviews-section" style="display:none">
+        <p style="font-size:0.7rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--tars-muted); margin-bottom:1rem">Review History</p>
+        <div id="reviews-list" class="d-flex flex-column gap-3"></div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    const POLL_MS = 3000;
+    const pollUrl = "{% url 'projects:go_poll' pk=project.pk session_id=session_id %}";
+    let lastStatus = null;
+    let pollTimer = null;
+
+    function statusBadge(status) {
+        const icons = {
+            planning:  '<span class="pulse-dot"></span> Planning',
+            working:   '<span class="pulse-dot"></span> Working',
+            reviewing: '<span class="pulse-dot"></span> Reviewing',
+            done:      '<i class="bi bi-check2-circle me-1"></i> Done',
+            failed:    '<i class="bi bi-x-circle me-1"></i> Failed',
+        };
+        return `<span class="status-badge ${status}">${icons[status] || status}</span>`;
+    }
+
+    function makeCard(task) {
+        const iterLabel = task.iteration > 1 ? `<div class="task-iter">Refinement ${task.iteration}</div>` : '';
+        const summaryHtml = (task.status === 'done' || task.status === 'failed') && task.summary
+            ? `<div class="task-summary">${escHtml(task.summary.slice(0, 120))}${task.summary.length > 120 ? '…' : ''}</div>`
+            : '';
+        const progressHtml = task.status === 'in_progress'
+            ? `<div class="in-progress-indicator"><span class="pulse-dot" style="background:var(--tars-accent)"></span> Working…</div>`
+            : '';
+        return `
+            <div class="task-card ${task.status}" data-id="${task.id}">
+                ${iterLabel}
+                <div class="task-title">${escHtml(task.title)}</div>
+                ${progressHtml}
+                ${summaryHtml}
+            </div>`;
+    }
+
+    function scoreColor(score) {
+        if (score >= 90) return 'var(--tars-green)';
+        if (score >= 70) return 'var(--tars-accent)';
+        if (score >= 50) return '#f59e0b';
+        return '#fca5a5';
+    }
+
+    function renderReview(review, index) {
+        const score = review.score ?? '—';
+        const color = typeof review.score === 'number' ? scoreColor(review.score) : 'var(--tars-muted)';
+        const newTasks = (review.new_tasks || []).map(t =>
+            `<li style="color:var(--tars-muted); font-size:0.8rem; margin-top:0.25rem">${escHtml(typeof t === 'string' ? t : t.title)}</li>`
+        ).join('');
+        return `
+            <div class="review-panel">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="score-ring" style="background:${color}22; box-shadow:0 0 0 3px ${color}33">
+                        ${score}
+                    </div>
+                    <div class="flex-grow-1">
+                        <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--tars-muted)">Iteration ${review.iteration || index + 1} Review</div>
+                        <div style="color:var(--tars-text); font-size:0.85rem; margin-top:0.25rem">${escHtml(review.summary || '')}</div>
+                        ${newTasks ? `<ul style="margin:0.5rem 0 0; padding-left:1.1rem">${newTasks}</ul>` : ''}
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    function render(data) {
+        // Header
+        document.getElementById('go-description').textContent = data.description || 'TARS Go session';
+        document.getElementById('status-area').innerHTML = statusBadge(data.status);
+
+        const tasks = data.tasks || [];
+        const queued = tasks.filter(t => t.status === 'queued');
+        const inProg  = tasks.filter(t => t.status === 'in_progress');
+        const done    = tasks.filter(t => t.status === 'done' || t.status === 'failed');
+
+        // Progress bar
+        const total = tasks.length;
+        const doneCount = done.length;
+        document.getElementById('progress-bar').style.width = total ? `${Math.round(doneCount / total * 100)}%` : '0%';
+        document.getElementById('progress-label').textContent = `${doneCount} / ${total} tasks done`;
+
+        // Kanban columns
+        ['queued', 'in_progress', 'done'].forEach(col => {
+            document.getElementById(`count-${col}`).textContent =
+                col === 'queued' ? queued.length :
+                col === 'in_progress' ? inProg.length : done.length;
+        });
+
+        const colQueued = document.getElementById('col-queued');
+        const colInProg = document.getElementById('col-in_progress');
+        const colDone   = document.getElementById('col-done');
+
+        colQueued.innerHTML = queued.length ? queued.map(makeCard).join('') :
+            '<div class="empty-col"><i class="bi bi-check2 me-1"></i>All tasks assigned</div>';
+        colInProg.innerHTML = inProg.length ? inProg.map(makeCard).join('') :
+            `<div class="empty-col">${data.status === 'done' || data.status === 'failed' ? '<i class="bi bi-check2-circle me-1"></i>Session complete' : '<i class="bi bi-cpu me-1"></i>Nothing running yet'}</div>`;
+        colDone.innerHTML = done.length ? [...done].reverse().map(makeCard).join('') :
+            '<div class="empty-col"><i class="bi bi-check2-circle me-1"></i>Completed tasks appear here</div>';
+
+        // Reviews
+        const reviews = data.review_history || [];
+        if (reviews.length) {
+            document.getElementById('reviews-section').style.display = 'block';
+            document.getElementById('reviews-list').innerHTML = reviews.map(renderReview).join('');
+        }
+    }
+
+    async function poll() {
+        try {
+            const resp = await fetch(pollUrl);
+            if (!resp.ok) throw new Error('poll failed');
+            const data = await resp.json();
+            render(data);
+            lastStatus = data.status;
+            if (data.status === 'done' || data.status === 'failed') {
+                clearTimeout(pollTimer);
+                return;
+            }
+        } catch (e) {
+            console.warn('poll error:', e);
+        }
+        pollTimer = setTimeout(poll, POLL_MS);
+    }
+
+    function escHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    poll();
+})();
+</script>
+{% endblock %}

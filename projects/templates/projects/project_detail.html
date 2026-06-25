@@ -466,6 +466,9 @@
                         <i class="bi bi-stars me-1"></i> Auto-populate tasks
                     </button>
                 </form>
+                <button type="button" class="btn btn-accent btn-sm" onclick="document.getElementById('goModal').style.display='flex'" title="Describe a goal and let TARS autonomously build, test, and refine until done">
+                    <i class="bi bi-lightning-charge-fill me-1"></i> TARS Go
+                </button>
                 <form method="post" action="{% url 'projects:pages' pk=project.pk %}" style="display:inline" onsubmit="this.querySelector('button').disabled=true;this.querySelector('button').innerHTML='<i class=&quot;bi bi-globe me-1&quot;></i> Enabling…';">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-outline-accent btn-sm" title="Publish this repo as a website on GitHub Pages">
@@ -916,8 +919,35 @@ document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
         closeDiff();
         document.getElementById('rollbackOverlay').classList.remove('open');
+        document.getElementById('goModal').style.display = 'none';
         document.body.style.overflow = '';
     }
 });
 </script>
+
+<!-- ── TARS Go modal ──────────────────────────────────────────────── -->
+<div id="goModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:1050; align-items:center; justify-content:center; padding:1rem;" onclick="if(event.target===this)this.style.display='none'">
+    <div style="background:var(--tars-surface); border:1px solid var(--tars-border); border-radius:20px; padding:2rem; width:100%; max-width:540px; position:relative;">
+        <button onclick="document.getElementById('goModal').style.display='none'" style="position:absolute;top:1rem;right:1rem;background:none;border:none;color:var(--tars-muted);font-size:1.25rem;cursor:pointer;line-height:1">&#x2715;</button>
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <span style="font-size:0.7rem; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--tars-accent)"><i class="bi bi-lightning-charge-fill me-1"></i>TARS Go</span>
+        </div>
+        <h5 class="fw-bold mb-1" style="color:var(--tars-text)">What should TARS build?</h5>
+        <p class="small mb-4" style="color:var(--tars-muted)">Describe your goal. TARS will plan tasks, implement them, run tests, and keep refining until it's done.</p>
+        <form method="post" action="{% url 'projects:go_launch' pk=project.pk %}" onsubmit="this.querySelector('button[type=submit]').disabled=true;this.querySelector('button[type=submit]').innerHTML='<i class=&quot;bi bi-hourglass-split me-1&quot;></i> Launching…';">
+            {% csrf_token %}
+            <textarea name="description" rows="5" required
+                style="width:100%; background:rgba(255,255,255,0.04); border:1px solid var(--tars-border); color:var(--tars-text); border-radius:10px; padding:0.75rem 1rem; font-size:0.9rem; resize:vertical; outline:none; font-family:inherit;"
+                onfocus="this.style.borderColor='var(--tars-accent)'" onblur="this.style.borderColor='var(--tars-border)'"
+                placeholder="e.g. Build a REST API with user auth, CRUD for posts, and a test suite. Deploy-ready with a Dockerfile."></textarea>
+            <div class="d-flex align-items-center gap-2 mt-3">
+                <button type="submit" class="btn btn-accent" style="flex:1">
+                    <i class="bi bi-lightning-charge-fill me-1"></i> Launch TARS Go
+                </button>
+                <button type="button" class="btn btn-sm" onclick="document.getElementById('goModal').style.display='none'"
+                    style="border:1px solid var(--tars-border); color:var(--tars-muted)">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}

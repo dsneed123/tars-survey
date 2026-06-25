@@ -77,6 +77,19 @@ def enable_pages(name):
     return _request("POST", f"/api/projects/{name}/pages", timeout=60)
 
 
+def go_start(name, description):
+    """Launch a TARS Go session. Returns {session_id, status}."""
+    return _request(
+        "POST", f"/api/projects/{name}/go",
+        json={"description": description}, timeout=60,
+    )
+
+
+def go_status(name, session_id):
+    """Poll a TARS Go session. Returns the full session state dict."""
+    return _request("GET", f"/api/projects/{name}/go/{session_id}", timeout=15)
+
+
 def list_models():
     return _request("GET", "/api/models", timeout=15)
 

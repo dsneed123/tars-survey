@@ -231,6 +231,53 @@ def project_pages(request, pk):
 
 @login_required
 @require_POST
+def project_go_launch(request, pk):
+    """Start a TARS Go session from a user-supplied goal description."""
+    project = get_object_or_404(_visible_projects(request.user), pk=pk)
+    short = (project.github_repo or "").split("/")[-1]
+    if not short:
+        messages.error(request, "This project has no GitHub repo.")
+        return redirect("projects:detail", pk=pk)
+    description = (request.POST.get("description") or "").strip()
+    if not description:
+        messages.error(request, "Describe what you want TARS to build.")
+        return redirect("projects:detail", pk=pk)
+    from chat.controller import go_start, ControllerError
+    try:
+        res = go_start(short, description)
+    except ControllerError as e:
+        messages.error(request, f"TARS Go failed to start: {e}")
+        return redirect("projects:detail", pk=pk)
+    return redirect("projects:go_session", pk=pk, session_id=res["session_id"])
+
+
+@login_required
+def project_go_session(request, pk, session_id):
+    """Kanban view for a running/completed TARS Go session."""
+    project = get_object_or_404(_visible_projects(request.user), pk=pk)
+    short = (project.github_repo or "").split("/")[-1]
+    return render(request, "projects/go_session.html", {
+        "project": project,
+        "session_id": session_id,
+        "project_short": short,
+    })
+
+
+@login_required
+def project_go_poll(request, pk, session_id):
+    """JSON endpoint: proxy the controller's session state to the browser."""
+    project = get_object_or_404(_visible_projects(request.user), pk=pk)
+    short = (project.github_repo or "").split("/")[-1]
+    from chat.controller import go_status, ControllerError
+    try:
+        data = go_status(short, session_id)
+    except ControllerError as e:
+        return JsonResponse({"error": str(e)}, status=502)
+    return JsonResponse(data)
+
+
+@login_required
+@require_POST
 def project_share(request, pk):
     """Share a project (repo) with another user by email, so you can work on it
     together. Backed by a team — collaborators see it via _visible_projects."""
