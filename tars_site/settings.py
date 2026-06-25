@@ -190,6 +190,10 @@ GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET", "")
 RECAPTCHA_SITE_KEY = os.environ.get("RECAPTCHA_SITE_KEY", "")
 RECAPTCHA_SECRET_KEY = os.environ.get("RECAPTCHA_SECRET_KEY", "")
 
+# Invite-key gate — comma-separated list of valid invite codes.
+# Leave empty to allow open signup (local dev).
+INVITE_KEYS = set(filter(None, os.environ.get("INVITE_KEYS", "").split(",")))
+
 # ---------------------------------------------------------------------------
 # Django Channels — WebSocket support
 # ---------------------------------------------------------------------------

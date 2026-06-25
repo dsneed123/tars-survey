@@ -112,12 +112,33 @@ def resend_verification_email(request):
     return redirect("members:dashboard")
 
 
+def github_invite_gate(request):
+    """Show an invite-code form before sending the user to GitHub OAuth."""
+    if request.user.is_authenticated:
+        return redirect("members:dashboard")
+    invite_keys = getattr(settings, "INVITE_KEYS", set())
+    if not invite_keys:
+        # No gate configured — skip straight to GitHub.
+        return redirect("accounts:github_login")
+    error = None
+    if request.method == "POST":
+        code = request.POST.get("invite_code", "").strip()
+        if code in invite_keys:
+            request.session["github_invite_verified"] = True
+            return redirect("accounts:github_login")
+        error = "Invalid invite code."
+    return render(request, "accounts/github_invite_gate.html", {"error": error})
+
+
 def github_login(request):
     if request.user.is_authenticated:
         return redirect("members:dashboard")
     if not settings.GITHUB_CLIENT_ID:
         messages.error(request, "GitHub login is not configured.")
         return redirect("accounts:login")
+    invite_keys = getattr(settings, "INVITE_KEYS", set())
+    if invite_keys and not request.session.get("github_invite_verified"):
+        return redirect("accounts:github_invite_gate")
     state = secrets.token_urlsafe(32)
     request.session["github_oauth_state"] = state
     callback_uri = request.build_absolute_uri(reverse("accounts:github_callback"))
@@ -214,6 +235,10 @@ def github_callback(request):
                 user.is_email_verified = True
             user.save(update_fields=["github_id", "github_username", "github_avatar_url", "is_email_verified"])
         else:
+            invite_keys = getattr(settings, "INVITE_KEYS", set())
+            if invite_keys and not request.session.pop("github_invite_verified", False):
+                messages.error(request, "An invite code is required to create an account.")
+                return redirect("accounts:github_invite_gate")
             username = _unique_github_username(gh_username)
             user = CustomUser.objects.create_user(
                 username=username,

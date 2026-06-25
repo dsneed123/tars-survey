@@ -1,4 +1,5 @@
 from django import forms
+from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 
@@ -17,8 +18,12 @@ class LoginForm(forms.Form):
 
 
 class RegisterForm(forms.Form):
+    invite_code = forms.CharField(
+        label="Invite code",
+        widget=forms.TextInput(attrs={"class": _INPUT, "placeholder": "Enter your invite code", "autofocus": True}),
+    )
     email = forms.EmailField(
-        widget=forms.EmailInput(attrs={"class": _INPUT, "placeholder": "you@company.com", "autofocus": True})
+        widget=forms.EmailInput(attrs={"class": _INPUT, "placeholder": "you@company.com"})
     )
     password1 = forms.CharField(
         label="Password",
@@ -28,6 +33,12 @@ class RegisterForm(forms.Form):
         label="Confirm password",
         widget=forms.PasswordInput(attrs={"class": _INPUT, "placeholder": "Repeat password"}),
     )
+
+    def clean_invite_code(self):
+        code = self.cleaned_data.get("invite_code", "").strip()
+        if settings.INVITE_KEYS and code not in settings.INVITE_KEYS:
+            raise forms.ValidationError("Invalid invite code.")
+        return code
 
     def clean_email(self):
         email = self.cleaned_data["email"].lower()
