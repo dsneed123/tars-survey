@@ -1,9 +1,8 @@
 from django import forms
-from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 
-from .models import CustomUser
+from .models import CustomUser, InviteKey
 
 _INPUT = "form-control"
 
@@ -36,8 +35,9 @@ class RegisterForm(forms.Form):
 
     def clean_invite_code(self):
         code = self.cleaned_data.get("invite_code", "").strip()
-        if settings.INVITE_KEYS and code not in settings.INVITE_KEYS:
-            raise forms.ValidationError("Invalid invite code.")
+        if InviteKey.objects.exists():
+            if not InviteKey.objects.filter(key=code, is_active=True, used_at__isnull=True).exists():
+                raise forms.ValidationError("Invalid invite code.")
         return code
 
     def clean_email(self):

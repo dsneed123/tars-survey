@@ -3,11 +3,13 @@ from datetime import datetime, timedelta
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Count
 from django.db.models.functions import TruncDate
-from django.shortcuts import render
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from django.views.decorators.cache import cache_page
+from django.views.decorators.http import require_POST
 
-from accounts.models import CustomUser
+from accounts.models import CustomUser, InviteKey
 from projects.models import Project
 from tasks.models import Task
 from workers.models import Worker
@@ -161,6 +163,9 @@ def analytics_dashboard(request):
         .values("id", "username", "email", "company_name", "plan", "created_at")[:15]
     )
 
+    # ── Invite keys ──────────────────────────────────────────────────────────
+    invite_keys = InviteKey.objects.select_related("used_by").order_by("-created_at")[:50]
+
     return render(
         request,
         "analytics/dashboard.html",
@@ -185,8 +190,27 @@ def analytics_dashboard(request):
             "worker_total": worker_total,
             # Recent signups
             "recent_signups": recent_signups,
+            # Invite keys
+            "invite_keys": invite_keys,
             # Date filter
             "date_from": date_from_str or (now - timedelta(days=30)).strftime("%Y-%m-%d"),
             "date_to": date_to_str or now.strftime("%Y-%m-%d"),
         },
     )
+
+
+@staff_member_required
+@require_POST
+def invite_key_generate(request):
+    label = request.POST.get("label", "").strip()[:100]
+    key = InviteKey.objects.create(label=label)
+    return JsonResponse({"key": key.key, "id": key.id, "label": key.label})
+
+
+@staff_member_required
+@require_POST
+def invite_key_revoke(request, key_id):
+    key = get_object_or_404(InviteKey, id=key_id)
+    key.is_active = False
+    key.save(update_fields=["is_active"])
+    return JsonResponse({"ok": True})

@@ -1,5 +1,33 @@
+import secrets
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+
+
+def _generate_invite_key():
+    return secrets.token_urlsafe(16)
+
+
+class InviteKey(models.Model):
+    key = models.CharField(max_length=64, unique=True, default=_generate_invite_key)
+    label = models.CharField(max_length=100, blank=True, help_text="Optional note, e.g. 'for John'")
+    created_at = models.DateTimeField(auto_now_add=True)
+    used_at = models.DateTimeField(null=True, blank=True)
+    used_by = models.ForeignKey(
+        "CustomUser", null=True, blank=True, on_delete=models.SET_NULL, related_name="invite_used"
+    )
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        status = "used" if self.used_at else ("active" if self.is_active else "revoked")
+        return f"{self.key[:12]}… [{status}]"
+
+    @property
+    def is_used(self):
+        return self.used_at is not None
 
 
 class CustomUser(AbstractUser):

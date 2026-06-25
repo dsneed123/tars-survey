@@ -18,7 +18,7 @@ from members.models import MemberProfile
 from notifications.utils import send_verification_email, send_welcome_email
 
 from .forms import LoginForm, RegisterForm
-from .models import CustomUser
+from .models import CustomUser, InviteKey
 from .tokens import email_verification_token
 
 logger = logging.getLogger(__name__)
@@ -71,6 +71,13 @@ def accounts_register(request):
                 user.is_email_verified = True
                 user.save(update_fields=["is_email_verified"])
             MemberProfile.objects.create(user=user)
+            # Mark invite key as used.
+            from django.utils import timezone as tz
+            code = form.cleaned_data.get("invite_code", "").strip()
+            if code:
+                InviteKey.objects.filter(key=code, is_active=True, used_at__isnull=True).update(
+                    used_at=tz.now(), used_by=user
+                )
             login(request, user)
             fire_event("signup_completed", user=user, metadata={"plan": user.plan})
             send_welcome_email(user)
@@ -116,15 +123,14 @@ def github_invite_gate(request):
     """Show an invite-code form before sending the user to GitHub OAuth."""
     if request.user.is_authenticated:
         return redirect("members:dashboard")
-    invite_keys = getattr(settings, "INVITE_KEYS", set())
-    if not invite_keys:
-        # No gate configured — skip straight to GitHub.
+    if not InviteKey.objects.exists():
+        # No invite keys in DB — gate is disabled, skip straight to GitHub.
         return redirect("accounts:github_login")
     error = None
     if request.method == "POST":
         code = request.POST.get("invite_code", "").strip()
-        if code in invite_keys:
-            request.session["github_invite_verified"] = True
+        if InviteKey.objects.filter(key=code, is_active=True, used_at__isnull=True).exists():
+            request.session["github_invite_key"] = code
             return redirect("accounts:github_login")
         error = "Invalid invite code."
     return render(request, "accounts/github_invite_gate.html", {"error": error})
@@ -136,8 +142,7 @@ def github_login(request):
     if not settings.GITHUB_CLIENT_ID:
         messages.error(request, "GitHub login is not configured.")
         return redirect("accounts:login")
-    invite_keys = getattr(settings, "INVITE_KEYS", set())
-    if invite_keys and not request.session.get("github_invite_verified"):
+    if InviteKey.objects.exists() and not request.session.get("github_invite_key"):
         return redirect("accounts:github_invite_gate")
     state = secrets.token_urlsafe(32)
     request.session["github_oauth_state"] = state
@@ -235,8 +240,8 @@ def github_callback(request):
                 user.is_email_verified = True
             user.save(update_fields=["github_id", "github_username", "github_avatar_url", "is_email_verified"])
         else:
-            invite_keys = getattr(settings, "INVITE_KEYS", set())
-            if invite_keys and not request.session.pop("github_invite_verified", False):
+            invite_code = request.session.pop("github_invite_key", None)
+            if InviteKey.objects.exists() and not invite_code:
                 messages.error(request, "An invite code is required to create an account.")
                 return redirect("accounts:github_invite_gate")
             username = _unique_github_username(gh_username)
@@ -249,6 +254,11 @@ def github_callback(request):
                 github_avatar_url=gh_avatar,
                 is_email_verified=bool(gh_email),
             )
+            if invite_code:
+                from django.utils import timezone as tz
+                InviteKey.objects.filter(key=invite_code, is_active=True, used_at__isnull=True).update(
+                    used_at=tz.now(), used_by=user
+                )
             MemberProfile.objects.get_or_create(user=user)
             fire_event("signup_completed", user=user, metadata={"plan": user.plan, "method": "github"})
             send_welcome_email(user)

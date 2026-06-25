@@ -504,6 +504,78 @@
 
     </div>
 
+    <!-- ── Invite Keys ───────────────────────────────────────────────────── -->
+    <div class="mb-5">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <p class="section-label mb-0">Invite Keys</p>
+            <div class="d-flex align-items-center gap-2">
+                <input type="text" id="invite-label" placeholder="Label (optional)" class="form-control form-control-sm"
+                    style="background:rgba(255,255,255,0.04);border:1px solid var(--tars-border);color:var(--tars-text);border-radius:8px;width:180px;font-size:0.82rem;">
+                <button id="gen-key-btn" class="btn btn-accent btn-sm px-3">
+                    <i class="bi bi-plus-circle me-1"></i>Generate Key
+                </button>
+            </div>
+        </div>
+
+        <div class="fleet-card" style="padding:0; overflow:hidden">
+            <table class="w-100" style="border-collapse:collapse; font-size:0.82rem" id="invite-keys-table">
+                <thead>
+                    <tr style="border-bottom:1px solid var(--tars-border)">
+                        <th style="padding:0.75rem 1.25rem; color:var(--tars-muted); font-weight:600; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em">Key</th>
+                        <th style="padding:0.75rem 1rem; color:var(--tars-muted); font-weight:600; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em">Label</th>
+                        <th style="padding:0.75rem 1rem; color:var(--tars-muted); font-weight:600; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em">Status</th>
+                        <th style="padding:0.75rem 1rem; color:var(--tars-muted); font-weight:600; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em">Used by</th>
+                        <th style="padding:0.75rem 1rem; color:var(--tars-muted); font-weight:600; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.06em">Created</th>
+                        <th style="padding:0.75rem 1.25rem;"></th>
+                    </tr>
+                </thead>
+                <tbody id="invite-keys-body">
+                {% for k in invite_keys %}
+                <tr data-key-id="{{ k.id }}" style="border-bottom:1px solid var(--tars-border)">
+                    <td style="padding:0.7rem 1.25rem; font-family:monospace; color:var(--tars-text)">
+                        <span class="key-text">{{ k.key }}</span>
+                        <button class="copy-key-btn btn btn-sm ms-1 p-0" title="Copy"
+                            style="color:var(--tars-muted); background:none; border:none; font-size:0.78rem; vertical-align:middle"
+                            data-key="{{ k.key }}">
+                            <i class="bi bi-copy"></i>
+                        </button>
+                    </td>
+                    <td style="padding:0.7rem 1rem; color:var(--tars-muted)">{{ k.label|default:"—" }}</td>
+                    <td style="padding:0.7rem 1rem">
+                        {% if k.used_at %}
+                        <span class="plan-pill free">Used</span>
+                        {% elif not k.is_active %}
+                        <span style="font-size:0.62rem; font-weight:700; text-transform:uppercase; padding:0.15rem 0.45rem; border-radius:999px; background:rgba(239,68,68,0.12); color:#fca5a5;">Revoked</span>
+                        {% else %}
+                        <span class="plan-pill pro">Active</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding:0.7rem 1rem; color:var(--tars-muted)">
+                        {% if k.used_by %}{{ k.used_by.email }}{% else %}—{% endif %}
+                    </td>
+                    <td style="padding:0.7rem 1rem; color:var(--tars-muted)">{{ k.created_at|date:"M j, Y" }}</td>
+                    <td style="padding:0.7rem 1.25rem; text-align:right">
+                        {% if k.is_active and not k.used_at %}
+                        <button class="revoke-btn btn btn-sm"
+                            style="border:1px solid rgba(239,68,68,0.3); color:#fca5a5; background:none; font-size:0.72rem; border-radius:6px; padding:0.2rem 0.6rem"
+                            data-key-id="{{ k.id }}" data-revoke-url="{% url 'analytics:invite_key_revoke' k.id %}">
+                            Revoke
+                        </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr id="empty-row">
+                    <td colspan="6" style="padding:2rem 1.25rem; text-align:center; color:var(--tars-muted)">
+                        <i class="bi bi-key me-1"></i> No invite keys yet. Generate one above.
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <!-- ── Bottom Row: Top Pages · Worker Fleet · Recent Signups ─────────── -->
     <div class="row g-4">
 
@@ -614,4 +686,84 @@
     </div>
 
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+    const csrfToken = '{{ csrf_token }}';
+
+    // Copy key to clipboard
+    document.getElementById('invite-keys-table').addEventListener('click', function (e) {
+        const copyBtn = e.target.closest('.copy-key-btn');
+        if (copyBtn) {
+            navigator.clipboard.writeText(copyBtn.dataset.key).then(() => {
+                const icon = copyBtn.querySelector('i');
+                icon.className = 'bi bi-check2';
+                setTimeout(() => { icon.className = 'bi bi-copy'; }, 1500);
+            });
+        }
+    });
+
+    // Revoke key
+    document.getElementById('invite-keys-table').addEventListener('click', function (e) {
+        const revokeBtn = e.target.closest('.revoke-btn');
+        if (!revokeBtn) return;
+        if (!confirm('Revoke this invite key?')) return;
+        const url = revokeBtn.dataset.revokeUrl;
+        const row = revokeBtn.closest('tr');
+        fetch(url, { method: 'POST', headers: { 'X-CSRFToken': csrfToken } })
+            .then(r => r.json())
+            .then(data => {
+                if (data.ok) {
+                    const statusCell = row.querySelector('td:nth-child(3)');
+                    statusCell.innerHTML = '<span style="font-size:0.62rem; font-weight:700; text-transform:uppercase; padding:0.15rem 0.45rem; border-radius:999px; background:rgba(239,68,68,0.12); color:#fca5a5;">Revoked</span>';
+                    revokeBtn.remove();
+                }
+            });
+    });
+
+    // Generate key
+    document.getElementById('gen-key-btn').addEventListener('click', function () {
+        const label = document.getElementById('invite-label').value.trim();
+        fetch('{% url "analytics:invite_key_generate" %}', {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: 'label=' + encodeURIComponent(label),
+        })
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('invite-label').value = '';
+            const emptyRow = document.getElementById('empty-row');
+            if (emptyRow) emptyRow.remove();
+            const tbody = document.getElementById('invite-keys-body');
+            const revokeUrl = `{% url "analytics:invite_key_revoke" 0 %}`.replace('/0/', `/${data.id}/`);
+            const row = document.createElement('tr');
+            row.dataset.keyId = data.id;
+            row.style.borderBottom = '1px solid var(--tars-border)';
+            row.innerHTML = `
+                <td style="padding:0.7rem 1.25rem; font-family:monospace; color:var(--tars-text)">
+                    <span class="key-text">${data.key}</span>
+                    <button class="copy-key-btn btn btn-sm ms-1 p-0" title="Copy"
+                        style="color:var(--tars-muted); background:none; border:none; font-size:0.78rem; vertical-align:middle"
+                        data-key="${data.key}">
+                        <i class="bi bi-copy"></i>
+                    </button>
+                </td>
+                <td style="padding:0.7rem 1rem; color:var(--tars-muted)">${data.label || '—'}</td>
+                <td style="padding:0.7rem 1rem"><span class="plan-pill pro">Active</span></td>
+                <td style="padding:0.7rem 1rem; color:var(--tars-muted)">—</td>
+                <td style="padding:0.7rem 1rem; color:var(--tars-muted)">Just now</td>
+                <td style="padding:0.7rem 1.25rem; text-align:right">
+                    <button class="revoke-btn btn btn-sm"
+                        style="border:1px solid rgba(239,68,68,0.3); color:#fca5a5; background:none; font-size:0.72rem; border-radius:6px; padding:0.2rem 0.6rem"
+                        data-key-id="${data.id}" data-revoke-url="${revokeUrl}">
+                        Revoke
+                    </button>
+                </td>`;
+            tbody.prepend(row);
+        });
+    });
+})();
+</script>
 {% endblock %}
